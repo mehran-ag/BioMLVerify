@@ -10,10 +10,13 @@ class ModelChecker(object):
     One of the requirements for models is having Mass Action Kinetics
     '''
 
-    def __init__(self, model):
+    def __init__(self, file_path):
 
-        self.model = model
+        self.file_path = file_path
 
     def SBML_checker(self):
 
         return self._SBML_checker()
+    
+    def _SBML_checker(self):
+        model = SBMLKinetics.readSBML(self.file_path)
