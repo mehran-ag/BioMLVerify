@@ -1,13 +1,24 @@
 import numpy as np
 import exception
 import os
+import sympy as sp
 
+from colorama import Fore, Back, Style, init
 
 
 
 class MatrixConstructor:
 
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def SBML_stoichiomrtic_matrix_constructor(self, model):
+        '''
+        This function constructs the Stoichiometric Matrix for a SBML model
+        It takes a SBML model, which is already read by another function, and extracts species and reactions to construct the Stoichiometric Matrix
+        '''
 
         species_list = model.getListOfSpecies()
         parameters_list = model.getListOfParameters()
@@ -23,7 +34,7 @@ class MatrixConstructor:
                 raise exception.EmptyList("There are no reactions in this model.")
             
         except exception.EmptyList as e:
-            print(f"\nError: {e}")
+            print(Fore.RED +  f"\nError: {e}")
 
 
         self.species_indices = {}
@@ -38,6 +49,7 @@ class MatrixConstructor:
                 if species_name not in self.species_indices:
                     self.species_indices[species_name] = current_element_index
                     current_element_index += 1
+
 
         self.reaction_indices = {}
 
@@ -113,27 +125,161 @@ class MatrixConstructor:
 
         return self.stoichiometric_matrix
     
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def stoichiometric_matrix_column_names(self):
         
-        return self.reaction_indices
-    
-    def stoichiometric_matrix_row_names(self):
+        try:
+            self.reaction_indices
 
-        return self.species_indices
+            return self.reaction_indices
+        
+        except NameError:
+            print(Fore.RED + "Stoichiometric Matrix hasn't been instantiated yet!\nPlease call the Stoichiometric Matrix Constructor Function first.")
     
-    def elementinformation(self, i, j):
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def stoichiometric_matrix_row_names(self):
+    
+        try:
+            self.species_indices
+
+            return self.species_indices
+        
+        except NameError:
+            print(Fore.RED + "Stoichiometric Matrix hasn't been instantiated yet!\nPlease call the Stoichiometric Matrix Constructor Function first.")
+    
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def stoichiometric_matrix_element_information(self, i, j):
 
         reaction = next((k for k, v in self.reaction_indices.items() if v == j), None)
 
         species = next((k for k, v in self.species_indices.items() if v == i), None)
 
         if (reaction is None) or (species is None):
-            print("Error: Invlaid indoces provided!")
+            print(Fore.RED + "Error: Invlaid indices provided!")
             highest_i = self.stoichiometric_matrix.shape[0]
             highest_j = self.stoichiometric_matrix.shape[1]
-            print(f"\nThe highest value for i (rows), j (columns) are {highest_i} and {highest_j}, respectively")
+            print(Fore.MAGENTA + f"\nThe highest value for i (rows), j (columns) are {highest_i} and {highest_j}, respectively")
             return
 
-        info = f"The stoichiometric coefficient for {species} in reaction {reaction} is {self.stoichiometric_matrix[i][j]}"
+        print(Fore.YELLOW + f"The stoichiometric coefficient for {species} in reaction {reaction} is {self.stoichiometric_matrix[i][j]}")
 
-        print(f"The stoichiometric coefficient for {species} in reaction {reaction} is {self.stoichiometric_matrix[i][j]}")
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def converstion_matrix_constructor(self, model):
+
+        init( autoreset=True )
+
+        if model is None:
+            raise exception.NoModel("No model has been read!!!")
+
+        species_classes_list = model.getListOfSpecies()
+        parameter_classes_list = model.getListOfParameters()
+        reaction_classes_list = model.getListOfReactions()
+        rule_classes_list = model.getListOfRules() #The governing rules of the reactions
+        parameters_list = []
+
+        for individual_parameter in parameter_classes_list:
+            parameter_name = individual_parameter.getId()
+            parameters_list.append(parameter_name)
+            parameter_SBO_term_URL = individual_parameter.getSBOTermAsURL()
+            parameter_SBO_term = os.path.basename(parameter_SBO_term_URL)
+
+        for individual_reaction in reaction_classes_list:
+
+            reaction_name = individual_reaction.getId()
+            kinetic_law = individual_reaction.getKineticLaw()
+            reaction_rate_formula = kinetic_law.getFormula()
+            symbols_dict = {"alpha": sp.symbols("alpha"), "beta": sp.symbols("beta")}
+
+            try:
+                sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = symbols_dict, evaluate = False)
+
+            except sp.SympifyError as e:
+                print(f"\nSympify Error: {e}")
+                print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
+                print(f"\nThe string for equation is: {reaction_rate_formula}")
+
+            except ValueError as v:
+                print(f"\nValue Error: {v}")
+                print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
+                print(f"\nThe string for equation is: {reaction_rate_formula}")
+
+            except Exception as e:
+                print(f"\nUnexpected Error: {e}")
+                print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
+                print(f"\nThe string for equation is: {reaction_rate_formula}")
+
+            else:
+                print(f"\nThe reaction rate expression is:\n{sp_reaction_rate_formula}")
+
+            def get_forward_reverse_rates(expression):
+
+                # Separate positive and negative terms manually
+                rates = {}
+
+                if "-" in str(expression):
+
+                    if expression.is_Mul:
+
+                        for arg in expression.args:
+
+                            if arg.is_Add:
+
+                                for term in arg.args:
+                        
+                                    if "-" in str(term):
+                                        rates["reverse_rate"] = term
+                                        
+                                    else:
+                                        rates["forward_rate"] = term
+
+                            elif arg.is_Mul:
+                                get_forward_reverse_rates(arg)
+
+                else:
+                    rates["forward_rate"] = expression
+
+                    
+                return rates
+
+            simplified_formula = sp.simplify(sp_reaction_rate_formula)
+
+            reordered_simplified_formulae = get_forward_reverse_rates(simplified_formula)
+
+            forward_variables_symbols = sp.sympify(reordered_simplified_formulae.get("forward_rate"), locals = symbols_dict, evaluate = False).free_symbols
+            forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
+            forward_rate_constat = set(forward_variables_as_strings) & set(parameters_list)
+
+            reverse_rate_constant = None
+
+            if reordered_simplified_formulae.get("reverse_rate"):
+
+                reverse_variables_symbols = sp.sympify(reordered_simplified_formulae.get("reverse_rate"), locals = symbols_dict, evaluate = False).free_symbols
+            
+                reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
+
+                reverse_rate_constant = set(reverse_variables_as_strings) & set(parameters_list)
+
+
+            
+
+            print(f"\nForward rate constant is {forward_rate_constat} and reverse rate constant is {reverse_rate_constant}")

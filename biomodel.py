@@ -1,7 +1,9 @@
 import libsbml
 import sys
 import os
+from colorama import Fore, Back, Style, init
 import matrix_constructor as mc
+import exception
 
 
 
@@ -24,38 +26,40 @@ class BioModel(object):
 
     def read_file(self, file_path):
                 
-        
+        init( autoreset=True )
+
         try:
             if not isinstance(file_path, str):
-                raise TypeError("File path must be a string.")
+                raise TypeError(Fore.RED + "File path must be a string.")
             
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
+                raise FileNotFoundError(Fore.RED + f"File not found: {file_path}")
             
             self.file_path = file_path
             self.file_name = os.path.basename(file_path)
             self.file_format = os.path.splitext(file_path)[1][1:]
             
         except TypeError as e:
-            print("File not read!")
-            print(f"Error: {e}")
+            print(Fore.RED + "File not read!")
+            print(Fore.RED + f"Error: {e}")
             return
 
-        except FileNotFoundError:
-            print("File not read!")
-            print(f"Error: {e}")
+        except FileNotFoundError as e:
+            print(Fore.RED + "File not read!")
+            print(Fore.RED + f"Error: {e}")
             return
         
         except Exception as e:
-            print("File not read!")
-            print(f"Unexpected error: {e}")
+            print(Fore.RED + "File not read!")
+            print(Fore.RED + f"Unexpected error: {e}")
             return
 
-        if self.file_format == 'xml':
+        else:
+            if self.file_format == 'xml':
 
-            self.model =  self._SBML_reader()
+                self.model =  self._SBML_reader()
 
-            print("\nThe input file is a SBML model")
+                print(Fore.GREEN + "\n\u27A4\u27A4\u27A4The input file is a SBML model\u27A4\u27A4\u27A4")
 
 
 
@@ -94,3 +98,13 @@ class BioModel(object):
     def getElementInformationInStoichiometricMatrix(self, i,j):
 
         return self.matrix_constructor.elementinformation(i,j)
+    
+    def getThermoConversionMatrix(self):
+
+        try:
+            self.matrix_constructor.converstion_matrix_constructor(self.model)
+            
+        except exception.NoModel as e:
+            print(Fore.BLUE + "\nAn error has been raised in \"getThermoConversionMatrix\" function")
+            print(Fore.RED + f"{e}")
+
