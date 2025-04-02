@@ -1,9 +1,12 @@
 import numpy as np
-import exception
+import exceptions
 import os
 import sympy as sp
+from classes.cReaction import *
 
 from colorama import Fore, Back, Style, init
+
+    
 
 
 
@@ -20,20 +23,23 @@ class MatrixConstructor:
         It takes a SBML model, which is already read by another function, and extracts species and reactions to construct the Stoichiometric Matrix
         '''
 
+        if model == None:
+            raise exceptions.NoModel("There is no input model")
+
         species_list = model.getListOfSpecies()
         parameters_list = model.getListOfParameters()
         reactions_list = model.getListOfReactions()
-        rules_list = model.getListOfRules() #The governing rules of the reactions
+        # rules_list = model.getListOfRules() #The governing rules of the reactions
 
         try:
 
             if len(species_list) == 0:
-                raise exception.EmptyList("There are no species in this model.")
+                raise exceptions.EmptyList("There are no species in this model.")
             
             if len(reactions_list) == 0:
-                raise exception.EmptyList("There are no reactions in this model.")
+                raise exceptions.EmptyList("There are no reactions in this model.")
             
-        except exception.EmptyList as e:
+        except exceptions.EmptyList as e:
             print(Fore.RED +  f"\nError: {e}")
 
 
@@ -72,7 +78,7 @@ class MatrixConstructor:
             reaction_reactants = individual_reaction.getListOfReactants()
 
             for individual_reactant in reaction_reactants:
-                reactant_name = individual_reactant.getSpecies()
+                reactant_name = individual_reactant.getId()
                 reactant_stoichiometry = individual_reactant.getStoichiometry()
 
                 if reactant_name != "empty":
@@ -184,82 +190,96 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def converstion_matrix_constructor(self, model):
+    def conversion_matrix_constructor(self, model):
+        '''
+        This function finds the reaction rate constants that are needed to check thermodynamic consistency
+        '''
+
+        # ################################
+        # *      Internal Function       *
+        # ################################
+        def get_forward_reverse_rates(expression):
+
+            # Separate positive and negative terms manually
+            rates = {}
+
+            if "-" in str(expression):
+
+                if expression.is_Mul:
+
+                    for arg in expression.args:
+
+                        if arg.is_Add:
+
+                            for term in arg.args:
+                    
+                                if "-" in str(term):
+                                    rates["reverse_rate"] = term
+                                    
+                                else:
+                                    rates["forward_rate"] = term
+
+                        elif arg.is_Mul:
+                            get_forward_reverse_rates(arg)
+
+            else:
+                rates["forward_rate"] = expression
+
+            return rates
+
+
+
+
 
         init( autoreset=True )
 
         if model is None:
-            raise exception.NoModel("No model has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_classes_list = model.getListOfSpecies()
         parameter_classes_list = model.getListOfParameters()
         reaction_classes_list = model.getListOfReactions()
-        rule_classes_list = model.getListOfRules() #The governing rules of the reactions
+        #rule_classes_list = model.getListOfRules() #The governing rules of the reactions
         parameters_list = []
 
-        for individual_parameter in parameter_classes_list:
-            parameter_name = individual_parameter.getId()
+        for individual_parameter_class in parameter_classes_list:
+
+            parameter_name = individual_parameter_class.getId()
             parameters_list.append(parameter_name)
-            parameter_SBO_term_URL = individual_parameter.getSBOTermAsURL()
-            parameter_SBO_term = os.path.basename(parameter_SBO_term_URL)
+            # parameter_SBO_term_URL = individual_parameter_class.getSBOTermAsURL()
+            # parameter_SBO_term = os.path.basename(parameter_SBO_term_URL)
 
-        for individual_reaction in reaction_classes_list:
+        for individual_reaction_class in reaction_classes_list:
 
-            reaction_name = individual_reaction.getId()
-            kinetic_law = individual_reaction.getKineticLaw()
-            reaction_rate_formula = kinetic_law.getFormula()
-            symbols_dict = {"alpha": sp.symbols("alpha"), "beta": sp.symbols("beta")}
+            reaction_name = individual_reaction_class.getId()
+            reaction_rate_formula = individual_reaction_class.getKineticLaw()
+            # kinetic_law_class = individual_reaction_class.getKineticLaw()
+            # reaction_rate_formula = kinetic_law_class.getFormula()
+
+            symbols_dict = {"alpha": sp.symbols("alpha"), "beta": sp.symbols("beta")} # THERE ARE SOME BUILT-IN FUNCTIONS IN SYMPY THAT INTERFERES WITH VARIABLE NAMES AND THE STRING TO ... \
+                                                                                    # SYMPY EXPRESSIONS AND THE EXECUTION FAILS. TO PREVENT IT, I HAVE DEFINED SOME BUILT-IN FUNCTIONS AS ... \
+                                                                                    # SYMPY VARIABLES BEFOREHAND
 
             try:
                 sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = symbols_dict, evaluate = False)
 
             except sp.SympifyError as e:
-                print(f"\nSympify Error: {e}")
+                print(Fore.RED + f"\nSympify Error: {e}" + Fore.LIGHTRED_EX + "Function cannot be completed")
                 print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
 
             except ValueError as v:
-                print(f"\nValue Error: {v}")
+                print(f"\nValue Error: {v}" + Fore.LIGHTRED_EX + "Function cannot be completed")
                 print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
 
             except Exception as e:
-                print(f"\nUnexpected Error: {e}")
+                print(f"\nUnexpected Error: {e}" + Fore.LIGHTRED_EX + "Function cannot be completed")
                 print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
 
             else:
-                print(f"\nThe reaction rate expression is:\n{sp_reaction_rate_formula}")
-
-            def get_forward_reverse_rates(expression):
-
-                # Separate positive and negative terms manually
-                rates = {}
-
-                if "-" in str(expression):
-
-                    if expression.is_Mul:
-
-                        for arg in expression.args:
-
-                            if arg.is_Add:
-
-                                for term in arg.args:
-                        
-                                    if "-" in str(term):
-                                        rates["reverse_rate"] = term
-                                        
-                                    else:
-                                        rates["forward_rate"] = term
-
-                            elif arg.is_Mul:
-                                get_forward_reverse_rates(arg)
-
-                else:
-                    rates["forward_rate"] = expression
-
-                    
-                return rates
+                print(f"\nThe reaction rate expression is:" + Fore.YELLOW + f"\n{sp_reaction_rate_formula}")
 
             simplified_formula = sp.simplify(sp_reaction_rate_formula)
 
@@ -280,6 +300,10 @@ class MatrixConstructor:
                 reverse_rate_constant = set(reverse_variables_as_strings) & set(parameters_list)
 
 
-            
+            if reverse_rate_constant is None:
 
-            print(f"\nForward rate constant is {forward_rate_constat} and reverse rate constant is {reverse_rate_constant}")
+                print(f"\nForward rate constant is " + Style.BRIGHT + Fore.CYAN + f"{list(forward_rate_constat)[0]}")
+
+            else:
+
+                print(f"\nForward rate constant is " + Style.BRIGHT + Fore.CYAN + f"{list(forward_rate_constat)[0]}" + Style.NORMAL + Fore.WHITE + " and reverse rate constant is " + Style.BRIGHT + Fore.CYAN + f"{list(reverse_rate_constant)[0]}")

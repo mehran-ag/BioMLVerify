@@ -3,7 +3,13 @@ import sys
 import os
 from colorama import Fore, Back, Style, init
 import matrix_constructor as mc
-import exception
+import exceptions
+
+from classes.cReaction import *
+from classes.cModel import *
+from classes.cSpecies import *
+from classes.cParameter import *
+from classes.cSpeciesReference import *
 
 
 
@@ -59,7 +65,7 @@ class BioModel(object):
 
                 self.model =  self._SBML_reader()
 
-                print(Fore.GREEN + "\n\u27A4\u27A4\u27A4The input file is a SBML model\u27A4\u27A4\u27A4")
+                print(Fore.GREEN + "\n\u27A4\u27A4\u27A4 The input file is a SBML model \u27A4\u27A4\u27A4")
 
 
 
@@ -76,16 +82,30 @@ class BioModel(object):
         if document.getNumErrors() > 0:
             print(f"\nError: The SBML file contains {document.getNumErrors()} error(s).")
             print("\nModel not read")
-            return None
+            return
         else:
             self.sbmodel = document.getModel()
-            return self.sbmodel
+            biomodel = Model(self.sbmodel.getId())
+            biomodel.species = self.SBML_to_BioModel_species_tranfer(self.sbmodel)
+            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(self.sbmodel)
+            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self.sbmodel)
+            
+            return biomodel
+            #return self.sbmodel
         
     def getStoichiometricMatrix(self):
 
-        stoichiometic_matrix = self.matrix_constructor.SBML_stoichiomrtic_matrix_constructor(self.model)
+        try:
+            stoichiometic_matrix = self.matrix_constructor.SBML_stoichiomrtic_matrix_constructor(self.model)
 
-        return stoichiometic_matrix
+            return stoichiometic_matrix
+
+        except exceptions.NoModel as e:
+
+            print(Fore.RED + f"\nError: {e}")
+
+            return "Error encountered"
+        
     
     def getStoichiometricColumnNamesIndices(self):
 
@@ -102,9 +122,115 @@ class BioModel(object):
     def getThermoConversionMatrix(self):
 
         try:
-            self.matrix_constructor.converstion_matrix_constructor(self.model)
+            self.matrix_constructor.conversion_matrix_constructor(self.model)
             
-        except exception.NoModel as e:
+        except exceptions.NoModel as e:
             print(Fore.BLUE + "\nAn error has been raised in \"getThermoConversionMatrix\" function")
             print(Fore.RED + f"{e}")
+    
+
+
+    def SBML_to_BioModel_species_tranfer(self, model):
+
+        self.biomodel_species_list = []
+
+        list_of_species = model.getListOfSpecies()
+
+        for species_class in list_of_species:
+
+            species_id = species_class.getId()
+
+            biomodel_species = Species(species_id)
+
+            biomodel_species.initial_concentration = species_class.getInitialConcentration()
+
+            biomodel_species.compartment = species_class.getCompartment()
+
+            biomodel_species.charge = species_class.getCharge()
+
+            self.biomodel_species_list.append(biomodel_species)
+
+        return self.biomodel_species_list
+    
+    def SBML_to_BioModel_parameter_transfer(self, model):
+
+        biomodel_parameters_list = []
+
+        parameters_list = model.getListOfParameters()
+
+        for parameter_class in parameters_list:
+
+            parameter_id = parameter_class.getId()
+
+            biomodel_parameter = Parameter(parameter_id)
+
+            biomodel_parameters_list.append(biomodel_parameter)
+
+        return biomodel_parameters_list
+    
+
+    def SBML_to_BioModel_reaction_tranfer(self, model):
+
+        biomodel_reactions_list = []
+
+        reactions = model.getListOfReactions()
+
+        for reaction_class in reactions:
+
+            biomodel_products_list =[]
+            biomodel_reactants_list = []
+
+            reactants = reaction_class.getListOfReactants()
+
+            products = reaction_class.getListOfProducts()
+
+            reaction_id = reaction_class.getId()
+
+            biomodel_reaction = Reaction(reaction_id)
+
+            biomodel_reaction.reversible = reaction_class.getReversible()
+
+            biomodel_reaction.kinetic_law = reaction_class.getKineticLaw().getFormula()
+
+            for reactant_class in reactants:
+
+                id = reactant_class.getSpecies()
+
+                for biomodel_species in self.biomodel_species_list:
+
+                    if id == biomodel_species.ID:
+
+                        species_reference = SpeciesReference(biomodel_species)
+
+                        species_reference.reaction_id = reaction_id
+
+                        species_reference.stoichiometry = reactant_class.getStoichiometry()
+
+                        biomodel_reactants_list.append(species_reference)
+
+            for product_class in products:
+
+                id = product_class.getSpecies()
+
+                for biomodel_species in self.biomodel_species_list:
+
+                    if id == biomodel_species.ID:
+
+                        species_reference.reaction_id = reaction_id
+
+                        species_reference.stoichiometry = reactant_class.getStoichiometry()
+
+                        biomodel_products_list.append(species_reference)
+
+            biomodel_reaction.reactants = biomodel_reactants_list
+
+            biomodel_reaction.products = biomodel_products_list
+
+            biomodel_reactions_list.append(biomodel_reaction)
+
+        return biomodel_reactions_list
+
+            
+
+
 
