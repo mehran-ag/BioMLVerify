@@ -23,11 +23,11 @@ class BioModel(object):
         Initializes the ModelReader by reading path for a file or a container of files
         '''
         
-        self.file_path = None
-        self.file_name= None
-        self.file_format = None
-        self.model = None
-        self.matrix_constructor = mc.MatrixConstructor()
+        self._file_path = None
+        self._file_name= None
+        self._file_format = None
+        self._bio_model = None
+        self._matrix_constructor = mc.MatrixConstructor()
 
 
     def read_file(self, file_path):
@@ -41,9 +41,9 @@ class BioModel(object):
             if not os.path.exists(file_path):
                 raise FileNotFoundError(Fore.RED + f"File not found: {file_path}")
             
-            self.file_path = file_path
-            self.file_name = os.path.basename(file_path)
-            self.file_format = os.path.splitext(file_path)[1][1:]
+            self._file_path = file_path
+            self._file_name = os.path.basename(file_path)
+            self._file_format = os.path.splitext(file_path)[1][1:]
             
         except TypeError as e:
             print(Fore.RED + "File not read!")
@@ -61,11 +61,13 @@ class BioModel(object):
             return
 
         else:
-            if self.file_format == 'xml':
-
-                self.model =  self._SBML_reader()
+            if self._file_format == 'xml':
 
                 print(Fore.GREEN + "\n\u27A4\u27A4\u27A4 The input file is a SBML model \u27A4\u27A4\u27A4")
+
+                self._bio_model =  self._SBML_reader()
+
+                print(Fore.GREEN + "\n\u27A4\u27A4\u27A4 The SBML model has been succesfully converted to a BioModel\u27A4\u27A4\u27A4")
 
 
 
@@ -78,25 +80,25 @@ class BioModel(object):
         """
 
         reader = libsbml.SBMLReader()
-        document = reader.readSBML(self.file_path)
+        document = reader.readSBML(self._file_path)
         if document.getNumErrors() > 0:
             print(f"\nError: The SBML file contains {document.getNumErrors()} error(s).")
             print("\nModel not read")
             return
         else:
-            self.sbmodel = document.getModel()
-            biomodel = Model(self.sbmodel.getId())
-            biomodel.species = self.SBML_to_BioModel_species_tranfer(self.sbmodel)
-            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(self.sbmodel)
-            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self.sbmodel)
-            
+            self._sbmodel = document.getModel()
+            biomodel = Model(self._sbmodel.getId())
+            biomodel.species = self.SBML_to_BioModel_species_tranfer(self._sbmodel)
+            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(self._sbmodel)
+            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self._sbmodel)
+        
             return biomodel
             #return self.sbmodel
         
     def getStoichiometricMatrix(self):
 
         try:
-            stoichiometic_matrix = self.matrix_constructor.SBML_stoichiomrtic_matrix_constructor(self.model)
+            stoichiometic_matrix = self._matrix_constructor.stoichiomrtic_matrix_constructor(self._bio_model)
 
             return stoichiometic_matrix
 
@@ -122,7 +124,7 @@ class BioModel(object):
     def getThermoConversionMatrix(self):
 
         try:
-            self.matrix_constructor.conversion_matrix_constructor(self.model)
+            self._matrix_constructor.conversion_matrix_constructor(self._bio_model)
             
         except exceptions.NoModel as e:
             print(Fore.BLUE + "\nAn error has been raised in \"getThermoConversionMatrix\" function")
@@ -130,37 +132,41 @@ class BioModel(object):
     
 
 
-    def SBML_to_BioModel_species_tranfer(self, model):
+    def SBML_to_BioModel_species_tranfer(self, libsbml_model):
+        '''
+        This function gets a SBML model, reads the required information for the species and creates a Species class for each one
+        Then, it returns a list that contains the classes of species for this tool
+        '''
 
-        self.biomodel_species_list = []
+        self._biomodel_species_list = []
 
-        list_of_species = model.getListOfSpecies()
+        list_of_libsbml_species = libsbml_model.getListOfSpecies()
 
-        for species_class in list_of_species:
+        for libsbml_species_class in list_of_libsbml_species:
 
-            species_id = species_class.getId()
+            species_id = libsbml_species_class.getId()
 
             biomodel_species = Species(species_id)
 
-            biomodel_species.initial_concentration = species_class.getInitialConcentration()
+            biomodel_species.initial_concentration = libsbml_species_class.getInitialConcentration()
 
-            biomodel_species.compartment = species_class.getCompartment()
+            biomodel_species.compartment = libsbml_species_class.getCompartment()
 
-            biomodel_species.charge = species_class.getCharge()
+            biomodel_species.charge = libsbml_species_class.getCharge()
 
-            self.biomodel_species_list.append(biomodel_species)
+            self._biomodel_species_list.append(biomodel_species)
 
-        return self.biomodel_species_list
+        return self._biomodel_species_list
     
-    def SBML_to_BioModel_parameter_transfer(self, model):
+    def SBML_to_BioModel_parameter_transfer(self, libsbml_model):
 
         biomodel_parameters_list = []
 
-        parameters_list = model.getListOfParameters()
+        libsbml_parameters_list = libsbml_model.getListOfParameters()
 
-        for parameter_class in parameters_list:
+        for libsbml_parameter_class in libsbml_parameters_list:
 
-            parameter_id = parameter_class.getId()
+            parameter_id = libsbml_parameter_class.getId()
 
             biomodel_parameter = Parameter(parameter_id)
 
@@ -169,58 +175,60 @@ class BioModel(object):
         return biomodel_parameters_list
     
 
-    def SBML_to_BioModel_reaction_tranfer(self, model):
+    def SBML_to_BioModel_reaction_tranfer(self, libsbml_model):
 
         biomodel_reactions_list = []
 
-        reactions = model.getListOfReactions()
+        libsbml_reactions = libsbml_model.getListOfReactions()
 
-        for reaction_class in reactions:
+        for libsbml_reaction_class in libsbml_reactions:
 
             biomodel_products_list =[]
             biomodel_reactants_list = []
 
-            reactants = reaction_class.getListOfReactants()
+            libsbml_reactants = libsbml_reaction_class.getListOfReactants()
 
-            products = reaction_class.getListOfProducts()
+            libsbml_products = libsbml_reaction_class.getListOfProducts()
 
-            reaction_id = reaction_class.getId()
+            reaction_id = libsbml_reaction_class.getId()
 
             biomodel_reaction = Reaction(reaction_id)
 
-            biomodel_reaction.reversible = reaction_class.getReversible()
+            biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
 
-            biomodel_reaction.kinetic_law = reaction_class.getKineticLaw().getFormula()
+            biomodel_reaction.kinetic_law = libsbml_reaction_class.getKineticLaw().getFormula()
 
-            for reactant_class in reactants:
+            for libsbml_reactant_class in libsbml_reactants:
 
-                id = reactant_class.getSpecies()
+                id = libsbml_reactant_class.getSpecies()
 
-                for biomodel_species in self.biomodel_species_list:
-
-                    if id == biomodel_species.ID:
-
-                        species_reference = SpeciesReference(biomodel_species)
-
-                        species_reference.reaction_id = reaction_id
-
-                        species_reference.stoichiometry = reactant_class.getStoichiometry()
-
-                        biomodel_reactants_list.append(species_reference)
-
-            for product_class in products:
-
-                id = product_class.getSpecies()
-
-                for biomodel_species in self.biomodel_species_list:
+                for biomodel_species in self._biomodel_species_list:
 
                     if id == biomodel_species.ID:
 
-                        species_reference.reaction_id = reaction_id
+                        biomodel_species_reference = SpeciesReference(biomodel_species)
 
-                        species_reference.stoichiometry = reactant_class.getStoichiometry()
+                        biomodel_species_reference.reaction_id = reaction_id
 
-                        biomodel_products_list.append(species_reference)
+                        biomodel_species_reference.stoichiometry = libsbml_reactant_class.getStoichiometry()
+
+                        biomodel_reactants_list.append(biomodel_species_reference)
+
+            for libsbml_product_class in libsbml_products:
+
+                id = libsbml_product_class.getSpecies()
+
+                for biomodel_species in self._biomodel_species_list:
+
+                    if id == biomodel_species.ID:
+
+                        biomodel_species_reference = SpeciesReference(biomodel_species)
+
+                        biomodel_species_reference.reaction_id = reaction_id
+
+                        biomodel_species_reference.stoichiometry = libsbml_product_class.getStoichiometry()
+
+                        biomodel_products_list.append(biomodel_species_reference)
 
             biomodel_reaction.reactants = biomodel_reactants_list
 

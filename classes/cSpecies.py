@@ -1,28 +1,32 @@
-class Species:
+from classes.SpeciesPropertiesMixin import *
+
+
+class Species(SpeciesPropertiesMixin):
 
     def __init__(self, ID):
-        self.ID = ID
-        self.initial_concentration = None
-        self.compartment = None
-        self.annotations = None
-        self.charge = None
+        self._ID = ID
+        self._name = None
+        self._initial_concentration = None
+        self._compartment = None
+        self._annotations = None
+        self._charge = None
 
     def getId(self):
 
-        return self.ID
+        return self._ID
     
     def getName(self):
 
-        return self.ID
+        return self._ID
     
     def getInitialConcentration(self):
 
-        return self.initial_concentration
+        return self._initial_concentration
     
     def getCharge(self):
 
-        return self.charge
+        return self._charge
     
     def getCompartment(self):
 
-        return self.compartment
+        return self._compartment

@@ -17,7 +17,7 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def SBML_stoichiomrtic_matrix_constructor(self, model):
+    def stoichiomrtic_matrix_constructor(self, model):
         '''
         This function constructs the Stoichiometric Matrix for a SBML model
         It takes a SBML model, which is already read by another function, and extracts species and reactions to construct the Stoichiometric Matrix
