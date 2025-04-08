@@ -11,6 +11,14 @@ class SpeciesPropertiesMixin:
         self._ID = str(ID)
 
     @property
+    def index(self):
+        return self._index
+    
+    @index.setter
+    def index(self, value):
+        raise ValueError("Index is read-only")
+
+    @property
     def name(self):
         return self._name
     

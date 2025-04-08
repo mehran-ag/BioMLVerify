@@ -3,6 +3,7 @@ class Parameter:
     def __init__(self, ID):
 
         self._ID = ID
+        self._value = None
         self._annotations = None
 
     @property
@@ -12,6 +13,17 @@ class Parameter:
     @ID.setter
     def ID(self, ID):
         self._ID = ID
+
+    @property
+    def value(self):
+        return self._value
+    
+    @value.setter
+    def value(self, value):
+        if isinstance(value, (int, float)):
+            self._value = value
+        else:
+            raise ValueError("Input for value must be a number")
 
     @property
     def annotations(self):
@@ -27,3 +39,7 @@ class Parameter:
     def getId(self):
 
         return self._ID
+    
+    def getValue(self):
+
+        return self._value

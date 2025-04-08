@@ -13,6 +13,14 @@ class ReactionPropertiesMixin:
         self._ID = str(ID)
 
     @property
+    def index(self):
+        return self._index
+    
+    @index.setter
+    def index(self, value):
+        raise ValueError("Index is read-only")
+
+    @property
     def annotations(self):
         '''Getter for annotations'''
         return self._annotations
@@ -42,10 +50,10 @@ class ReactionPropertiesMixin:
     
     @kinetic_forward_rate_constant.setter
     def kinetic_forward_rate_constant(self, kfrc):
-        if isinstance(kfrc, (int, float)):
+        if isinstance(kfrc, str):
             self._kinetic_forward_rate_constant = kfrc
         else:
-            raise ValueError("Input for kinetic rate constant must be a number")
+            raise ValueError("Input for kinetic rate constant must be a string")
         
     @property
     def kinetic_reverse_rate_constant(self):
@@ -53,10 +61,32 @@ class ReactionPropertiesMixin:
     
     @kinetic_reverse_rate_constant.setter
     def kinetic_reverse_rate_constant(self, krrc):
-        if isinstance(krrc, (int, float)):
+        if isinstance(krrc, str):
             self._kinetic_reverse_rate_constant = krrc
         else:
-            raise ValueError("Input for kinetic rate constant must be a number")
+            raise ValueError("Input for kinetic rate constant must be a string")
+        
+    @property
+    def kinetic_forward_rate_constant_value(self):
+        return self._kinetic_forward_rate_constant_value
+    
+    @kinetic_forward_rate_constant_value.setter
+    def kinetic_forward_rate_constant_value(self, kfrc):
+        if isinstance(kfrc, (int, float)):
+            self._kinetic_forward_rate_constant_value = kfrc
+        else:
+            raise ValueError("Input for kinetic rate constant value must be a number")
+        
+    @property
+    def kinetic_reverse_rate_constant_value(self):
+        return self._kinetic_reverse_rate_constant_value
+    
+    @kinetic_reverse_rate_constant_value.setter
+    def kinetic_reverse_rate_constant_value(self, krrc):
+        if isinstance(krrc, (int, float)):
+            self._kinetic_reverse_rate_constant_value = krrc
+        else:
+            raise ValueError("Input for kinetic rate constant value must be a number")
         
     @property
     def thermo_forward_rate_constant(self):
@@ -64,10 +94,10 @@ class ReactionPropertiesMixin:
     
     @thermo_forward_rate_constant.setter
     def thermo_forward_rate_constant(self, tfrc):
-        if isinstance(tfrc, (int, float)):
+        if isinstance(tfrc, str):
             self._thermo_forward_rate_constant = tfrc
         else:
-            raise ValueError("Input for thermodynamic rate constant must be a number")
+            raise ValueError("Input for thermodynamic rate constant must be a string")
         
     @property
     def thermo_reverse_rate_constant(self):
@@ -75,10 +105,32 @@ class ReactionPropertiesMixin:
     
     @thermo_reverse_rate_constant.setter
     def thermo_reverse_rate_constant(self, trrc):
-        if isinstance(trrc, (int, float)):
+        if isinstance(trrc, str):
             self._thermo_reverse_rate_constant = trrc
         else:
-            raise ValueError("Input for thermodynamic rate constant must be a number")
+            raise ValueError("Input for thermodynamic rate constant must be a string")
+        
+    @property
+    def thermo_forward_rate_constant_value(self):
+        return self._thermo_forward_rate_constant_value
+    
+    @thermo_forward_rate_constant_value.setter
+    def thermo_forward_rate_constant_value(self, tfrc):
+        if isinstance(tfrc, (int, float)):
+            self._thermo_forward_rate_constant_value = tfrc
+        else:
+            raise ValueError("Input for thermodynamic rate constant value must be a number")
+        
+    @property
+    def thermo_reverse_rate_constant_value(self):
+        return self._thermo_reverse_rate_constant_value
+    
+    @thermo_reverse_rate_constant_value.setter
+    def thermo_reverse_rate_constant_value(self, trrc):
+        if isinstance(trrc, (int, float)):
+            self._thermo_reverse_rate_constant_value = trrc
+        else:
+            raise ValueError("Input for thermodynamic rate constant value must be a number")
         
     @property
     def kinetic_law(self):

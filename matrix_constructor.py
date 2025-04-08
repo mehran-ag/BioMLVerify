@@ -3,6 +3,8 @@ import exceptions
 import os
 import sympy as sp
 from classes.cReaction import *
+from classes.cSpecies import *
+import utility
 
 from colorama import Fore, Back, Style, init
 
@@ -14,22 +16,152 @@ class MatrixConstructor:
 
 
 
+    # # ********************************
+    # # *           Function           *
+    # # ********************************
+    # def stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+    #     """
+    #     Constructs the stoichiometric matrix for the given BioModel.
+
+    #     Parameters:
+    #         biomodel (an instance of BioModel class): The biological model containing species and reactions.
+
+    #     Returns:
+    #         np.ndarray: A 2D array representing the stoichiometric matrix, 
+    #                     where rows correspond to species and columns to reactions.
+    #     """
+
+    #     if biomodel == None:
+    #         raise exceptions.NoModel("There is no input model")
+
+    #     species_list = biomodel.getListOfSpecies()
+    #     parameters_list = biomodel.getListOfParameters()
+    #     reactions_list = biomodel.getListOfReactions()
+
+    #     try:
+
+    #         if len(species_list) == 0:
+    #             raise exceptions.EmptyList("There are no species in this model.")
+            
+    #         if len(reactions_list) == 0:
+    #             raise exceptions.EmptyList("There are no reactions in this model.")
+            
+    #     except exceptions.EmptyList as e:
+    #         print(Fore.RED +  f"\nError: {e}")
+    #         print("Unable to complete the query\!")
+    #         return
+
+
+    #     self.species_indices = {}
+
+    #     current_element_index = 0
+
+    #     for individual_species in species_list:
+
+    #         species_name = individual_species.getId() # I AM NOT SURE IF I NEED TO USE getName() or getID() to READ THE NAMES OF SPECIES
+
+    #         if species_name != "empty":
+    #             if species_name not in self.species_indices:
+    #                 self.species_indices[species_name] = current_element_index
+    #                 current_element_index += 1
+
+
+    #     self.reaction_indices = {}
+
+    #     current_reaction_index = 0
+
+    #     rows = len(self.species_indices)
+
+    #     columns = len(reactions_list)
+
+    #     self.stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
+
+    #     for individual_reaction in reactions_list:
+
+    #         reaction_name = individual_reaction.getId()
+
+    #         self.reaction_indices[reaction_name] = current_reaction_index
+    #         column = current_reaction_index
+    #         current_reaction_index += 1
+
+    #         reaction_reactants = individual_reaction.getListOfReactants()
+
+    #         for individual_reactant in reaction_reactants:
+    #             reactant_name = individual_reactant.getId()
+    #             reactant_stoichiometry = individual_reactant.getStoichiometry()
+
+    #             if reactant_name != "empty":
+
+    #                 row = self.species_indices[reactant_name]
+    #                 self.stoichiometric_matrix[row, column] = -1 * int(reactant_stoichiometry)
+
+    #         reaction_products = individual_reaction.getListOfProducts()
+
+    #         if reactant_name == "empty":
+
+    #             for individual_product in reaction_products:
+    #                 product_name = individual_product.getSpecies()
+    #                 product_stoichiometry = individual_product.getStoichiometry()
+
+    #             row = self.species_indices[product_name]
+    #             self.stoichiometric_matrix[row, column] = int(product_stoichiometry)
+
+    #             new_reactant = product_name + "_e"
+    #             self.species_indices[new_reactant] = current_element_index
+    #             row = current_element_index
+    #             current_element_index += 1
+
+    #             new_row = np.zeros((1, self.stoichiometric_matrix.shape[1]))
+    #             self.stoichiometric_matrix = np.vstack([self.stoichiometric_matrix, new_row])
+
+    #             self.stoichiometric_matrix[row, column] = -1
+
+    #         else:
+
+    #             for individual_product in reaction_products:
+    #                 product_name = individual_product.getSpecies()
+    #                 product_stoichiometry = individual_product.getStoichiometry()
+
+    #                 if product_name == "empty":
+    #                     new_product = reactant_name + "_e"
+    #                     self.species_indices[new_product] = current_element_index
+    #                     row = current_element_index
+    #                     current_element_index += 1
+
+    #                     new_row = np.zeros((1, self.stoichiometric_matrix.shape[1]))
+    #                     self.stoichiometric_matrix = np.vstack([self.stoichiometric_matrix, new_row])
+
+    #                     self.stoichiometric_matrix[row, column] = 1
+
+    #                 else:
+
+    #                     row = self.species_indices[product_name]
+    #                     self.stoichiometric_matrix[row, column] = int( product_stoichiometry )
+
+    #     return self.stoichiometric_matrix
+
+
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiomrtic_matrix_constructor(self, model):
-        '''
-        This function constructs the Stoichiometric Matrix for a SBML model
-        It takes a SBML model, which is already read by another function, and extracts species and reactions to construct the Stoichiometric Matrix
-        '''
+    def stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+        """
+        Constructs the stoichiometric matrix for the given BioModel.
 
-        if model == None:
+        Parameters:
+            biomodel (an instance of BioModel class): The biological model containing species and reactions.
+
+        Returns:
+            np.ndarray: A 2D array representing the stoichiometric matrix, 
+                        where rows correspond to species and columns to reactions.
+        """
+
+        if biomodel == None:
             raise exceptions.NoModel("There is no input model")
 
-        species_list = model.getListOfSpecies()
-        parameters_list = model.getListOfParameters()
-        reactions_list = model.getListOfReactions()
-        # rules_list = model.getListOfRules() #The governing rules of the reactions
+        species_list = biomodel.getListOfSpecies()
+        parameters_list = biomodel.getListOfParameters()
+        reactions_list = biomodel.getListOfReactions()
 
         try:
 
@@ -41,103 +173,173 @@ class MatrixConstructor:
             
         except exceptions.EmptyList as e:
             print(Fore.RED +  f"\nError: {e}")
+            print("Unable to complete the query\!")
+            return
 
+        rows = Species.getCurrentIndex() + 1
 
-        self.species_indices = {}
-
-        current_element_index = 0
-
-        for individual_species in species_list:
-
-            species_name = individual_species.getId() # I AM NOT SURE IF I NEED TO USE getName() or getID() to READ THE NAMES OF SPECIES
-
-            if species_name != "empty":
-                if species_name not in self.species_indices:
-                    self.species_indices[species_name] = current_element_index
-                    current_element_index += 1
-
-
-        self.reaction_indices = {}
-
-        current_reaction_index = 0
-
-        rows = len(self.species_indices)
-
-        columns = len(reactions_list)
+        columns = Reaction.getCurrentIndex() + 1
 
         self.stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
 
         for individual_reaction in reactions_list:
 
-            reaction_name = individual_reaction.getId()
+            column = individual_reaction.index
 
-            self.reaction_indices[reaction_name] = current_reaction_index
-            column = current_reaction_index
-            current_reaction_index += 1
+            if column == None:
+                continue
 
             reaction_reactants = individual_reaction.getListOfReactants()
 
             for individual_reactant in reaction_reactants:
-                reactant_name = individual_reactant.getId()
-                reactant_stoichiometry = individual_reactant.getStoichiometry()
 
-                if reactant_name != "empty":
+                row = individual_reactant.index
 
-                    row = self.species_indices[reactant_name]
-                    self.stoichiometric_matrix[row, column] = -1 * int(reactant_stoichiometry)
+                stoichiometry = individual_reactant.getStoichiometry()
+
+                self.stoichiometric_matrix[row, column] = -1 * int(stoichiometry)
 
             reaction_products = individual_reaction.getListOfProducts()
 
-            if reactant_name == "empty":
+            for individual_product in reaction_products:
 
-                for individual_product in reaction_products:
-                    product_name = individual_product.getSpecies()
-                    product_stoichiometry = individual_product.getStoichiometry()
+                row = individual_product.index
 
-                row = self.species_indices[product_name]
-                self.stoichiometric_matrix[row, column] = int(product_stoichiometry)
+                stoichiometry = individual_product.getStoichiometry()
 
-                new_reactant = product_name + "_e"
-                self.species_indices[new_reactant] = current_element_index
-                row = current_element_index
-                current_element_index += 1
-
-                new_row = np.zeros((1, self.stoichiometric_matrix.shape[1]))
-                self.stoichiometric_matrix = np.vstack([self.stoichiometric_matrix, new_row])
-
-                self.stoichiometric_matrix[row, column] = -1
-
-            else:
-
-                for individual_product in reaction_products:
-                    product_name = individual_product.getSpecies()
-                    product_stoichiometry = individual_product.getStoichiometry()
-
-                    if product_name == "empty":
-                        new_product = reactant_name + "_e"
-                        self.species_indices[new_product] = current_element_index
-                        row = current_element_index
-                        current_element_index += 1
-
-                        new_row = np.zeros((1, self.stoichiometric_matrix.shape[1]))
-                        self.stoichiometric_matrix = np.vstack([self.stoichiometric_matrix, new_row])
-
-                        self.stoichiometric_matrix[row, column] = 1
-
-                    else:
-
-                        row = self.species_indices[product_name]
-                        self.stoichiometric_matrix[row, column] = int( product_stoichiometry )
+                self.stoichiometric_matrix[row, column] = int(stoichiometry)
 
         return self.stoichiometric_matrix
     
 
 
+        # ********************************
+    # *           Function           *
+    # ********************************
+    def forward_stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+        """
+        Constructs the forward stoichiometric matrix for the given BioModel.
+
+        Parameters:
+            biomodel (an instance of BioModel class): The biological model containing species and reactions.
+
+        Returns:
+            np.ndarray: A 2D array representing the stoichiometric matrix, 
+                        where rows correspond to species and columns to reactions.
+        """
+
+        if biomodel == None:
+            raise exceptions.NoModel("There is no input model")
+
+        species_list = biomodel.getListOfSpecies()
+        parameters_list = biomodel.getListOfParameters()
+        reactions_list = biomodel.getListOfReactions()
+
+        try:
+
+            if len(species_list) == 0:
+                raise exceptions.EmptyList("There are no species in this model.")
+            
+            if len(reactions_list) == 0:
+                raise exceptions.EmptyList("There are no reactions in this model.")
+            
+        except exceptions.EmptyList as e:
+            print(Fore.RED +  f"\nError: {e}")
+            print("Unable to complete the query\!")
+            return
+
+        rows = Species.getCurrentIndex() + 1
+
+        columns = Reaction.getCurrentIndex() + 1
+
+        self.forward_stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
+
+        for individual_reaction in reactions_list:
+
+            column = individual_reaction.index
+
+            if column == None:
+                continue
+
+            reaction_reactants = individual_reaction.getListOfReactants()
+
+            for individual_reactant in reaction_reactants:
+
+                row = individual_reactant.index
+
+                stoichiometry = individual_reactant.getStoichiometry()
+
+                self.forward_stoichiometric_matrix[row, column] = int(stoichiometry)
+
+        return self.forward_stoichiometric_matrix
+    
+
+
+        # ********************************
+    # *           Function           *
+    # ********************************
+    def reverse_stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+        """
+        Constructs the reverse stoichiometric matrix for the given BioModel.
+
+        Parameters:
+            biomodel (an instance of BioModel class): The biological model containing species and reactions.
+
+        Returns:
+            np.ndarray: A 2D array representing the stoichiometric matrix, 
+                        where rows correspond to species and columns to reactions.
+        """
+
+        if biomodel == None:
+            raise exceptions.NoModel("There is no input model")
+
+        species_list = biomodel.getListOfSpecies()
+        parameters_list = biomodel.getListOfParameters()
+        reactions_list = biomodel.getListOfReactions()
+
+        try:
+
+            if len(species_list) == 0:
+                raise exceptions.EmptyList("There are no species in this model.")
+            
+            if len(reactions_list) == 0:
+                raise exceptions.EmptyList("There are no reactions in this model.")
+            
+        except exceptions.EmptyList as e:
+            print(Fore.RED +  f"\nError: {e}")
+            print("Unable to complete the query\!")
+            return
+
+        rows = Species.getCurrentIndex() + 1
+
+        columns = Reaction.getCurrentIndex() + 1
+
+        self.reverse_stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
+
+        for individual_reaction in reactions_list:
+
+            column = individual_reaction.index
+
+            if column == None:
+                continue
+
+            reaction_products = individual_reaction.getListOfProducts()
+
+            for individual_product in reaction_products:
+
+                row = individual_product.index
+
+                stoichiometry = individual_product.getStoichiometry()
+
+                self.reverse_stoichiometric_matrix[row, column] = int(stoichiometry)
+
+        return self.reverse_stoichiometric_matrix
+
 
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_column_names(self):
+    def stoichiometric_matrix_column_names(self) -> dict:
         
         try:
             self.reaction_indices
@@ -153,7 +355,7 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_row_names(self):
+    def stoichiometric_matrix_row_names(self) -> dict:
     
         try:
             self.species_indices
@@ -169,7 +371,7 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_element_information(self, i, j):
+    def stoichiometric_matrix_element_information(self, i, j) -> None:
 
         reaction = next((k for k, v in self.reaction_indices.items() if v == j), None)
 
@@ -185,20 +387,31 @@ class MatrixConstructor:
         print(Fore.YELLOW + f"The stoichiometric coefficient for {species} in reaction {reaction} is {self.stoichiometric_matrix[i][j]}")
 
 
-
-
     # ********************************
     # *           Function           *
     # ********************************
-    def conversion_matrix_constructor(self, model):
-        '''
-        This function finds the reaction rate constants that are needed to check thermodynamic consistency
-        '''
+    def forward_reverse_rate_finder(self, biomodel, printing = "off") -> dict:
+        """
+        Input of this function is a BioModel class instance
+        This function extracts the rate constants for each reaction in the given model, 
+        including both forward and reverse directions. Then, "kinetic_forward_rate_constant" and "kinetic_reverse_rate_constant" variables of each reaction is updated
 
-        # ################################
+        Each reaction's rate constants are stored in a dictionary with 'forward' and 'reverse' 
+        as keys and their corresponding values as floats.
+
+        These per-reaction dictionaries are then stored in a master dictionary, 
+        `reaction_to_rate_constants`, where the keys are reaction names and the values 
+        are the corresponding rate constant dictionaries.
+
+        The final dictionary is returned.
+        """
+
+        reaction_to_rate_constants = {} # This dictionary maps reaction names (IDs) to a dictionary of forward and reverse rate constants and their values
+
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
-        # ################################
-        def get_forward_reverse_rates(expression):
+        # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        def get_forward_reverse_rate_expressions(expression):
 
             # Separate positive and negative terms manually
             rates = {}
@@ -220,48 +433,65 @@ class MatrixConstructor:
                                     rates["forward_rate"] = term
 
                         elif arg.is_Mul:
-                            get_forward_reverse_rates(arg)
+                            nested_rates = get_forward_reverse_rate_expressions(arg)
+                            rates.update(nested_rates)
+
+                elif expression.is_Add:
+
+                    for arg in expression.args:
+
+                        if arg.is_Add:
+
+                            for term in arg.args:
+                    
+                                if "-" in str(term):
+                                    rates["reverse_rate"] = term
+                                    
+                                else:
+                                    rates["forward_rate"] = term
 
             else:
                 rates["forward_rate"] = expression
 
             return rates
+        # --------------------------------------------------
+        # --------------------------------------------------
 
 
-
-
-
-        init( autoreset=True )
-
-        if model is None:
+        if biomodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        species_classes_list = model.getListOfSpecies()
-        parameter_classes_list = model.getListOfParameters()
-        reaction_classes_list = model.getListOfReactions()
-        #rule_classes_list = model.getListOfRules() #The governing rules of the reactions
-        parameters_list = []
+        species_classes_list = biomodel.getListOfSpecies()
+        parameter_classes_list = biomodel.getListOfParameters()
+        reaction_classes_list = biomodel.getListOfReactions()
+
+        string_to_sympy_symbols = {} # THERE ARE SOME BUILT-IN FUNCTIONS IN SYMPY THAT INTERFERES WITH VARIABLE NAMES AND THE STRING TO ... \
+                                        # SYMPY EXPRESSIONS AND THE EXECUTION FAILS. TO PREVENT IT, I HAVE DEFINED SOME BUILT-IN FUNCTIONS AS ... \
+                                        # SYMPY VARIABLES BEFOREHAND
+
+        for individual_species_class in species_classes_list:
+            species_name = individual_species_class.getId()
+            string_to_sympy_symbols[species_name] = sp.symbols(species_name)
+
+
+        parameters_values = {}  # This list stores the names of the parameters and their values
 
         for individual_parameter_class in parameter_classes_list:
 
             parameter_name = individual_parameter_class.getId()
-            parameters_list.append(parameter_name)
-            # parameter_SBO_term_URL = individual_parameter_class.getSBOTermAsURL()
-            # parameter_SBO_term = os.path.basename(parameter_SBO_term_URL)
+            parameter_value = individual_parameter_class.getValue()
+            string_to_sympy_symbols[parameter_name] = sp.symbols(parameter_name)
+            parameters_values[parameter_name] = parameter_value
+
 
         for individual_reaction_class in reaction_classes_list:
 
             reaction_name = individual_reaction_class.getId()
             reaction_rate_formula = individual_reaction_class.getKineticLaw()
-            # kinetic_law_class = individual_reaction_class.getKineticLaw()
-            # reaction_rate_formula = kinetic_law_class.getFormula()
 
-            symbols_dict = {"alpha": sp.symbols("alpha"), "beta": sp.symbols("beta")} # THERE ARE SOME BUILT-IN FUNCTIONS IN SYMPY THAT INTERFERES WITH VARIABLE NAMES AND THE STRING TO ... \
-                                                                                    # SYMPY EXPRESSIONS AND THE EXECUTION FAILS. TO PREVENT IT, I HAVE DEFINED SOME BUILT-IN FUNCTIONS AS ... \
-                                                                                    # SYMPY VARIABLES BEFOREHAND
 
             try:
-                sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = symbols_dict, evaluate = False)
+                sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
 
             except sp.SympifyError as e:
                 print(Fore.RED + f"\nSympify Error: {e}" + Fore.LIGHTRED_EX + "Function cannot be completed")
@@ -279,31 +509,62 @@ class MatrixConstructor:
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
 
             else:
-                print(f"\nThe reaction rate expression is:" + Fore.YELLOW + f"\n{sp_reaction_rate_formula}")
+
+                if printing.lower() == 'on':
+                    utility.printer("\nThe reaction rate expression is:\n", sp_reaction_rate_formula, text_color="yellow")
+                #print(f"\nThe reaction rate expression is:" + Fore.YELLOW + f"\n{sp_reaction_rate_formula}")
 
             simplified_formula = sp.simplify(sp_reaction_rate_formula)
 
-            reordered_simplified_formulae = get_forward_reverse_rates(simplified_formula)
+            forward_reverse_rate_equations = get_forward_reverse_rate_expressions(simplified_formula)
 
-            forward_variables_symbols = sp.sympify(reordered_simplified_formulae.get("forward_rate"), locals = symbols_dict, evaluate = False).free_symbols
+            forward_variables_symbols = sp.sympify(forward_reverse_rate_equations.get("forward_rate"), locals = string_to_sympy_symbols, evaluate = False).free_symbols
             forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
-            forward_rate_constat = set(forward_variables_as_strings) & set(parameters_list)
+            forward_rate_constant = next(iter(set(forward_variables_as_strings) & set(parameters_values.keys())), None)
+
+            individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
+            individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
 
             reverse_rate_constant = None
 
-            if reordered_simplified_formulae.get("reverse_rate"):
+            if forward_reverse_rate_equations.get("reverse_rate"):
 
-                reverse_variables_symbols = sp.sympify(reordered_simplified_formulae.get("reverse_rate"), locals = symbols_dict, evaluate = False).free_symbols
+                reverse_variables_symbols = sp.sympify(forward_reverse_rate_equations.get("reverse_rate"), locals = string_to_sympy_symbols, evaluate = False).free_symbols
             
                 reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
 
-                reverse_rate_constant = set(reverse_variables_as_strings) & set(parameters_list)
+                reverse_rate_constant = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+
+                individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
 
 
             if reverse_rate_constant is None:
 
-                print(f"\nForward rate constant is " + Style.BRIGHT + Fore.CYAN + f"{list(forward_rate_constat)[0]}")
+                if printing.lower() == "on":
+
+                    utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
+
+                #print(f"\nForward rate constant is " + Style.BRIGHT + Fore.CYAN + f"{forward_rate_constant}")
+
+                reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)]}
 
             else:
 
-                print(f"\nForward rate constant is " + Style.BRIGHT + Fore.CYAN + f"{list(forward_rate_constat)[0]}" + Style.NORMAL + Fore.WHITE + " and reverse rate constant is " + Style.BRIGHT + Fore.CYAN + f"{list(reverse_rate_constant)[0]}")
+                if printing == "On" or printing == "ON" or printing == "on":
+
+                    utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
+                    utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
+
+
+                reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)], "reverse": parameters_values[str(reverse_rate_constant)]}
+
+        return reaction_to_rate_constants
+    
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    # def conversion_matrix_constructor(self, biomodel, printing = "off"):
+

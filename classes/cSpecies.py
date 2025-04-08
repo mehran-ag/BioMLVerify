@@ -3,13 +3,26 @@ from classes.SpeciesPropertiesMixin import *
 
 class Species(SpeciesPropertiesMixin):
 
+    _counter: int = 0
+
     def __init__(self, ID):
+
+        if ID != "empty":
+            self._index = Species._counter
+            Species._counter += 1
+        else:
+            self._index = None
+
         self._ID = ID
         self._name = None
         self._initial_concentration = None
         self._compartment = None
         self._annotations = None
         self._charge = None
+
+    @classmethod
+    def getCurrentIndex(cls):
+        return cls._counter
 
     def getId(self):
 

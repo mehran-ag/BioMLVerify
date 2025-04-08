@@ -10,17 +10,8 @@ biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000315.xml")
 
 print("\n\n")
 
-# print(biomodel.getStoichiometricMatrix())
+biomodel.getForwardStoichiometricMatrix(printing="on")
 
-# print("\n\n")
+biomodel.getReverseStoichiometricMatrix(printing="on")
 
-# print(biomodel.getStoichiometricColumnNamesIndices())
-
-# print("\n\n")
-
-# print(biomodel.getStoichiometricRowNamesIndices())
-
-# print("\n\n")
-
-# biomodel.getElementInformationInStoichiometricMatrix(0,0)
-biomodel.getThermoConversionMatrix()
+biomodel.getStoichiometricMatrix(printing="on")

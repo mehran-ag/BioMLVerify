@@ -8,6 +8,9 @@ class Model(ModelPropertiesMixin):
         self._reactions = None
         self._species = None
         self._parameters = None
+        self._kinetic_rate_constants_vector: np.ndarray = None
+        self._reaction_indices: dict = None
+        self._species_indices: dict = None
 
     def getId(self):
 

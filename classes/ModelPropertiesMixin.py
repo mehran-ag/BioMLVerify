@@ -1,3 +1,5 @@
+import numpy as np
+
 class ModelPropertiesMixin:
 
     @property
@@ -44,3 +46,14 @@ class ModelPropertiesMixin:
         if not isinstance(new_parameters, list):
             raise ValueError("parameters must be stored in a list")
         self._parameters = new_parameters
+
+    @property
+    def kinetic_rate_constants_vector(self):
+        return self._kinetic_rate_constants_vector
+    
+    @kinetic_rate_constants_vector.setter
+    def kinetic_rate_constants_vector(self, vec):
+        if isinstance(vec, np.ndarray):
+            self._kinetic_rate_constants_vector = vec
+        else:
+            raise ValueError("Input must be a numpy 1D array")

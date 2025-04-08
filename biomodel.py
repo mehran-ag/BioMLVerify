@@ -4,6 +4,7 @@ import os
 from colorama import Fore, Back, Style, init
 import matrix_constructor as mc
 import exceptions
+import utility
 
 from classes.cReaction import *
 from classes.cModel import *
@@ -87,20 +88,65 @@ class BioModel(object):
             return
         else:
             self._sbmodel = document.getModel()
-            biomodel = Model(self._sbmodel.getId())
-            biomodel.species = self.SBML_to_BioModel_species_tranfer(self._sbmodel)
-            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(self._sbmodel)
-            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self._sbmodel)
+            self._biomodel = Model(self._sbmodel.getId())
+            self._biomodel.species = self.SBML_to_BioModel_species_tranfer(self._sbmodel)
+            self._biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(self._sbmodel)
+            self._biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self._sbmodel)
         
-            return biomodel
+            return self._biomodel
             #return self.sbmodel
+
+    def getListOfReactions(self):
+
+        return self._biomodel._reactions
+    
+    def getListOfSpecies(self):
+
+        return self._biomodel._species
+
         
-    def getStoichiometricMatrix(self):
+    def getStoichiometricMatrix(self, printing = "off"):
 
         try:
-            stoichiometic_matrix = self._matrix_constructor.stoichiomrtic_matrix_constructor(self._bio_model)
+            stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._bio_model)
 
-            return stoichiometic_matrix
+            if printing.lower() == "on":
+                utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
+
+            return stoichiometric_matrix
+
+        except exceptions.NoModel as e:
+
+            print(Fore.RED + f"\nError: {e}")
+
+            return "Error encountered"
+        
+    def getForwardStoichiometricMatrix(self, printing = "off"):
+
+        try:
+            forward_stoichiometric_matrix = self._matrix_constructor.forward_stoichiometric_matrix_constructor(self._bio_model)
+
+            if printing.lower() == "on":
+                utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
+
+            return forward_stoichiometric_matrix
+
+        except exceptions.NoModel as e:
+
+            print(Fore.RED + f"\nError: {e}")
+
+            return "Error encountered"
+        
+
+    def getReverseStoichiometricMatrix(self, printing = "off"):
+
+        try:
+            reverse_stoichiometric_matrix = self._matrix_constructor.reverse_stoichiometric_matrix_constructor(self._bio_model)
+
+            if printing.lower() == "on":
+                utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
+
+            return reverse_stoichiometric_matrix
 
         except exceptions.NoModel as e:
 
@@ -121,10 +167,10 @@ class BioModel(object):
 
         return self.matrix_constructor.elementinformation(i,j)
     
-    def getThermoConversionMatrix(self):
+    def getThermoConversionMatrix(self, printing = "off"):
 
         try:
-            self._matrix_constructor.conversion_matrix_constructor(self._bio_model)
+            self._matrix_constructor.forward_reverse_rate_finder(self._bio_model, printing = printing)
             
         except exceptions.NoModel as e:
             print(Fore.BLUE + "\nAn error has been raised in \"getThermoConversionMatrix\" function")
@@ -141,6 +187,8 @@ class BioModel(object):
         self._biomodel_species_list = []
 
         list_of_libsbml_species = libsbml_model.getListOfSpecies()
+
+
 
         for libsbml_species_class in list_of_libsbml_species:
 
@@ -168,7 +216,11 @@ class BioModel(object):
 
             parameter_id = libsbml_parameter_class.getId()
 
+            parameter_value = libsbml_parameter_class.getValue()
+
             biomodel_parameter = Parameter(parameter_id)
+
+            biomodel_parameter.value = parameter_value
 
             biomodel_parameters_list.append(biomodel_parameter)
 
@@ -192,6 +244,8 @@ class BioModel(object):
 
             reaction_id = libsbml_reaction_class.getId()
 
+            index = Reaction.getCurrentIndex()
+
             biomodel_reaction = Reaction(reaction_id)
 
             biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
@@ -201,6 +255,12 @@ class BioModel(object):
             for libsbml_reactant_class in libsbml_reactants:
 
                 id = libsbml_reactant_class.getSpecies()
+
+                if id == "empty":
+
+                    Reaction.ResetCounter(index)
+
+                    biomodel_reaction.ResetIndex()
 
                 for biomodel_species in self._biomodel_species_list:
 
@@ -217,6 +277,12 @@ class BioModel(object):
             for libsbml_product_class in libsbml_products:
 
                 id = libsbml_product_class.getSpecies()
+
+                if id == "empty":
+
+                    Reaction.ResetCounter(index)
+
+                    biomodel_reaction.ResetIndex()
 
                 for biomodel_species in self._biomodel_species_list:
 
