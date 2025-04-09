@@ -6,26 +6,31 @@ import pandas as pd
 
 os.system("cls" if os.name == "nt" else "clear")
 
-biomodel = BioModel()
+path = "/Users/makb047/UoA/Codes/Mass_Actions"
 
-biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000315.xml")
+for filename in os.listdir(path):
 
-print("\n\n")
+    if not filename.endswith('.xml'): continue
 
-biomodel.getForwardStoichiometricMatrix(printing="on")
+    fullname = os.path.join(path, filename)
 
-biomodel.getReverseStoichiometricMatrix(printing="on")
+    biomodel = BioModel()
 
-biomodel.getStoichiometricMatrix(printing="on")
+    biomodel.read_file(fullname)
 
-biomodel.getElementInformationInStoichiometricMatrix(1,5)
+    if biomodel.checkModelReversibility():
+        print(f"\nModel {biomodel.file_name} is ALL REVERSIBLE")
 
-large_array = biomodel.getThermoConversionMatrix()
+# biomodel = BioModel()
 
-df = pd.DataFrame(large_array)
+# biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000267.xml")
 
-print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
+# print("\n")
 
-biomodel.getKineticRateConstantsVector("on")
+# large_array = biomodel.getThermoConversionMatrix()
 
-check = biomodel.KineticConstantsThermoCompatibilty("on")
+# df = pd.DataFrame(large_array)
+
+# print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
+
+# biomodel.checkModelReversibility(printing="on")

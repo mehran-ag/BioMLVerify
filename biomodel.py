@@ -1,8 +1,8 @@
 import libsbml
 import sys
 import os
-from colorama import Fore, Back, Style, init
-import matrix_constructor as mc
+import matrix_constructor
+import model_checker
 import exceptions
 import utility
 
@@ -27,48 +27,54 @@ class BioModel(object):
         self._file_path = None
         self._file_name= None
         self._file_format = None
-        self._bio_model = None
-        self._matrix_constructor = mc.MatrixConstructor()
+        self._biomodel = None
+        self._matrix_constructor = matrix_constructor.MatrixConstructor()
+        self._model_checker = model_checker.ModelChecker()
+
+
+    @property
+    def file_name(self):
+        return self._file_name
 
 
     def read_file(self, file_path):
-                
-        init( autoreset=True )
 
         try:
             if not isinstance(file_path, str):
-                raise TypeError(Fore.RED + "File path must be a string.")
+                raise TypeError("File path must be a string.")
             
             if not os.path.exists(file_path):
-                raise FileNotFoundError(Fore.RED + f"File not found: {file_path}")
+                raise FileNotFoundError(f"File not found: {file_path}")
             
             self._file_path = file_path
             self._file_name = os.path.basename(file_path)
             self._file_format = os.path.splitext(file_path)[1][1:]
             
         except TypeError as e:
-            print(Fore.RED + "File not read!")
-            print(Fore.RED + f"Error: {e}")
+            utility.message_printer("File not read!", color="red")
+            utility.printer("\nError: ", e)
             return
 
         except FileNotFoundError as e:
-            print(Fore.RED + "File not read!")
-            print(Fore.RED + f"Error: {e}")
+            utility.message_printer("File not read!", color="red")
+            utility.printer("\nError: ", e)
             return
         
         except Exception as e:
-            print(Fore.RED + "File not read!")
-            print(Fore.RED + f"Unexpected error: {e}")
+            utility.message_printer("File not read!", color="red")
+            utility.printer("\nUnexpected error: ", e)
             return
 
         else:
             if self._file_format == 'xml':
 
-                print(Fore.GREEN + "\n\u27A4\u27A4\u27A4 The input file is a SBML model \u27A4\u27A4\u27A4")
+                utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
-                self._bio_model =  self._SBML_reader()
+                self._biomodel =  self._SBML_reader()
 
-                print(Fore.GREEN + "\n\u27A4\u27A4\u27A4 The SBML model has been succesfully converted to a BioModel\u27A4\u27A4\u27A4")
+                if self._biomodel is not None:
+
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The SBML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
 
 
 
@@ -83,9 +89,9 @@ class BioModel(object):
         reader = libsbml.SBMLReader()
         document = reader.readSBML(self._file_path)
         if document.getNumErrors() > 0:
-            print(f"\nError: The SBML file contains {document.getNumErrors()} error(s).")
-            print("\nModel not read")
-            return
+            utility.error_printer("\nError: ", f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
+            utility.message_printer("\nModel not read", color="red")
+            return None
         else:
             self._sbmodel = document.getModel()
             self._biomodel = Model(self._sbmodel.getId())
@@ -94,7 +100,48 @@ class BioModel(object):
             self._biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self._sbmodel)
         
             return self._biomodel
-            #return self.sbmodel
+        
+
+    def checkModelReversibility(self, return_irreversibles = False, printing = "off"):
+
+        try:
+
+            if return_irreversibles:
+
+                reversibility, irreversibles = self._model_checker.check_model_reversibility(self._biomodel, return_irreversibles = return_irreversibles)
+
+                if printing.lower() == "on":
+
+                    if reversibility:
+
+                        utility.printer("\nAll reactions in the model are REVERSIBLE.\nModel: ", self._file_name)
+
+                    else:
+
+                        utility.printer("\nAll reactions in the model are NOT reversible.\nModel: ", self._file_name)
+
+                return reversibility, irreversibles
+            
+            else:
+
+                reversibility = self._model_checker.check_model_reversibility(self._biomodel)
+
+                if printing.lower() == "on":
+
+                    if reversibility:
+
+                        utility.printer("\nAll reactions in the model are REVERSIBLE.\nModel: ", self._file_name)
+
+                    else:
+
+                        utility.printer("\nAll reactions in the model are NOT reversible.\nModel: ", self._file_name)
+
+                return reversibility
+
+        except exceptions.NoModel as e:
+
+            utility.printer("\nAn error has been raised in function: ", "checkModelConsistency")
+            utility.error_printer("Error:", e)
 
     def getListOfReactions(self):
 
@@ -108,7 +155,7 @@ class BioModel(object):
     def getStoichiometricMatrix(self, printing = "off"):
 
         try:
-            stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._bio_model)
+            stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._biomodel)
 
             if printing.lower() == "on":
                 utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
@@ -117,14 +164,14 @@ class BioModel(object):
 
         except exceptions.NoModel as e:
 
-            print(Fore.RED + f"\nError: {e}")
+            utility.printer("\nAn error has been raised in function: ", "getStoichiometricMatrix")
+            utility.error_printer("Error:", e)
 
-            return "Error encountered"
         
     def getForwardStoichiometricMatrix(self, printing = "off"):
 
         try:
-            forward_stoichiometric_matrix = self._matrix_constructor.forward_stoichiometric_matrix_constructor(self._bio_model)
+            forward_stoichiometric_matrix = self._matrix_constructor.forward_stoichiometric_matrix_constructor(self._biomodel)
 
             if printing.lower() == "on":
                 utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
@@ -133,15 +180,14 @@ class BioModel(object):
 
         except exceptions.NoModel as e:
 
-            print(Fore.RED + f"\nError: {e}")
-
-            return "Error encountered"
+            utility.printer("\nAn error has been raised in function: ", "getForwardStoichiometricMatrix")
+            utility.error_printer("Error:", e)
         
 
     def getReverseStoichiometricMatrix(self, printing = "off"):
 
         try:
-            reverse_stoichiometric_matrix = self._matrix_constructor.reverse_stoichiometric_matrix_constructor(self._bio_model)
+            reverse_stoichiometric_matrix = self._matrix_constructor.reverse_stoichiometric_matrix_constructor(self._biomodel)
 
             if printing.lower() == "on":
                 utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
@@ -150,9 +196,8 @@ class BioModel(object):
 
         except exceptions.NoModel as e:
 
-            print(Fore.RED + f"\nError: {e}")
-
-            return "Error encountered"
+            utility.printer("\nAn error has been raised in function: ", "getReverseStoichiometricMatrix")
+            utility.error_printer("Error:", e)
         
     
     def getStoichiometricColumnNamesIndices(self):
@@ -163,42 +208,52 @@ class BioModel(object):
 
         return self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
     
-    def getElementInformationInStoichiometricMatrix(self, i, j):
+    def getElementInformationInStoichiometricMatrix(self, i, j, printing = "off"):
 
-        return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomodel)
+        try:
+
+            if self._biomodel is None:
+                raise exceptions.NoModel("No BioModel has been read!!!")
+
+            return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomodel, printing = printing)
+        
+        except exceptions.NoModel as e:
+
+            utility.printer("\nAn error has been raised in function: ", "getElementInformationInStoichiometricMatrix")
+            utility.error_printer("Error:", e)
     
     def getThermoConversionMatrix(self, printing = "off"):
 
         try:
-            conversion_matrix = self._matrix_constructor.kinetic_thermo_conversion_matrix_constructor(self._bio_model, printing = printing)
+            conversion_matrix = self._matrix_constructor.kinetic_thermo_conversion_matrix_constructor(self._biomodel, printing = printing)
 
             return conversion_matrix
             
         except exceptions.NoModel as e:
-            print(Fore.BLUE + "\nAn error has been raised in \"getThermoConversionMatrix\" function")
-            print(Fore.RED + f"{e}")
+            utility.printer("\nAn error has been raised in function: ", "getThermoConversionMatrix")
+            utility.error_printer("Error:", e)
 
     def getKineticRateConstantsVector(self, printing = "off"):
 
         try:
-            kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._bio_model, printing)
+            kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._biomodel, printing)
 
             return kinetic_constants_vector
 
         except exceptions.NoModel as e:
-            print(Fore.BLUE + "\nAn error has been raised in \"ggetKineticRateConstantsVector\" function")
-            print(Fore.RED + f"{e}")
+            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
+            utility.error_printer("Error:", e)
 
     def KineticConstantsThermoCompatibilty(self, printing = "off"):
 
         try:
-            comatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._bio_model, printing)
+            comatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomodel, printing)
 
             return comatibility
         
         except exceptions.NoModel as e:
-            print(Fore.BLUE + "\nAn error has been raised in \"KineticConstantsThermoCompatibilty\" function")
-            print(Fore.RED + f"{e}")
+            utility.printer("\nAn error has been raised in function: ", "KineticConstantsThermoCompatibilty")
+            utility.error_printer("Error:", e)
 
 
     def SBML_to_BioModel_species_tranfer(self, libsbml_model):

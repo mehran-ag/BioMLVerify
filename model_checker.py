@@ -1,5 +1,7 @@
 import libsbml
+import exceptions
 import SBMLKinetics
+from typing import Union
 
 
 
@@ -10,9 +12,35 @@ class ModelChecker(object):
     One of the requirements for models is having Mass Action Kinetics
     '''
 
-    def __init__(self, file_path):
 
-        self.file_path = file_path
+    def check_model_reversibility(self, biomodel, return_irreversibles = False) -> Union[bool, tuple[bool, list]]:
+
+        if biomodel == None:
+            raise exceptions.NoModel("No BioModel has been read!!!")
+
+        biomodel_reactions = biomodel.getListOfReactions()
+
+        irreversible_reactions = []
+
+        reversible = True
+
+        for biomodel_reaction in biomodel_reactions:
+
+            if not biomodel_reaction.reversible:
+                reversible = False
+                irreversible_reactions.append(biomodel_reaction.ID)
+
+        if return_irreversibles:
+
+            return reversible, irreversible_reactions
+        
+        else:
+
+            return reversible
+        
+
+        
+
 
     def SBML_checker(self):
 

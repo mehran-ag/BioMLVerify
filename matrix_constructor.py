@@ -31,7 +31,7 @@ class MatrixConstructor:
         """
 
         if biomodel == None:
-            raise exceptions.NoModel("There is no input model")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomodel.getListOfSpecies()
         parameters_list = biomodel.getListOfParameters()
@@ -103,7 +103,7 @@ class MatrixConstructor:
         """
 
         if biomodel == None:
-            raise exceptions.NoModel("There is no input model")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomodel.getListOfSpecies()
         parameters_list = biomodel.getListOfParameters()
@@ -165,7 +165,7 @@ class MatrixConstructor:
         """
 
         if biomodel == None:
-            raise exceptions.NoModel("There is no input model")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomodel.getListOfSpecies()
         parameters_list = biomodel.getListOfParameters()
@@ -216,7 +216,7 @@ class MatrixConstructor:
     def stoichiometric_matrix_column_names(self, biomodel) -> dict:
         
         if biomodel == None:
-            raise exceptions.NoModel("There is no input model")
+            raise exceptions.NoModel("No BioModel has been read!!!")
         
         reactions_list = biomodel.getListOfReactions()
 
@@ -239,7 +239,7 @@ class MatrixConstructor:
     def stoichiometric_matrix_row_names(self, biomodel) -> dict:
     
         if biomodel == None:
-            raise exceptions.NoModel("There is no input model")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomodel.getListOfSpecies()
 
@@ -261,6 +261,9 @@ class MatrixConstructor:
     # ********************************
     def stoichiometric_matrix_element_information(self, i, j, biomodel, printing="off") -> str:
 
+        if biomodel == None:
+            raise exceptions.NoModel("No BioModel has been read!!!")
+
         highest_i = self.stoichiometric_matrix.shape[0]
         highest_j = self.stoichiometric_matrix.shape[1]
 
@@ -280,7 +283,7 @@ class MatrixConstructor:
             reaction = column_indices_names[j]
 
             if printing.lower() == "on":
-                utility.printer(f"The stoichiometric coefficient for {species} in reaction {reaction} is: ", f"{self.stoichiometric_matrix[i][j]}")
+                utility.printer(f"\nThe stoichiometric coefficient for {species} in reaction {reaction} is: ", f"{self.stoichiometric_matrix[i][j]}", text_color="yellow")
 
             return f"The stoichiometric coefficient for {species} in reaction {reaction} is: {self.stoichiometric_matrix[i][j]}"
 
