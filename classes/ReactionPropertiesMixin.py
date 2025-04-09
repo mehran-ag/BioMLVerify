@@ -133,6 +133,17 @@ class ReactionPropertiesMixin:
             raise ValueError("Input for thermodynamic rate constant value must be a number")
         
     @property
+    def kappa(self):
+        return self._kappa
+    
+    @kappa.setter
+    def kappa(self, kp):
+        if isinstance(kp, (int, float)):
+            self._kappa = kp
+        else:
+            raise ValueError("Input must be a numnber")
+        
+    @property
     def kinetic_law(self):
         return self._kinetic_law
     
@@ -186,3 +197,14 @@ class ReactionPropertiesMixin:
             self._products = products
         else:
             raise ValueError("Input for products must be a list")
+        
+    @property
+    def boundary_condition(self):
+        return self._boundary_condition
+    
+    @boundary_condition.setter
+    def boundary_condition(self, BC):
+        if isinstance(BC, bool):
+            self._boundary_condition = BC
+        else:
+            raise ValueError("Input for boundary condition must be a boolean")

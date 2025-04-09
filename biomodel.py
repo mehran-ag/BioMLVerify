@@ -157,25 +157,48 @@ class BioModel(object):
     
     def getStoichiometricColumnNamesIndices(self):
 
-        return self.matrix_constructor.stoichiometric_matrix_column_names()
+        return self._matrix_constructor.stoichiometric_matrix_column_names(self._biomodel)
     
     def getStoichiometricRowNamesIndices(self):
 
-        return self.matrix_constructor.stoichiometric_matrix_row_names()
+        return self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
     
-    def getElementInformationInStoichiometricMatrix(self, i,j):
+    def getElementInformationInStoichiometricMatrix(self, i, j):
 
-        return self.matrix_constructor.elementinformation(i,j)
+        return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomodel)
     
     def getThermoConversionMatrix(self, printing = "off"):
 
         try:
-            self._matrix_constructor.forward_reverse_rate_finder(self._bio_model, printing = printing)
+            conversion_matrix = self._matrix_constructor.kinetic_thermo_conversion_matrix_constructor(self._bio_model, printing = printing)
+
+            return conversion_matrix
             
         except exceptions.NoModel as e:
             print(Fore.BLUE + "\nAn error has been raised in \"getThermoConversionMatrix\" function")
             print(Fore.RED + f"{e}")
-    
+
+    def getKineticRateConstantsVector(self, printing = "off"):
+
+        try:
+            kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._bio_model, printing)
+
+            return kinetic_constants_vector
+
+        except exceptions.NoModel as e:
+            print(Fore.BLUE + "\nAn error has been raised in \"ggetKineticRateConstantsVector\" function")
+            print(Fore.RED + f"{e}")
+
+    def KineticConstantsThermoCompatibilty(self, printing = "off"):
+
+        try:
+            comatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._bio_model, printing)
+
+            return comatibility
+        
+        except exceptions.NoModel as e:
+            print(Fore.BLUE + "\nAn error has been raised in \"KineticConstantsThermoCompatibilty\" function")
+            print(Fore.RED + f"{e}")
 
 
     def SBML_to_BioModel_species_tranfer(self, libsbml_model):
@@ -262,6 +285,8 @@ class BioModel(object):
 
                     biomodel_reaction.ResetIndex()
 
+                    biomodel_reaction.boundary_condition = True
+
                 for biomodel_species in self._biomodel_species_list:
 
                     if id == biomodel_species.ID:
@@ -283,6 +308,8 @@ class BioModel(object):
                     Reaction.ResetCounter(index)
 
                     biomodel_reaction.ResetIndex()
+
+                    biomodel_reaction.boundary_condition = True
 
                 for biomodel_species in self._biomodel_species_list:
 

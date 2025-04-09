@@ -19,6 +19,7 @@ class Species(SpeciesPropertiesMixin):
         self._compartment = None
         self._annotations = None
         self._charge = None
+        self._thermodynamic_rate_constant = None
 
     @classmethod
     def getCurrentIndex(cls):

@@ -72,3 +72,14 @@ class SpeciesPropertiesMixin:
             self._charge = charge
         else:
             raise ValueError("Input for Charge must be a number")
+        
+    @property
+    def thermodynamic_rate_constant(self):
+        return self._thermodynamic_rate_constant
+    
+    @thermodynamic_rate_constant.setter
+    def thermodynamic_rate_constant(self, trc):
+        if isinstance(trc, (int, float)):
+            self._thermodynamic_rate_constant = trc
+        else:
+            raise ValueError("Input must be a number")
