@@ -5,13 +5,14 @@ import matrix_constructor
 import model_checker
 import exceptions
 import utility
+import warnings
+import time
 
 from classes.cReaction import *
 from classes.cModel import *
 from classes.cSpecies import *
 from classes.cParameter import *
 from classes.cSpeciesReference import *
-
 
 
 class BioModel(object):
@@ -89,7 +90,7 @@ class BioModel(object):
         reader = libsbml.SBMLReader()
         document = reader.readSBML(self._file_path)
         if document.getNumErrors() > 0:
-            utility.error_printer("\nError: ", f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
+            utility.error_printer("\nERROR: ", f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
             utility.message_printer("\nModel not read", color="red")
             return None
         else:
@@ -102,6 +103,9 @@ class BioModel(object):
             return self._biomodel
         
 
+    # ********************************
+    # *           Function           *
+    # ********************************
     def checkModelReversibility(self, return_irreversibles = False, printing = "off"):
 
         try:
@@ -141,17 +145,28 @@ class BioModel(object):
         except exceptions.NoModel as e:
 
             utility.printer("\nAn error has been raised in function: ", "checkModelConsistency")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getListOfReactions(self):
 
         return self._biomodel._reactions
     
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getListOfSpecies(self):
 
         return self._biomodel._species
 
-        
+    
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getStoichiometricMatrix(self, printing = "off"):
 
         try:
@@ -165,9 +180,12 @@ class BioModel(object):
         except exceptions.NoModel as e:
 
             utility.printer("\nAn error has been raised in function: ", "getStoichiometricMatrix")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
 
-        
+
+    # ********************************
+    # *           Function           *
+    # ********************************    
     def getForwardStoichiometricMatrix(self, printing = "off"):
 
         try:
@@ -181,9 +199,13 @@ class BioModel(object):
         except exceptions.NoModel as e:
 
             utility.printer("\nAn error has been raised in function: ", "getForwardStoichiometricMatrix")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
+            return
         
 
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getReverseStoichiometricMatrix(self, printing = "off"):
 
         try:
@@ -197,17 +219,29 @@ class BioModel(object):
         except exceptions.NoModel as e:
 
             utility.printer("\nAn error has been raised in function: ", "getReverseStoichiometricMatrix")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
+            return
         
     
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getStoichiometricColumnNamesIndices(self):
 
         return self._matrix_constructor.stoichiometric_matrix_column_names(self._biomodel)
     
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getStoichiometricRowNamesIndices(self):
 
         return self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
     
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getElementInformationInStoichiometricMatrix(self, i, j, printing = "off"):
 
         try:
@@ -220,8 +254,13 @@ class BioModel(object):
         except exceptions.NoModel as e:
 
             utility.printer("\nAn error has been raised in function: ", "getElementInformationInStoichiometricMatrix")
-            utility.error_printer("Error:", e)
-    
+            utility.error_printer("ERROR: ", e)
+            return
+        
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getThermoConversionMatrix(self, printing = "off"):
 
         try:
@@ -231,8 +270,14 @@ class BioModel(object):
             
         except exceptions.NoModel as e:
             utility.printer("\nAn error has been raised in function: ", "getThermoConversionMatrix")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
+            return
+        
 
+    
+    # ********************************
+    # *           Function           *
+    # ********************************
     def getKineticRateConstantsVector(self, printing = "off"):
 
         try:
@@ -242,8 +287,18 @@ class BioModel(object):
 
         except exceptions.NoModel as e:
             utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
+            return
 
+        except ValueError as e:
+            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
+            utility.error_printer("ERROR: ", e)
+            return
+
+    
+    # ********************************
+    # *           Function           *
+    # ********************************
     def KineticConstantsThermoCompatibilty(self, printing = "off"):
 
         try:
@@ -253,9 +308,19 @@ class BioModel(object):
         
         except exceptions.NoModel as e:
             utility.printer("\nAn error has been raised in function: ", "KineticConstantsThermoCompatibilty")
-            utility.error_printer("Error:", e)
+            utility.error_printer("ERROR: ", e)
+            return
+
+        except ValueError as e:
+            utility.printer("\nAn error has been raised in function: ", "KineticConstantsThermoCompatibilty")
+            utility.error_printer("ERROR: ", e)
+            return
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def SBML_to_BioModel_species_tranfer(self, libsbml_model):
         '''
         This function gets a SBML model, reads the required information for the species and creates a Species class for each one
@@ -282,8 +347,15 @@ class BioModel(object):
 
             self._biomodel_species_list.append(biomodel_species)
 
+        if not self._biomodel_species_list:
+            utility.message_printer("\nWARNING: ", "No species imported from SBML model!", color="yellow")
+
         return self._biomodel_species_list
     
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def SBML_to_BioModel_parameter_transfer(self, libsbml_model):
 
         biomodel_parameters_list = []
@@ -302,9 +374,34 @@ class BioModel(object):
 
             biomodel_parameters_list.append(biomodel_parameter)
 
+        try:
+
+            if not biomodel_parameters_list:
+                utility.error_printer("\nWARNING: ", "No GLOBAL parameters found in the SBML model!", error_color = "yellow")
+                time.sleep(3)
+
+                biomodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
+            
+        except exceptions.LocalParameterConflict as e:
+
+            utility.error_printer("\nWARNING: ", e)
+
+            return biomodel_parameters_list
+        
+        except exceptions.EmptyList as e:
+
+            utility.error_printer("\nWARNING: ", e)
+
+            return biomodel_parameters_list
+
+
         return biomodel_parameters_list
     
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def SBML_to_BioModel_reaction_tranfer(self, libsbml_model):
 
         biomodel_reactions_list = []
@@ -384,9 +481,69 @@ class BioModel(object):
 
             biomodel_reactions_list.append(biomodel_reaction)
 
+        if not biomodel_reactions_list:
+            warnings.warn("No reactions imported from SBML model!", UserWarning)
+
         return biomodel_reactions_list
-
-            
-
+    
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _sbml_local_parameter_finder(self, libsbml_model):
+
+        local_parameters_strings = []
+
+        libsbml_reactions_list = libsbml_model.getListOfReactions()
+
+        conflicting_parameter_IDs = False
+
+        for libsbml_reaction_class in libsbml_reactions_list:
+
+            libsbml_reaction_parameters_list = libsbml_reaction_class.getKineticLaw().getListOfParameters()
+
+            for libsbml_reaction_parameter_class in libsbml_reaction_parameters_list:
+
+                parameter_id = libsbml_reaction_parameter_class.getId()
+
+                if parameter_id not in local_parameters_strings:
+
+                    local_parameters_strings.append(parameter_id)
+
+                else:
+
+                    conflicting_parameter_IDs = True
+
+        if conflicting_parameter_IDs is False:
+                    
+            local_biomodel_parameters_list = []
+
+            for libsbml_reaction_class in libsbml_reactions_list:
+
+                libsbml_reaction_parameters_list = libsbml_reaction_class.getKineticLaw().getListOfParameters()
+                    
+                for libsbml_reaction_parameter_class in libsbml_reaction_parameters_list:
+                        
+                    parameter_id = libsbml_reaction_parameter_class.getId()
+
+                    parameter_value = libsbml_reaction_parameter_class.getValue()
+
+                    biomodel_parameter = Parameter(parameter_id)
+
+                    biomodel_parameter.value = parameter_value
+
+                    local_biomodel_parameters_list.append(biomodel_parameter)
+
+            if not local_biomodel_parameters_list:
+                raise exceptions.EmptyList("There are no local parameters!")
+            else:
+                utility.message_printer("\nLocal parameters are stored as global parameters, too!", color="magenta", style="normal")
+                time.sleep(3)
+
+            return local_biomodel_parameters_list
+
+        else:
+
+            raise exceptions.LocalParameterConflict("Global parameters list cannot be created from local parameters!\nThere are conflictions in local parameter names in different reactions!")

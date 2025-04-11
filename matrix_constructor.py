@@ -362,9 +362,21 @@ class MatrixConstructor:
         if biomodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
+
         species_classes_list = biomodel.getListOfSpecies()
         parameter_classes_list = biomodel.getListOfParameters()
         reaction_classes_list = biomodel.getListOfReactions()
+
+        if not species_classes_list:
+            raise ValueError("Species list is empty.")
+
+        if not parameter_classes_list:
+            raise ValueError("Parameter list is empty.")
+
+        if not reaction_classes_list:
+            raise ValueError("Reaction list is empty.")
+
+
 
         string_to_sympy_symbols = {} # THERE ARE SOME BUILT-IN FUNCTIONS IN SYMPY THAT INTERFERES WITH VARIABLE NAMES AND THE STRING TO ... \
                                         # SYMPY EXPRESSIONS AND THE EXECUTION FAILS. TO PREVENT IT, I HAVE DEFINED SOME BUILT-IN FUNCTIONS AS ... \
@@ -423,40 +435,101 @@ class MatrixConstructor:
             forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
             forward_rate_constant = next(iter(set(forward_variables_as_strings) & set(parameters_values.keys())), None)
 
-            individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
-            individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
+            if forward_rate_constant:
 
-            reverse_rate_constant = None
+                try:
 
-            if forward_reverse_rate_equations.get("reverse_rate"):
+                    individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
+                    individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
 
-                reverse_variables_symbols = sp.sympify(forward_reverse_rate_equations.get("reverse_rate"), locals = string_to_sympy_symbols, evaluate = False).free_symbols
-            
-                reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
+                except ValueError as e:
+                    utility.error_printer(f"\nERROR: ", e)
+                    utility.message_printer(f"Forward reaction rate constant can't be found for {reaction_name}", style="normal")
 
-                reverse_rate_constant = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+                reverse_rate_constant = None
 
-                individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
-                individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
+                if forward_reverse_rate_equations.get("reverse_rate"):
+
+                    reverse_variables_symbols = sp.sympify(forward_reverse_rate_equations.get("reverse_rate"), locals = string_to_sympy_symbols, evaluate = False).free_symbols
+                
+                    reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
+
+                    reverse_rate_constant = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+
+                    try:
+
+                        individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                        individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
+
+                    except ValueError as e:
+                        utility.error_printer(f"\nERROR: ", e)
+                        utility.message_printer(f"Reverse reaction rate constant can't be found for {reaction_name}", style="normal")
+
+                if forward_rate_constant is not None:
+
+                    if reverse_rate_constant is None:
+
+                        if printing.lower() == "on":
+
+                            utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
+
+                        reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)]}
+
+                    else:
+
+                        if printing.lower() == "on":
+
+                            utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
+                            utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
 
 
-            if reverse_rate_constant is None:
-
-                if printing.lower() == "on":
-
-                    utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
-
-                reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)]}
+                        reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)], "reverse": parameters_values[str(reverse_rate_constant)]}
 
             else:
 
-                if printing == "On" or printing == "ON" or printing == "on":
+                if forward_reverse_rate_equations.get("reverse_rate"):
 
-                    utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
-                    utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
+                    forward_variables_symbols = sp.sympify(simplified_formula, locals = string_to_sympy_symbols, evaluate = False).free_symbols
+                    forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
+                    common_rate_constant = next(iter(set(forward_variables_as_strings) & set(parameters_values.keys())), None)
+
+                    forward_rate_constant = common_rate_constant
+
+                    reverse_rate_constant = common_rate_constant
+
+                    try:
+
+                        individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
+                        individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
+
+                        individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                        individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
+
+                    except ValueError as e:
+                        utility.error_printer(f"\nERROR: ", e)
+                        utility.message_printer(f"Reaction rate constant can't be found for {reaction_name}", style="normal")
+
+                    if forward_rate_constant is not None:
+
+                        if reverse_rate_constant is None:
+
+                            if printing.lower() == "on":
+
+                                utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
+
+                            reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)]}
+
+                        else:
+
+                            if printing.lower() == "on":
+
+                                utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
+                                utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
 
 
-                reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)], "reverse": parameters_values[str(reverse_rate_constant)]}
+                            reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)], "reverse": parameters_values[str(reverse_rate_constant)]}
+
+
 
         return reaction_to_rate_constants
     
@@ -476,7 +549,7 @@ class MatrixConstructor:
 
         for _ in range(3):
 
-            r_num = random.randint(0, Reaction.getCurrentIndex())
+            r_num = random.randint(0, Reaction.getCurrentIndex()-1)
 
             if biomodel_reactions[r_num].kinetic_forward_rate_constant_value is not None:
 
@@ -582,9 +655,9 @@ class MatrixConstructor:
 
         ones_array = np.concatenate((np.ones(reactions_number), -np.ones(reactions_number)))
 
-        result = ones_array @ logn_kinetic_rates_vector
+        result = (ones_array @ logn_kinetic_rates_vector).item()
 
-        if result == 0:
+        if abs(result) < 1e-6:
 
             if printing.lower() == "on":
                 utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints", text_color="green")
@@ -597,8 +670,3 @@ class MatrixConstructor:
                 utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red")
             
             return False
-
-
-
-
-

@@ -9,3 +9,9 @@ class NoModel(Exception):
     This exception is raised when there is no model to read for a function
     '''
     pass
+
+class LocalParameterConflict(Exception):
+    '''
+    This error is raised when local parameters for different reactions are similar
+    '''
+    pass

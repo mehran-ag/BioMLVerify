@@ -53,7 +53,7 @@ class ReactionPropertiesMixin:
         if isinstance(kfrc, str):
             self._kinetic_forward_rate_constant = kfrc
         else:
-            raise ValueError("Input for kinetic rate constant must be a string")
+            raise ValueError(f"Input for kinetic rate constant must be a string!\nEntered:\"{kfrc}\"")
         
     @property
     def kinetic_reverse_rate_constant(self):
@@ -75,7 +75,7 @@ class ReactionPropertiesMixin:
         if isinstance(kfrc, (int, float)):
             self._kinetic_forward_rate_constant_value = kfrc
         else:
-            raise ValueError("Input for kinetic rate constant value must be a number")
+            raise ValueError(f"Input for kinetic rate constant value must be a number!\nEntered: \"{kfrc}\"")
         
     @property
     def kinetic_reverse_rate_constant_value(self):
