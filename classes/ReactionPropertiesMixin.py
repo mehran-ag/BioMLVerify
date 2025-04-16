@@ -2,6 +2,8 @@ from sympy import Basic
 
 class ReactionPropertiesMixin:
 
+
+
     @property
     def ID(self):
         '''Getter for ID'''
@@ -12,6 +14,8 @@ class ReactionPropertiesMixin:
         '''Setter for ID'''
         self._ID = str(ID)
 
+
+
     @property
     def index(self):
         return self._index
@@ -19,6 +23,8 @@ class ReactionPropertiesMixin:
     @index.setter
     def index(self, value):
         raise ValueError("Index is read-only")
+
+
 
     @property
     def annotations(self):
@@ -32,6 +38,8 @@ class ReactionPropertiesMixin:
             raise ValueError("The annotations must be stored in a list")
         self._annotations = annotations
 
+
+
     @property
     def reversible(self):
         '''Getter for reversible'''
@@ -44,6 +52,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for reversible must be a boolean")
         
+
+
     @property
     def kinetic_forward_rate_constant(self):
         return self._kinetic_forward_rate_constant
@@ -55,6 +65,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError(f"Input for kinetic rate constant must be a string!\nEntered:\"{kfrc}\"")
         
+
+
     @property
     def kinetic_reverse_rate_constant(self):
         return self._kinetic_reverse_rate_constant
@@ -66,6 +78,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for kinetic rate constant must be a string")
         
+
+
     @property
     def kinetic_forward_rate_constant_value(self):
         return self._kinetic_forward_rate_constant_value
@@ -76,7 +90,9 @@ class ReactionPropertiesMixin:
             self._kinetic_forward_rate_constant_value = kfrc
         else:
             raise ValueError(f"Input for kinetic rate constant value must be a number!\nEntered: \"{kfrc}\"")
-        
+
+
+
     @property
     def kinetic_reverse_rate_constant_value(self):
         return self._kinetic_reverse_rate_constant_value
@@ -87,7 +103,9 @@ class ReactionPropertiesMixin:
             self._kinetic_reverse_rate_constant_value = krrc
         else:
             raise ValueError("Input for kinetic rate constant value must be a number")
-        
+      
+
+
     @property
     def thermo_forward_rate_constant(self):
         return self._thermo_forward_rate_constant
@@ -98,7 +116,9 @@ class ReactionPropertiesMixin:
             self._thermo_forward_rate_constant = tfrc
         else:
             raise ValueError("Input for thermodynamic rate constant must be a string")
-        
+
+
+
     @property
     def thermo_reverse_rate_constant(self):
         return self._thermo_reverse_rate_constant
@@ -110,6 +130,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for thermodynamic rate constant must be a string")
         
+
+
     @property
     def thermo_forward_rate_constant_value(self):
         return self._thermo_forward_rate_constant_value
@@ -121,6 +143,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for thermodynamic rate constant value must be a number")
         
+
+
     @property
     def thermo_reverse_rate_constant_value(self):
         return self._thermo_reverse_rate_constant_value
@@ -132,6 +156,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for thermodynamic rate constant value must be a number")
         
+
+
     @property
     def kappa(self):
         return self._kappa
@@ -143,6 +169,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input must be a numnber")
         
+
+
     @property
     def kinetic_law(self):
         return self._kinetic_law
@@ -154,6 +182,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for kinetic law must be a string")
         
+
+
     @property
     def sp_kinetic_law(self):
         return self._sp_kinetic_law
@@ -165,6 +195,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for Sympy Kinetic Law(sp_kinetic_law) must be a Sympy Expression")
         
+
+
     @property
     def kinetic_law_type(self):
         return self._kinetic_law_type
@@ -176,6 +208,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("input for kinetic law type must be a string")
         
+
+
     @property
     def reactants(self):
         return self._reactants
@@ -187,6 +221,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for reactants must be a list")
         
+
+
     @property
     def products(self):
         return self._products
@@ -198,6 +234,8 @@ class ReactionPropertiesMixin:
         else:
             raise ValueError("Input for products must be a list")
         
+
+
     @property
     def boundary_condition(self):
         return self._boundary_condition
@@ -208,3 +246,16 @@ class ReactionPropertiesMixin:
             self._boundary_condition = BC
         else:
             raise ValueError("Input for boundary condition must be a boolean")
+        
+
+
+    @property
+    def local_parameters(self):
+        return self._local_parameters
+    
+    @local_parameters.setter
+    def local_parameters(self, lp):
+        if isinstance(lp, list):
+            self._local_parameters = lp
+        else:
+            raise ValueError("Input for local parameters must be a list!")

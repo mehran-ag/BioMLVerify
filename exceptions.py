@@ -15,3 +15,9 @@ class LocalParameterConflict(Exception):
     This error is raised when local parameters for different reactions are similar
     '''
     pass
+
+class Warning(Exception):
+    '''
+    This type of error will be considered as a warning and will not stop the execution.
+    '''
+    pass

@@ -7,6 +7,7 @@ import exceptions
 import utility
 import warnings
 import time
+import sympy as sp
 
 from classes.cReaction import *
 from classes.cModel import *
@@ -171,9 +172,11 @@ class BioModel(object):
 
         try:
             stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._biomodel)
+            
 
             if printing.lower() == "on":
                 utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
+                #time.sleep(2)
 
             return stoichiometric_matrix
 
@@ -181,6 +184,17 @@ class BioModel(object):
 
             utility.printer("\nAn error has been raised in function: ", "getStoichiometricMatrix")
             utility.error_printer("ERROR: ", e)
+            return
+
+        except exceptions.EmptyList as e:
+            utility.error_printer("\nError: ", e)
+            print("Unable to complete the query\!")
+            return
+        
+        except Exception as e:
+            utility.error_printer("\nError: ", e)
+            print("Unable to complete the query\!")
+            return
 
 
     # ********************************
@@ -193,6 +207,7 @@ class BioModel(object):
 
             if printing.lower() == "on":
                 utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
+                #time.sleep(5)
 
             return forward_stoichiometric_matrix
 
@@ -200,6 +215,16 @@ class BioModel(object):
 
             utility.printer("\nAn error has been raised in function: ", "getForwardStoichiometricMatrix")
             utility.error_printer("ERROR: ", e)
+            return
+        
+        except exceptions.EmptyList as e:
+            utility.error_printer("\nError: ", e)
+            print("Unable to complete the query\!")
+            return
+        
+        except Exception as e:
+            utility.error_printer("\nError: ", e)
+            print("Unable to complete the query\!")
             return
         
 
@@ -213,6 +238,7 @@ class BioModel(object):
 
             if printing.lower() == "on":
                 utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
+                #time.sleep(5)
 
             return reverse_stoichiometric_matrix
 
@@ -220,6 +246,16 @@ class BioModel(object):
 
             utility.printer("\nAn error has been raised in function: ", "getReverseStoichiometricMatrix")
             utility.error_printer("ERROR: ", e)
+            return
+        
+        except exceptions.EmptyList as e:
+            utility.error_printer("\nError: ", e)
+            print("Unable to complete the query\!")
+            return
+        
+        except Exception as e:
+            utility.error_printer("\nError: ", e)
+            print("Unable to complete the query\!")
             return
         
     
@@ -273,6 +309,10 @@ class BioModel(object):
             utility.error_printer("ERROR: ", e)
             return
         
+        except Exception as e:
+            utility.printer("\nAn error has been raised in function: ", "getThermoConversionMatrix")
+            utility.error_printer("ERROR: ", e)
+            return
 
     
     # ********************************
@@ -294,6 +334,14 @@ class BioModel(object):
             utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
             utility.error_printer("ERROR: ", e)
             return
+        
+        except sp.SympifyError as e:
+
+            utility.error_printer("\nSympify Error: ", e)
+            print("\nEquation couldn't be converted to Sympy expression for reaction")
+
+        except Exception as e:
+            utility.error_printer("\nUnexpected Error: ", e)
 
     
     # ********************************
@@ -426,6 +474,48 @@ class BioModel(object):
             biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
 
             biomodel_reaction.kinetic_law = libsbml_reaction_class.getKineticLaw().getFormula()
+
+            sbml_level = libsbml_model.getLevel()
+
+            if sbml_level == 3:
+
+                biomodel_reaction.local_parameters = libsbml_reaction_class.getKineticLaw().getListOfLocalParameters()
+
+                local_parameters = []
+
+                for sbml_local_parameter in sbml_local_parameters:
+
+                    local_parameter_id = sbml_local_parameter.getId()
+
+                    local_parameter_value = sbml_local_parameter.getValue()
+
+                    biomodel_parameter = Parameter(local_parameter_id)
+
+                    biomodel_parameter.value = local_parameter_value
+
+                    local_parameters.append(biomodel_parameter)
+
+                biomodel_reaction.local_parameters = local_parameters
+
+            elif sbml_level == 1 or sbml_level == 2:
+
+                sbml_local_parameters = libsbml_reaction_class.getKineticLaw().getListOfParameters()
+
+                local_parameters = []
+
+                for sbml_local_parameter in sbml_local_parameters:
+
+                    local_parameter_id = sbml_local_parameter.getId()
+
+                    local_parameter_value = sbml_local_parameter.getValue()
+
+                    biomodel_parameter = Parameter(local_parameter_id)
+
+                    biomodel_parameter.value = local_parameter_value
+
+                    local_parameters.append(biomodel_parameter)
+
+                biomodel_reaction.local_parameters = local_parameters
 
             for libsbml_reactant_class in libsbml_reactants:
 

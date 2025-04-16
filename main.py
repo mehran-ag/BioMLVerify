@@ -38,11 +38,15 @@ os.system("cls" if os.name == "nt" else "clear")
 
 biomodel = BioModel()
 
-biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml")
+biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000002.xml")
 
 print("\n")
 
+biomodel.getStoichiometricMatrix("on")
+
 biomodel.getForwardStoichiometricMatrix("on")
+
+biomodel.getReverseStoichiometricMatrix("on")
 
 large_array = biomodel.getThermoConversionMatrix("on")
 

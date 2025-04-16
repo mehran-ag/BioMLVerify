@@ -28,6 +28,7 @@ class Reaction(ReactionPropertiesMixin):
         self._reactants: list = None
         self._products: list = None
         self._boundary_condition: bool = False
+        self._local_parameters: list = None
 
 
     @classmethod
@@ -37,6 +38,9 @@ class Reaction(ReactionPropertiesMixin):
     @classmethod
     def ResetCounter(cls, new_counter_value):
         cls._counter = new_counter_value  # Reset the class-level counter
+
+
+
 
     def ResetIndex(self):
         self._index = None
@@ -49,6 +53,9 @@ class Reaction(ReactionPropertiesMixin):
             self._index = Reaction._counter
             Reaction._counter += 1
             print(f"Index \"{self._index}\" has now been assigned to this reaction")
+
+
+
 
     def getId(self):
 

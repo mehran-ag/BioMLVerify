@@ -37,18 +37,11 @@ class MatrixConstructor:
         parameters_list = biomodel.getListOfParameters()
         reactions_list = biomodel.getListOfReactions()
 
-        try:
-
-            if len(species_list) == 0:
-                raise exceptions.EmptyList("There are no species in this model.")
-            
-            if len(reactions_list) == 0:
-                raise exceptions.EmptyList("There are no reactions in this model.")
-            
-        except exceptions.EmptyList as e:
-            utility.error_printer("\nError: ", e)
-            print("Unable to complete the query\!")
-            return
+        if len(species_list) == 0:
+            raise exceptions.EmptyList("There are no species in this model.")
+        
+        if len(reactions_list) == 0:
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = Species.getCurrentIndex()
 
@@ -109,18 +102,11 @@ class MatrixConstructor:
         parameters_list = biomodel.getListOfParameters()
         reactions_list = biomodel.getListOfReactions()
 
-        try:
-
-            if len(species_list) == 0:
-                raise exceptions.EmptyList("There are no species in this model.")
-            
-            if len(reactions_list) == 0:
-                raise exceptions.EmptyList("There are no reactions in this model.")
-            
-        except exceptions.EmptyList as e:
-            utility.error_printer("\nError: ", e)
-            print("Unable to complete the query\!")
-            return
+        if len(species_list) == 0:
+            raise exceptions.EmptyList("There are no species in this model.")
+        
+        if len(reactions_list) == 0:
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = Species.getCurrentIndex()
 
@@ -171,18 +157,11 @@ class MatrixConstructor:
         parameters_list = biomodel.getListOfParameters()
         reactions_list = biomodel.getListOfReactions()
 
-        try:
-
-            if len(species_list) == 0:
-                raise exceptions.EmptyList("There are no species in this model.")
-            
-            if len(reactions_list) == 0:
-                raise exceptions.EmptyList("There are no reactions in this model.")
-            
-        except exceptions.EmptyList as e:
-            utility.error_printer("\nError: ", e)
-            print("Unable to complete the query\!")
-            return
+        if len(species_list) == 0:
+            raise exceptions.EmptyList("There are no species in this model.")
+        
+        if len(reactions_list) == 0:
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = Species.getCurrentIndex()
 
@@ -351,6 +330,14 @@ class MatrixConstructor:
                                 else:
                                     rates["forward_rate"] = term
 
+                        elif arg.is_Mul:
+
+                            if "-" in str(arg):
+                                rates["reverse_rate"] = arg
+                                    
+                            else:
+                                rates["forward_rate"] = arg
+
             else:
                 rates["forward_rate"] = expression
 
@@ -358,6 +345,8 @@ class MatrixConstructor:
         # --------------------------------------------------
         # --------------------------------------------------
 
+
+        empty_global_parameters = False
 
         if biomodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -371,7 +360,7 @@ class MatrixConstructor:
             raise ValueError("Species list is empty.")
 
         if not parameter_classes_list:
-            raise ValueError("Parameter list is empty.")
+            empty_global_parameters = True
 
         if not reaction_classes_list:
             raise ValueError("Reaction list is empty.")
@@ -402,6 +391,27 @@ class MatrixConstructor:
             reaction_name = individual_reaction_class.getId()
             reaction_rate_formula = individual_reaction_class.getKineticLaw()
 
+            if individual_reaction_class.local_parameters is not None:
+
+                local_parameters_values = {}
+
+                local_parameters_list = individual_reaction_class.local_parameters
+
+                for local_parameter_class in local_parameters_list:
+
+                    local_parameter_name = local_parameter_class.getId()
+                    local_parameter_value = local_parameter_class.getValue()
+                    string_to_sympy_symbols[local_parameter_name] = sp.symbols(local_parameter_name)
+                    local_parameters_values[local_parameter_name] = local_parameter_value
+
+                parameters_values.update(local_parameters_values)
+                
+            
+            else:
+
+                if empty_global_parameters == True:
+                    raise ValueError(f"There are no global parameters defined for the model, nor are there any local parameters defined for {reaction_name}!")
+
 
             try:
                 sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
@@ -431,20 +441,20 @@ class MatrixConstructor:
 
             forward_reverse_rate_equations = get_forward_reverse_rate_expressions(simplified_formula)
 
-            forward_variables_symbols = sp.sympify(forward_reverse_rate_equations.get("forward_rate"), locals = string_to_sympy_symbols, evaluate = False).free_symbols
+            forward_rate_expr = forward_reverse_rate_equations.get("forward_rate")
+
+            if forward_rate_expr is None:
+                raise ValueError(f"Forward rate expression cannot be found for {reaction_name}")
+            
+            forward_variables_symbols = sp.sympify(forward_rate_expr, locals = string_to_sympy_symbols, evaluate = False).free_symbols
             forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
             forward_rate_constant = next(iter(set(forward_variables_as_strings) & set(parameters_values.keys())), None)
+            
 
             if forward_rate_constant:
 
-                try:
-
-                    individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
-                    individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
-
-                except ValueError as e:
-                    utility.error_printer(f"\nERROR: ", e)
-                    utility.message_printer(f"Forward reaction rate constant can't be found for {reaction_name}", style="normal")
+                individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
+                individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
 
                 reverse_rate_constant = None
 
@@ -456,14 +466,10 @@ class MatrixConstructor:
 
                     reverse_rate_constant = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
 
-                    try:
 
-                        individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
-                        individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
+                    individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                    individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
 
-                    except ValueError as e:
-                        utility.error_printer(f"\nERROR: ", e)
-                        utility.message_printer(f"Reverse reaction rate constant can't be found for {reaction_name}", style="normal")
 
                 if forward_rate_constant is not None:
 
@@ -497,17 +503,12 @@ class MatrixConstructor:
 
                     reverse_rate_constant = common_rate_constant
 
-                    try:
 
-                        individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
-                        individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
+                    individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
+                    individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
 
-                        individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
-                        individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
-
-                    except ValueError as e:
-                        utility.error_printer(f"\nERROR: ", e)
-                        utility.message_printer(f"Reaction rate constant can't be found for {reaction_name}", style="normal")
+                    individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                    individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
 
                     if forward_rate_constant is not None:
 
@@ -557,7 +558,7 @@ class MatrixConstructor:
 
         if called == False:
         
-            self.forward_reverse_rate_finder(biomodel)
+            self.forward_reverse_rate_finder(biomodel, printing="on")
 
         reactions_number = Reaction.getCurrentIndex()
 
@@ -638,7 +639,7 @@ class MatrixConstructor:
                 if printing.lower() == "on":
                     utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
 
-                return False
+                raise ValueError(f"\nCaught an error: ", e)
 
             except RuntimeWarning as e:
 
