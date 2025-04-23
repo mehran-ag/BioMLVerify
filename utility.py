@@ -31,12 +31,12 @@ def printer(descrip, text_to_print, descript_color = "white", text_color = "blue
 
     print(f"{description} {text}")
 
-def error_printer(message, error, message_color = 'white', error_color = "red", error_style="normal"):
+def error_printer(message, error, message_color = 'white', error_color = "red", error_style="normal", u_end="\n"):
 
     message = f"{color_map.get(message_color.lower(), Fore.WHITE)}{message}"
     error = f"{style_map.get(error_style.lower(), Style.NORMAL)}{color_map.get(error_color.lower(), Fore.BLUE)}{error}"
 
-    print(f"{message} {error}")
+    print(f"{message} {error}", end=u_end)
 
 def message_printer(message, color="yellow", style = "bold"):
 

@@ -7,7 +7,8 @@ from classes.cSpecies import *
 import utility
 import random
 import warnings
-
+import re
+import inspect
     
 
 
@@ -346,7 +347,7 @@ class MatrixConstructor:
         # --------------------------------------------------
 
 
-        empty_global_parameters = False
+        empty_global_parameters = False     # a flag to indicate if there are no global parameters
 
         if biomodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -367,7 +368,7 @@ class MatrixConstructor:
 
 
 
-        string_to_sympy_symbols = {} # THERE ARE SOME BUILT-IN FUNCTIONS IN SYMPY THAT INTERFERES WITH VARIABLE NAMES AND THE STRING TO ... \
+        string_to_sympy_symbols = {} # THERE ARE SOME BUILT-IN FUNCTIONS IN SYMPY THAT INTERFERE WITH VARIABLE NAMES AND THE STRING TO ... \
                                         # SYMPY EXPRESSIONS AND THE EXECUTION FAILS. TO PREVENT IT, I HAVE DEFINED SOME BUILT-IN FUNCTIONS AS ... \
                                         # SYMPY VARIABLES BEFOREHAND
 
@@ -405,32 +406,31 @@ class MatrixConstructor:
                     local_parameters_values[local_parameter_name] = local_parameter_value
 
                 parameters_values.update(local_parameters_values)
-                
             
             else:
 
                 if empty_global_parameters == True:
                     raise ValueError(f"There are no global parameters defined for the model, nor are there any local parameters defined for {reaction_name}!")
 
-
             try:
                 sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
 
             except sp.SympifyError as e:
 
-                utility.error_printer("\nSympify Error: ", e)
                 print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
+                raise ValueError(f"\nSympify Error: {e}")
 
             except ValueError as v:
                 utility.error_printer("\nValue Error: ", e)
                 print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
+                raise ValueError(f"\nValue Error: {e}")
 
             except Exception as e:
-                utility.error_printer("\nUnexpected Error: ", e)
                 print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
                 print(f"\nThe string for equation is: {reaction_rate_formula}")
+                raise ValueError(f"\nUnexpected Error: {e}")
 
             else:
 
@@ -448,27 +448,123 @@ class MatrixConstructor:
             
             forward_variables_symbols = sp.sympify(forward_rate_expr, locals = string_to_sympy_symbols, evaluate = False).free_symbols
             forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
-            forward_rate_constant = next(iter(set(forward_variables_as_strings) & set(parameters_values.keys())), None)
+            forward_rate_matching_parameters = set(forward_variables_as_strings) & set(parameters_values.keys())
+
+            if not forward_rate_matching_parameters:
+                raise exceptions.EmptyList(f"No forward reaction rate constant found in reaction {reaction_name}")
+            else:
+                if isinstance(forward_rate_matching_parameters, str):
+                    forward_rate_matching_parameters = [forward_rate_matching_parameters]
+                else:
+                    forward_rate_matching_parameters = list(forward_rate_matching_parameters)
+
+                forward_rate_constant = forward_rate_matching_parameters[0]
+                forward_rate_constant_value = parameters_values[forward_rate_constant]
+
+                if len( forward_rate_matching_parameters ) == 2:
+
+                    k_plus_1 = str(forward_rate_matching_parameters[0])
+
+                    k_plus_2 = str(forward_rate_matching_parameters[1])
+
+                    forward_pattern = rf"(?:{re.escape(k_plus_1)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_2)}|{re.escape(k_plus_2)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_1)})"
+
+                    forward_match = re.search( forward_pattern, str(forward_rate_expr) )
+
+                    forward_match_str = forward_match.group()
+
+                    if "*" in forward_match_str:
+                        forward_rate_constant = k_plus_1 + " * " + k_plus_2
+                        forward_rate_constant_value = parameters_values[k_plus_1] *  parameters_values[k_plus_2]
+
+                    elif "+" in forward_match_str:
+                        forward_rate_constant = k_plus_1 + " + " + k_plus_2
+                        forward_rate_constant_value = parameters_values[k_plus_1] +  parameters_values[k_plus_2]
+
+                    elif "-" in forward_match_str:
+                        forward_rate_constant = k_plus_1 + " - " + k_plus_2
+                        forward_rate_constant_value = parameters_values[k_plus_1] -  parameters_values[k_plus_2]
+
+                    elif "/" in forward_match_str:
+                        forward_rate_constant = k_plus_1 + " / " + k_plus_2
+                        forward_rate_constant_value = parameters_values[k_plus_1] /  parameters_values[k_plus_2]
+
+                    else:
+                        
+                        raise ValueError(f"Operand not found in the reaction rate composition expression: {forward_rate_expr} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                    
+                elif len( forward_rate_matching_parameters ) > 2:
+
+                    raise ValueError("Number of reaction rate constants are more than two which is not supported!")
             
 
             if forward_rate_constant:
 
                 individual_reaction_class.kinetic_forward_rate_constant = forward_rate_constant
-                individual_reaction_class.kinetic_forward_rate_constant_value = parameters_values[str(forward_rate_constant)]
+                individual_reaction_class.kinetic_forward_rate_constant_value = forward_rate_constant_value
 
                 reverse_rate_constant = None
 
                 if forward_reverse_rate_equations.get("reverse_rate"):
 
-                    reverse_variables_symbols = sp.sympify(forward_reverse_rate_equations.get("reverse_rate"), locals = string_to_sympy_symbols, evaluate = False).free_symbols
+                    reverse_rate_expr = forward_reverse_rate_equations.get("reverse_rate")
+
+                    reverse_variables_symbols = sp.sympify(reverse_rate_expr, locals = string_to_sympy_symbols, evaluate = False).free_symbols
                 
                     reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
 
-                    reverse_rate_constant = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+                    reverse_rate_matching_parameters = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+
+                    if not reverse_rate_matching_parameters:
+                        raise exceptions.EmptyList(f"No reverse reaction rate constant found in reaction {reaction_name}")
+                    else:
+                        if isinstance(reverse_rate_matching_parameters, str):
+                            reverse_rate_matching_parameters = [reverse_rate_matching_parameters]
+                        else:
+                            reverse_rate_matching_parameters = list(reverse_rate_matching_parameters)
+
+                        reverse_rate_constant = reverse_rate_matching_parameters[0]
+                        reverse_rate_constant_value = parameters_values[reverse_rate_constant]
+                        
+                        if len( reverse_rate_matching_parameters ) == 2:
+
+                            k_minus_1 = reverse_rate_matching_parameters[0]
+
+                            k_minus_2 = reverse_rate_matching_parameters[1]
+
+                            reverse_pattern = rf"(?:{re.escape(k_minus_1)}\s*([\+\-\*/])\s*{re.escape(k_minus_2)}|{re.escape(k_minus_2)}\s*([\+\-\*/])\s*{re.escape(k_minus_1)})"
+
+                            reverse_match = re.search( reverse_pattern,  str(reverse_rate_expr) )
+
+                            reverse_match_str = reverse_match.group()
+
+                            if "*" in reverse_match_str:
+                                reverse_rate_constant = k_minus_1 + " * " + k_minus_2
+                                reverse_rate_constant_value = parameters_values[k_minus_1] *  parameters_values[k_minus_2]
+
+                            elif "+" in reverse_match_str:
+                                reverse_rate_constant = k_minus_1 + " + " + k_minus_2
+                                reverse_rate_constant_value = parameters_values[k_minus_1] +  parameters_values[k_minus_2]
+
+                            elif "-" in reverse_match_str:
+                                reverse_rate_constant = k_minus_1 + " - " + k_minus_2
+                                reverse_rate_constant_value = parameters_values[k_minus_1] -  parameters_values[k_minus_2]
+
+                            elif "/" in reverse_match_str:
+                                reverse_rate_constant = k_minus_1 + " / " + k_minus_2
+                                reverse_rate_constant_value = parameters_values[k_minus_1] /  parameters_values[k_minus_2]
+
+                            else:
+                                raise ValueError(f"Operand not found in the reaction rate composition expression: {reverse_rate_expr} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                            
+                        elif len( reverse_rate_matching_parameters ) > 2:
+
+                            raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                            
 
 
                     individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
-                    individual_reaction_class.kinetic_reverse_rate_constant_value = parameters_values[str(reverse_rate_constant)]
+                    individual_reaction_class.kinetic_reverse_rate_constant_value = reverse_rate_constant_value
 
 
                 if forward_rate_constant is not None:
@@ -479,7 +575,7 @@ class MatrixConstructor:
 
                             utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
 
-                        reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)]}
+                        reaction_to_rate_constants[reaction_name] = {"forward": forward_rate_constant_value}
 
                     else:
 
@@ -489,7 +585,7 @@ class MatrixConstructor:
                             utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
 
 
-                        reaction_to_rate_constants[reaction_name] = {"forward": parameters_values[str(forward_rate_constant)], "reverse": parameters_values[str(reverse_rate_constant)]}
+                        reaction_to_rate_constants[reaction_name] = {"forward": forward_rate_constant_value, "reverse": reverse_rate_constant_value}
 
             else:
 
