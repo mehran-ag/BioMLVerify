@@ -757,13 +757,13 @@ class MatrixConstructor:
         if abs(result) < 1e-6:
 
             if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints", text_color="green")
+                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints", text_color="green", text_style="bold")
 
             return True
         
         else:
 
             if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red")
+                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
             
             return False

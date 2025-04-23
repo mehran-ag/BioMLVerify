@@ -47,6 +47,20 @@ class ModelPropertiesMixin:
             raise ValueError("parameters must be stored in a list")
         self._parameters = new_parameters
 
+
+    @property
+    def function_definitions(self):
+        '''Getter for function_definitions'''
+        return self._function_definitions
+    
+    @function_definitions.setter
+    def function_definitions(self, new_definitions):
+        '''Setter for function_definitions - Ensures it is a list'''
+        if not isinstance(new_definitions, list):
+            raise ValueError("parameters must be stored in a list")
+        self._function_definitions = new_definitions
+
+
     @property
     def kinetic_rate_constants_vector(self):
         return self._kinetic_rate_constants_vector

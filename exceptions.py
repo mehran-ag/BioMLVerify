@@ -21,3 +21,9 @@ class Warning(Exception):
     This type of error will be considered as a warning and will not stop the execution.
     '''
     pass
+
+class WrongInitializationInput(Exception):
+    '''
+    Thierror will be raised when initialization of a class fails
+    '''
+    pass

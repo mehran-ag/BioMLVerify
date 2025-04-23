@@ -15,6 +15,7 @@ from classes.cModel import *
 from classes.cSpecies import *
 from classes.cParameter import *
 from classes.cSpeciesReference import *
+from classes.cFunctionDefinition import *
 
 
 class BioModel(object):
@@ -103,13 +104,14 @@ class BioModel(object):
             utility.message_printer("Model not read", color="red")
             return None
         else:
-            self._sbmodel = document.getModel()
-            self._biomodel = Model(self._sbmodel.getId())
-            self._biomodel.species = self.SBML_to_BioModel_species_tranfer(self._sbmodel)
-            self._biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(self._sbmodel)
-            self._biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(self._sbmodel)
+            sbmodel = document.getModel()
+            biomodel = Model(sbmodel.getId())
+            biomodel.species = self.SBML_to_BioModel_species_tranfer(sbmodel)
+            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(sbmodel)
+            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(sbmodel)
+            biomodel.function_definitions = self.SBML_to_BioModel_function_definition_transfer(sbmodel)
         
-            return self._biomodel
+            return biomodel
         
 
     # ********************************
@@ -639,6 +641,21 @@ class BioModel(object):
             warnings.warn("No reactions imported from SBML model!", UserWarning)
 
         return biomodel_reactions_list
+    
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def SBML_to_BioModel_function_definition_transfer(self, libsbml_model):
+
+        sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
+                                    for i in range(libsbml_model.getNumFunctionDefinitions())]
+        
+        function_definitions = [FunctionDefinition(sb)
+                                for sb in sbml_function_definitons]
+        
+        return function_definitions
     
 
 
