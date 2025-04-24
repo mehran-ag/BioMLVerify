@@ -38,7 +38,7 @@ os.system("cls" if os.name == "nt" else "clear")
 
 biomodel = BioModel()
 
-biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000086.xml")
+biomodel.read_file("/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000500.xml")
 
 print("\n")
 

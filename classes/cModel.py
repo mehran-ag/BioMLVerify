@@ -5,6 +5,7 @@ class Model(ModelPropertiesMixin):
     def __init__(self, ID):
 
         self._ID = ID
+        self._compartments = None
         self._reactions = None
         self._species = None
         self._parameters = None
@@ -16,6 +17,10 @@ class Model(ModelPropertiesMixin):
     def getId(self):
 
         return self._ID
+    
+    def getListOfCompartments(self):
+
+        return self._compartments
 
     def getListOfSpecies(self):
 
@@ -28,6 +33,10 @@ class Model(ModelPropertiesMixin):
     def getListOfParameters(self):
 
         return self._parameters
+    
+    def getListOfFunctionDefinitions(self):
+
+        return self._function_definitions
     
     def setID(self, new_ID):
         self._ID = str(new_ID)

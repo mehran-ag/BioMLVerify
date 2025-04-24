@@ -9,6 +9,7 @@ import random
 import warnings
 import re
 import inspect
+from constants import *
     
 
 
@@ -356,6 +357,8 @@ class MatrixConstructor:
         species_classes_list = biomodel.getListOfSpecies()
         parameter_classes_list = biomodel.getListOfParameters()
         reaction_classes_list = biomodel.getListOfReactions()
+        function_definitions_list = biomodel.getListOfFunctionDefinitions()
+        compartments_list = biomodel.getListOfCompartments()
 
         if not species_classes_list:
             raise ValueError("Species list is empty.")
@@ -376,6 +379,10 @@ class MatrixConstructor:
             species_name = individual_species_class.getId()
             string_to_sympy_symbols[species_name] = sp.symbols(species_name)
 
+            string_to_sympy_symbols.update({
+                name: sp.symbols(name) for name in compartments_list
+            })
+
 
         parameters_values = {}  # This list stores the names of the parameters and their values
 
@@ -388,9 +395,6 @@ class MatrixConstructor:
 
 
         for individual_reaction_class in reaction_classes_list:
-
-            reaction_name = individual_reaction_class.getId()
-            reaction_rate_formula = individual_reaction_class.getKineticLaw()
 
             if individual_reaction_class.local_parameters is not None:
 
@@ -412,8 +416,17 @@ class MatrixConstructor:
                 if empty_global_parameters == True:
                     raise ValueError(f"There are no global parameters defined for the model, nor are there any local parameters defined for {reaction_name}!")
 
+            reaction_name = individual_reaction_class.getId()
+            reaction_rate_formula = individual_reaction_class.getKineticLaw()
+
+            reaction_rate_formula, function_symbols = MatrixConstructor._expandFormula(reaction_rate_formula, function_definitions_list)
+
+            string_to_sympy_symbols.update(function_symbols)
+
             try:
                 sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
+
+                simplified_formula = sp.simplify(sp_reaction_rate_formula)
 
             except sp.SympifyError as e:
 
@@ -435,9 +448,14 @@ class MatrixConstructor:
             else:
 
                 if printing.lower() == 'on':
-                    utility.printer("\nThe reaction rate expression is:\n", sp_reaction_rate_formula, text_color="yellow")
+                    utility.printer("\nThe simplified reaction rate expression is:\n", simplified_formula, text_color="yellow")
 
-            simplified_formula = sp.simplify(sp_reaction_rate_formula)
+            
+
+            # utility.printer("\nSimplified reaction rate expression is:\n", simplified_formula, text_color="green")
+
+            # for key, value in string_to_sympy_symbols.items():
+            #     print(f"\nKey is {key} and Value is {value}")
 
             forward_reverse_rate_equations = get_forward_reverse_rate_expressions(simplified_formula)
 
@@ -767,3 +785,57 @@ class MatrixConstructor:
                 utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
             
             return False
+        
+
+
+
+    @staticmethod
+    def _expandFormula(formula, function_definitions,
+            num_recursions=0):
+        """
+        Expands the kinetics formula, replacing function definitions
+        with their body.
+
+        Parameters
+        ----------
+        expansion: str
+            expansion of the kinetic law
+        function_definitions: list-FunctionDefinition
+        num_recursion: int
+        
+        Returns
+        -------
+        str
+        """
+
+
+        if num_recursions > MAX_RECURSION:
+            return formula, {}
+        
+        input_symbols_dict = {}  # To collect input symbols
+        done = True
+        for function_definition in function_definitions:
+        
+            function_calls = re.findall(r'{}\(.*?\)'.format(function_definition.ID), formula)
+
+            if len(function_calls) == 0:
+                continue
+
+            done = False
+            for function_call in function_calls:
+                # Find argument call. Ex: '(a, b)'
+                call_arguments = re.findall(r'\(.*?\)', function_call)[0]
+                call_arguments = call_arguments.strip()
+                call_arguments = call_arguments[1:-1]  # Eliminate parentheses
+                input_arguments = call_arguments.split(',')
+                input_arguments = [a.strip() for a in input_arguments]
+                for arg in input_arguments:
+                    input_symbols_dict[arg] = sp.symbols(arg)
+                function_formula = function_definition.formula
+                for formal_arg, call_arg in zip(function_definition.arguments, input_arguments):
+                    function_formula = function_formula.replace(formal_arg, call_arg)
+                formula = formula.replace(function_call, function_formula)
+        if not done:
+            return MatrixConstructor._expandFormula(formula, function_definitions,
+                        num_recursions=num_recursions+1)
+        return formula, input_symbols_dict

@@ -110,6 +110,7 @@ class BioModel(object):
             biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(sbmodel)
             biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(sbmodel)
             biomodel.function_definitions = self.SBML_to_BioModel_function_definition_transfer(sbmodel)
+            biomodel.compartments = self.SBML_to_BioModel_compartments_transfer(sbmodel)
         
             return biomodel
         
@@ -429,6 +430,23 @@ class BioModel(object):
             utility.error_printer("Unexpected Error: ", e)
             utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
             utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def SBML_to_BioModel_compartments_transfer(self, libsbml_model):
+
+        compartments = [comp.getId()
+                        for comp in libsbml_model.getListOfCompartments()]
+        
+        return compartments
+
+
+
 
 
 

@@ -11,6 +11,22 @@ class ModelPropertiesMixin:
     def ID(self, new_ID):
         self._ID = str(new_ID)
 
+    
+    @property
+    def compartments(self):
+        '''Getter for compartments'''
+        return self._compartments
+    
+    @compartments.setter
+    def compartments(self, new_compartments):
+        '''Setter for compartments - Ensures it is a list'''
+        if not isinstance(new_compartments, list):
+            raise ValueError("compartments must be stored in a list")
+        self._compartments = new_compartments
+
+
+
+
     @property
     def reactions(self):
         '''Getter for reactions'''
@@ -57,7 +73,7 @@ class ModelPropertiesMixin:
     def function_definitions(self, new_definitions):
         '''Setter for function_definitions - Ensures it is a list'''
         if not isinstance(new_definitions, list):
-            raise ValueError("parameters must be stored in a list")
+            raise ValueError("function definitions must be stored in a list")
         self._function_definitions = new_definitions
 
 
