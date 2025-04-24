@@ -10,6 +10,7 @@ import warnings
 import re
 import inspect
 from constants import *
+from collections import defaultdict
     
 
 
@@ -296,52 +297,23 @@ class MatrixConstructor:
         def get_forward_reverse_rate_expressions(expression):
 
             # Separate positive and negative terms manually
-            rates = {}
+            rates = defaultdict(list)
 
-            if "-" in str(expression):
+            if expression.is_Mul:
 
-                if expression.is_Mul:
+                rates["forward_rate"].append(expression)
 
-                    for arg in expression.args:
+            elif expression.is_Add:
 
-                        if arg.is_Add:
+                for argument in expression.args:
 
-                            for term in arg.args:
-                    
-                                if "-" in str(term):
-                                    rates["reverse_rate"] = term
-                                    
-                                else:
-                                    rates["forward_rate"] = term
+                    if "-" in str(argument):
 
-                        elif arg.is_Mul:
-                            nested_rates = get_forward_reverse_rate_expressions(arg)
-                            rates.update(nested_rates)
+                        rates["reverse_rate"].append(argument)
 
-                elif expression.is_Add:
+                    else:
 
-                    for arg in expression.args:
-
-                        if arg.is_Add:
-
-                            for term in arg.args:
-                    
-                                if "-" in str(term):
-                                    rates["reverse_rate"] = term
-                                    
-                                else:
-                                    rates["forward_rate"] = term
-
-                        elif arg.is_Mul:
-
-                            if "-" in str(arg):
-                                rates["reverse_rate"] = arg
-                                    
-                            else:
-                                rates["forward_rate"] = arg
-
-            else:
-                rates["forward_rate"] = expression
+                        rates["forward_rate"].append(argument)
 
             return rates
         # --------------------------------------------------
@@ -426,7 +398,9 @@ class MatrixConstructor:
             try:
                 sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
 
-                simplified_formula = sp.simplify(sp_reaction_rate_formula)
+                simplified_formula = sp.cancel(sp_reaction_rate_formula)
+
+                expanded_formula = sp.expand(simplified_formula)
 
             except sp.SympifyError as e:
 
@@ -457,27 +431,82 @@ class MatrixConstructor:
             # for key, value in string_to_sympy_symbols.items():
             #     print(f"\nKey is {key} and Value is {value}")
 
-            forward_reverse_rate_equations = get_forward_reverse_rate_expressions(simplified_formula)
+            forward_reverse_rate_equations = get_forward_reverse_rate_expressions(expanded_formula)
 
-            forward_rate_expr = forward_reverse_rate_equations.get("forward_rate")
+            forward_rate_expressions = forward_reverse_rate_equations.get("forward_rate")
 
-            if forward_rate_expr is None:
+            if not forward_rate_expressions:
                 raise ValueError(f"Forward rate expression cannot be found for {reaction_name}")
             
-            forward_variables_symbols = sp.sympify(forward_rate_expr, locals = string_to_sympy_symbols, evaluate = False).free_symbols
+            
+            forward_rate_expression = forward_rate_expressions[0]
+
+            forward_variables_symbols = sp.sympify(forward_rate_expression, locals = string_to_sympy_symbols, evaluate = False).free_symbols
             forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
             forward_rate_matching_parameters = set(forward_variables_as_strings) & set(parameters_values.keys())
 
-            if not forward_rate_matching_parameters:
-                raise exceptions.EmptyList(f"No forward reaction rate constant found in reaction {reaction_name}")
+            
+            if isinstance(forward_rate_matching_parameters, str):
+                forward_rate_matching_parameters = [forward_rate_matching_parameters]
             else:
+                forward_rate_matching_parameters = list(forward_rate_matching_parameters)
+
+            temp_forward_rate_constant = forward_rate_matching_parameters[0]
+            temp_forward_rate_constant_value = parameters_values[temp_forward_rate_constant]
+
+            if len( forward_rate_matching_parameters ) == 2:
+
+                k_plus_1 = str(forward_rate_matching_parameters[0])
+
+                k_plus_2 = str(forward_rate_matching_parameters[1])
+
+                forward_pattern = rf"(?:{re.escape(k_plus_1)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_2)}|{re.escape(k_plus_2)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_1)})"
+
+                forward_match = re.search( forward_pattern, str(forward_rate_expression) )
+
+                forward_match_str = forward_match.group()
+
+                if "*" in forward_match_str:
+                    temp_forward_rate_constant = "(" + k_plus_1 + " * " + k_plus_2 + ")"
+                    forward_rate_constant_value = parameters_values[k_plus_1] *  parameters_values[k_plus_2]
+
+                elif "+" in forward_match_str:
+                    temp_forward_rate_constant = "(" + k_plus_1 + " + " + k_plus_2 + ")"
+                    temp_forward_rate_constant_value = parameters_values[k_plus_1] +  parameters_values[k_plus_2]
+
+                elif "-" in forward_match_str:
+                    temp_forward_rate_constant = "(" + k_plus_1 + " - " + k_plus_2 + ")"
+                    temp_forward_rate_constant_value = parameters_values[k_plus_1] -  parameters_values[k_plus_2]
+
+                elif "/" in forward_match_str:
+                    temp_forward_rate_constant = "(" + k_plus_1 + " / " + k_plus_2 + ")"
+                    temp_forward_rate_constant_value = parameters_values[k_plus_1] /  parameters_values[k_plus_2]
+
+                else:
+                    
+                    raise ValueError(f"Operand not found in the reaction rate composition expression: {forward_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+            
+            elif len( forward_rate_matching_parameters ) > 2:
+
+                raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                
+            forward_rate_constant = temp_forward_rate_constant
+            forward_rate_constant_value = temp_forward_rate_constant_value
+
+            for forward_rate_expression in forward_rate_expressions[1:]:
+
+                forward_variables_symbols = sp.sympify(forward_rate_expression, locals = string_to_sympy_symbols, evaluate = False).free_symbols
+                forward_variables_as_strings = [str(symbol) for symbol in forward_variables_symbols]
+                forward_rate_matching_parameters = set(forward_variables_as_strings) & set(parameters_values.keys())
+
+                
                 if isinstance(forward_rate_matching_parameters, str):
                     forward_rate_matching_parameters = [forward_rate_matching_parameters]
                 else:
                     forward_rate_matching_parameters = list(forward_rate_matching_parameters)
 
-                forward_rate_constant = forward_rate_matching_parameters[0]
-                forward_rate_constant_value = parameters_values[forward_rate_constant]
+                temp_forward_rate_constant = forward_rate_matching_parameters[0]
+                temp_forward_rate_constant_value = parameters_values[temp_forward_rate_constant]
 
                 if len( forward_rate_matching_parameters ) == 2:
 
@@ -487,33 +516,36 @@ class MatrixConstructor:
 
                     forward_pattern = rf"(?:{re.escape(k_plus_1)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_2)}|{re.escape(k_plus_2)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_1)})"
 
-                    forward_match = re.search( forward_pattern, str(forward_rate_expr) )
+                    forward_match = re.search( forward_pattern, str(forward_rate_expression) )
 
                     forward_match_str = forward_match.group()
 
                     if "*" in forward_match_str:
-                        forward_rate_constant = k_plus_1 + " * " + k_plus_2
+                        temp_forward_rate_constant = "(" + k_plus_1 + " * " + k_plus_2 + ")"
                         forward_rate_constant_value = parameters_values[k_plus_1] *  parameters_values[k_plus_2]
 
                     elif "+" in forward_match_str:
-                        forward_rate_constant = k_plus_1 + " + " + k_plus_2
-                        forward_rate_constant_value = parameters_values[k_plus_1] +  parameters_values[k_plus_2]
+                        temp_forward_rate_constant = "(" + k_plus_1 + " + " + k_plus_2 + ")"
+                        temp_forward_rate_constant_value = parameters_values[k_plus_1] +  parameters_values[k_plus_2]
 
                     elif "-" in forward_match_str:
-                        forward_rate_constant = k_plus_1 + " - " + k_plus_2
-                        forward_rate_constant_value = parameters_values[k_plus_1] -  parameters_values[k_plus_2]
+                        temp_forward_rate_constant = "(" + k_plus_1 + " - " + k_plus_2 + ")"
+                        temp_forward_rate_constant_value = parameters_values[k_plus_1] -  parameters_values[k_plus_2]
 
                     elif "/" in forward_match_str:
-                        forward_rate_constant = k_plus_1 + " / " + k_plus_2
-                        forward_rate_constant_value = parameters_values[k_plus_1] /  parameters_values[k_plus_2]
+                        temp_forward_rate_constant = "(" + k_plus_1 + " / " + k_plus_2 + ")"
+                        temp_forward_rate_constant_value = parameters_values[k_plus_1] /  parameters_values[k_plus_2]
 
                     else:
                         
-                        raise ValueError(f"Operand not found in the reaction rate composition expression: {forward_rate_expr} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
-                    
+                        raise ValueError(f"Operand not found in the reaction rate composition expression: {forward_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                
                 elif len( forward_rate_matching_parameters ) > 2:
 
                     raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                
+                forward_rate_constant += " + " + temp_forward_rate_constant
+                forward_rate_constant_value += temp_forward_rate_constant_value
             
 
             if forward_rate_constant:
@@ -525,24 +557,82 @@ class MatrixConstructor:
 
                 if forward_reverse_rate_equations.get("reverse_rate"):
 
-                    reverse_rate_expr = forward_reverse_rate_equations.get("reverse_rate")
+                    reverse_rate_expressions = forward_reverse_rate_equations.get("reverse_rate")
 
-                    reverse_variables_symbols = sp.sympify(reverse_rate_expr, locals = string_to_sympy_symbols, evaluate = False).free_symbols
+                    reverse_rate_expression = reverse_rate_expressions[0]
+
+                    reverse_variables_symbols = sp.sympify(reverse_rate_expression, locals = string_to_sympy_symbols, evaluate = False).free_symbols
                 
                     reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
 
                     reverse_rate_matching_parameters = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
 
-                    if not reverse_rate_matching_parameters:
-                        raise exceptions.EmptyList(f"No reverse reaction rate constant found in reaction {reaction_name}")
+                    
+                    if isinstance(reverse_rate_matching_parameters, str):
+                        reverse_rate_matching_parameters = [reverse_rate_matching_parameters]
                     else:
+                        reverse_rate_matching_parameters = list(reverse_rate_matching_parameters)
+
+                    temp_reverse_rate_constant = reverse_rate_matching_parameters[0]
+                    temp_reverse_rate_constant_value = parameters_values[temp_reverse_rate_constant]
+                    
+                    
+                    if len( reverse_rate_matching_parameters ) == 2:
+
+                        k_minus_1 = reverse_rate_matching_parameters[0]
+
+                        k_minus_2 = reverse_rate_matching_parameters[1]
+
+                        reverse_pattern = rf"(?:{re.escape(k_minus_1)}\s*([\+\-\*/])\s*{re.escape(k_minus_2)}|{re.escape(k_minus_2)}\s*([\+\-\*/])\s*{re.escape(k_minus_1)})"
+
+                        reverse_match = re.search( reverse_pattern,  str(reverse_rate_expression) )
+
+                        reverse_match_str = reverse_match.group()
+
+                        if "*" in reverse_match_str:
+                            temp_reverse_rate_constant = "(" + k_minus_1 + " * " + k_minus_2 + ")"
+                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] *  parameters_values[k_minus_2]
+
+                        elif "+" in reverse_match_str:
+                            temp_reverse_rate_constant = "(" + k_minus_1 + " + " + k_minus_2 + ")"
+                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] +  parameters_values[k_minus_2]
+
+                        elif "-" in reverse_match_str:
+                            temp_reverse_rate_constant = "(" + k_minus_1 + " - " + k_minus_2 + ")"
+                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] -  parameters_values[k_minus_2]
+
+                        elif "/" in reverse_match_str:
+                            temp_reverse_rate_constant = "(" + k_minus_1 + " / " + k_minus_2 + ")"
+                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] /  parameters_values[k_minus_2]
+
+                        else:
+                            raise ValueError(f"Operand not found in the reaction rate composition expression: {reverse_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                        
+                    elif len( reverse_rate_matching_parameters ) > 2:
+
+                        raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                    
+
+                    reverse_rate_constant = temp_reverse_rate_constant
+                    reverse_rate_constant_value = temp_reverse_rate_constant_value
+
+                    for reverse_rate_expression in reverse_rate_expressions[1:]:
+
+                        reverse_variables_symbols = sp.sympify(reverse_rate_expression, locals = string_to_sympy_symbols, evaluate = False).free_symbols
+                
+                        reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
+
+                        reverse_rate_matching_parameters = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+
+                        
                         if isinstance(reverse_rate_matching_parameters, str):
                             reverse_rate_matching_parameters = [reverse_rate_matching_parameters]
                         else:
                             reverse_rate_matching_parameters = list(reverse_rate_matching_parameters)
 
-                        reverse_rate_constant = reverse_rate_matching_parameters[0]
-                        reverse_rate_constant_value = parameters_values[reverse_rate_constant]
+                        temp_reverse_rate_constant = reverse_rate_matching_parameters[0]
+                        temp_reverse_rate_constant_value = parameters_values[temp_reverse_rate_constant]
+                        
                         
                         if len( reverse_rate_matching_parameters ) == 2:
 
@@ -552,37 +642,40 @@ class MatrixConstructor:
 
                             reverse_pattern = rf"(?:{re.escape(k_minus_1)}\s*([\+\-\*/])\s*{re.escape(k_minus_2)}|{re.escape(k_minus_2)}\s*([\+\-\*/])\s*{re.escape(k_minus_1)})"
 
-                            reverse_match = re.search( reverse_pattern,  str(reverse_rate_expr) )
+                            reverse_match = re.search( reverse_pattern,  str(reverse_rate_expression) )
 
                             reverse_match_str = reverse_match.group()
 
                             if "*" in reverse_match_str:
-                                reverse_rate_constant = k_minus_1 + " * " + k_minus_2
-                                reverse_rate_constant_value = parameters_values[k_minus_1] *  parameters_values[k_minus_2]
+                                temp_reverse_rate_constant = "(" + k_minus_1 + " * " + k_minus_2 + ")"
+                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] *  parameters_values[k_minus_2]
 
                             elif "+" in reverse_match_str:
-                                reverse_rate_constant = k_minus_1 + " + " + k_minus_2
-                                reverse_rate_constant_value = parameters_values[k_minus_1] +  parameters_values[k_minus_2]
+                                temp_reverse_rate_constant = "(" + k_minus_1 + " + " + k_minus_2 + ")"
+                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] +  parameters_values[k_minus_2]
 
                             elif "-" in reverse_match_str:
-                                reverse_rate_constant = k_minus_1 + " - " + k_minus_2
-                                reverse_rate_constant_value = parameters_values[k_minus_1] -  parameters_values[k_minus_2]
+                                temp_reverse_rate_constant = "(" + k_minus_1 + " - " + k_minus_2 + ")"
+                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] -  parameters_values[k_minus_2]
 
                             elif "/" in reverse_match_str:
-                                reverse_rate_constant = k_minus_1 + " / " + k_minus_2
-                                reverse_rate_constant_value = parameters_values[k_minus_1] /  parameters_values[k_minus_2]
+                                temp_reverse_rate_constant = "(" + k_minus_1 + " / " + k_minus_2 + ")"
+                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] /  parameters_values[k_minus_2]
 
                             else:
-                                raise ValueError(f"Operand not found in the reaction rate composition expression: {reverse_rate_expr} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                                raise ValueError(f"Operand not found in the reaction rate composition expression: {reverse_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
                             
                         elif len( reverse_rate_matching_parameters ) > 2:
 
                             raise ValueError("Number of reaction rate constants are more than two which is not supported!")
-                            
+                        
+                        reverse_rate_constant += " + " + temp_reverse_rate_constant
+                        reverse_rate_constant_value += temp_reverse_rate_constant_value
+                        
 
 
-                    individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
-                    individual_reaction_class.kinetic_reverse_rate_constant_value = reverse_rate_constant_value
+                individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                individual_reaction_class.kinetic_reverse_rate_constant_value = reverse_rate_constant_value
 
 
                 if forward_rate_constant is not None:
