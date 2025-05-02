@@ -11,6 +11,8 @@ import re
 import inspect
 from constants import *
 from collections import defaultdict
+
+import itertools
     
 
 
@@ -291,6 +293,8 @@ class MatrixConstructor:
 
         reaction_to_rate_constants = {} # This dictionary maps reaction names (IDs) to a dictionary of forward and reverse rate constants and their values
 
+
+
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -316,6 +320,161 @@ class MatrixConstructor:
                         rates["forward_rate"].append(argument)
 
             return rates
+        # --------------------------------------------------
+        # --------------------------------------------------
+
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        # *      Internal Function       *
+        # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        def power_operator_finder(expression, parameters, parameters_values, new_parameters=None, reaction_rate_constant='', reaction_rate_constant_value=None, number_of_recursions = 0):
+
+            # Create a dictionary to map operators to their corresponding operations
+            operations = {
+                "**": lambda x, y: pow(x, y)
+            }
+
+            if number_of_recursions > MAX_RECURSION:
+                return expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value
+            
+            if new_parameters is None:
+                new_parameters = []
+
+            pairs = list(itertools.combinations(parameters, 2))
+
+            used_elements = set()
+
+            for pair in pairs:
+
+                if pair[0] in used_elements or pair[1] in used_elements:
+                    continue
+
+                power_pattern = rf"(?:({re.escape(pair[0])})[\s]*(\*\*)[\s]*({re.escape(pair[1])})|({re.escape(pair[1])})[\s]*(\*\*)[\s]*({re.escape(pair[0])}))"
+
+                power_match = re.search( power_pattern, expression )
+
+                if power_match:
+
+                    power_match_str = str(power_match.group(0))
+
+                    used_elements.update(pair[0], pair[1])
+
+                    parameters.remove(pair[0])
+
+                    parameters.remove(pair[1])
+
+                    replacing_power_k = "replaced_power_k_" + str(number_of_recursions)
+
+                    parameters.append(replacing_power_k)
+
+                    new_parameters.append(replacing_power_k)
+
+                    if power_match.group(1):
+
+                        if not bool(reaction_rate_constant):
+                            reaction_rate_constant = str(power_match.group(1)) + str(power_match.group(2)) + str(power_match.group(3))
+                        else:
+                            reaction_rate_constant =  (reaction_rate_constant + str(power_match.group(2)) + str(power_match.group(3)) if str(power_match.group(1)) in new_parameters else str(power_match.group(1)) + str(power_match.group(2)) + reaction_rate_constant)
+
+                        reaction_rate_constant_value = operations[str(power_match.group(2))](parameters_values[pair[0]], parameters_values[pair[1]])
+
+                        parameters_values[replacing_power_k] = operations[str(power_match.group(2))](parameters_values[pair[0]], parameters_values[pair[1]])
+
+                        expression = expression.replace( power_match_str, replacing_power_k )
+
+                    elif power_match.group(4):
+
+                        if not bool(reaction_rate_constant):
+                            reaction_rate_constant = str(power_match.group(4)) + str(power_match.group(5)) + str(power_match.group(6))
+                        else:
+                            reaction_rate_constant =  (reaction_rate_constant + str(power_match.group(5)) + str(power_match.group(6)) if str(power_match.group(4)) in new_parameters else str(power_match.group(4)) + str(power_match.group(5)) + reaction_rate_constant)
+
+                        reaction_rate_constant_value = operations[str(power_match.group(5))](parameters_values[pair[1]], parameters_values[pair[0]])
+
+                        parameters_values[replacing_power_k] = operations[str(power_match.group(5))](parameters_values[pair[1]], parameters_values[pair[0]])
+
+                        expression = expression.replace( power_match_str, replacing_power_k )
+
+            return power_operator_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
+        # --------------------------------------------------
+        # --------------------------------------------------
+
+
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        # *      Internal Function       *
+        # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        def parameters_finder(expression, parameters, parameters_values, new_parameters = None, reaction_rate_constant = "", reaction_rate_constant_value=None, number_of_recursions=0):
+
+            # Create a dictionary to map operators to their corresponding operations
+            operations = {
+                "*": lambda x, y: x * y,
+                "+": lambda x, y: x + y,
+                "-": lambda x, y: x - y,
+                "/": lambda x, y: x / y,
+            }
+
+            if number_of_recursions > MAX_RECURSION:
+                return expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value
+
+
+            if new_parameters is None:
+                new_parameters = []
+
+            pairs = list(itertools.combinations(parameters, 2))
+
+            used_elements = set()
+
+            for pair in pairs:
+
+                if pair[0] in used_elements or pair[1] in used_elements:
+                    continue
+
+                pattern = rf"(?:({re.escape(str(pair[0]))}).*?([\+\-\*/]).*?({re.escape(str(pair[1]))})|({re.escape(str(pair[1]))}).*?([\+\-\*/]).*?({re.escape(str(pair[0]))}))"
+
+                match = re.search( pattern, str(expression) )
+
+                if match:
+
+                    match_str = str(match.group(0))
+
+                    used_elements.update(pair[0], pair[1])
+
+                    parameters.remove(pair[0])
+
+                    parameters.remove(pair[1])
+
+                    replacing_k = "replaced_k_" + str(number_of_recursions)
+
+                    parameters.append(replacing_k)
+
+                    new_parameters.append(replacing_k)
+
+                    if match.group(1):
+
+                        if not bool(reaction_rate_constant):
+                            reaction_rate_constant = str(match.group(1)) + str(match.group(2)) + str(match.group(3))
+                        else:
+                            reaction_rate_constant =  (reaction_rate_constant + str(match.group(2)) + str(match.group(3)) if str(match.group(1)) in new_parameters else str(match.group(1)) + str(match.group(2)) + reaction_rate_constant)
+
+                        reaction_rate_constant_value = operations[str(match.group(2))](parameters_values[pair[0]], parameters_values[pair[1]])
+
+                        parameters_values[replacing_k] = operations[str(match.group(2))](parameters_values[pair[0]], parameters_values[pair[1]])
+
+                        expression = expression.replace( match_str, replacing_k )
+
+                    elif match.group(4):
+
+                        if not bool(reaction_rate_constant):
+                            reaction_rate_constant = str(match.group(4)) + str(match.group(5)) + str(match.group(6))
+                        else:
+                            reaction_rate_constant =  (reaction_rate_constant + str(match.group(5)) + str(match.group(6)) if str(match.group(4)) in new_parameters else str(match.group(4)) + str(match.group(5)) + reaction_rate_constant)
+
+                        reaction_rate_constant_value = operations[str(match.group(5))](parameters_values[pair[1]], parameters_values[pair[0]])
+
+                        parameters_values[replacing_k] = operations[str(match.group(5))](parameters_values[pair[1]], parameters_values[pair[0]])
+
+                        expression = expression.replace( match_str, replacing_k )
+
+            return parameters_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
         # --------------------------------------------------
         # --------------------------------------------------
 
@@ -426,11 +585,6 @@ class MatrixConstructor:
 
             
 
-            # utility.printer("\nSimplified reaction rate expression is:\n", simplified_formula, text_color="green")
-
-            # for key, value in string_to_sympy_symbols.items():
-            #     print(f"\nKey is {key} and Value is {value}")
-
             forward_reverse_rate_equations = get_forward_reverse_rate_expressions(expanded_formula)
 
             forward_rate_expressions = forward_reverse_rate_equations.get("forward_rate")
@@ -451,47 +605,21 @@ class MatrixConstructor:
             else:
                 forward_rate_matching_parameters = list(forward_rate_matching_parameters)
 
-            temp_forward_rate_constant = forward_rate_matching_parameters[0]
-            temp_forward_rate_constant_value = parameters_values[temp_forward_rate_constant]
+            forward_rate_constant = forward_rate_matching_parameters[0]
+            forward_rate_constant_value = parameters_values[forward_rate_constant]
 
-            if len( forward_rate_matching_parameters ) == 2:
+            if len( forward_rate_matching_parameters ) > 2 and len( forward_rate_matching_parameters ) < MAX_RECURSION:
 
-                k_plus_1 = str(forward_rate_matching_parameters[0])
+                parameters_list = [str(p) for p in forward_rate_matching_parameters]
 
-                k_plus_2 = str(forward_rate_matching_parameters[1])
+                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
 
-                forward_pattern = rf"(?:{re.escape(k_plus_1)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_2)}|{re.escape(k_plus_2)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_1)})"
-
-                forward_match = re.search( forward_pattern, str(forward_rate_expression) )
-
-                forward_match_str = forward_match.group()
-
-                if "*" in forward_match_str:
-                    temp_forward_rate_constant = "(" + k_plus_1 + " * " + k_plus_2 + ")"
-                    forward_rate_constant_value = parameters_values[k_plus_1] *  parameters_values[k_plus_2]
-
-                elif "+" in forward_match_str:
-                    temp_forward_rate_constant = "(" + k_plus_1 + " + " + k_plus_2 + ")"
-                    temp_forward_rate_constant_value = parameters_values[k_plus_1] +  parameters_values[k_plus_2]
-
-                elif "-" in forward_match_str:
-                    temp_forward_rate_constant = "(" + k_plus_1 + " - " + k_plus_2 + ")"
-                    temp_forward_rate_constant_value = parameters_values[k_plus_1] -  parameters_values[k_plus_2]
-
-                elif "/" in forward_match_str:
-                    temp_forward_rate_constant = "(" + k_plus_1 + " / " + k_plus_2 + ")"
-                    temp_forward_rate_constant_value = parameters_values[k_plus_1] /  parameters_values[k_plus_2]
-
-                else:
-                    
-                    raise ValueError(f"Operand not found in the reaction rate composition expression: {forward_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value)
             
-            elif len( forward_rate_matching_parameters ) > 2:
+            elif len( forward_rate_matching_parameters ) >= MAX_RECURSION:
 
-                raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                raise ValueError(f"Number of reaction rate constants are more than {MAX_RECURSION} which is not supported!")
                 
-            forward_rate_constant = temp_forward_rate_constant
-            forward_rate_constant_value = temp_forward_rate_constant_value
 
             for forward_rate_expression in forward_rate_expressions[1:]:
 
@@ -508,41 +636,17 @@ class MatrixConstructor:
                 temp_forward_rate_constant = forward_rate_matching_parameters[0]
                 temp_forward_rate_constant_value = parameters_values[temp_forward_rate_constant]
 
-                if len( forward_rate_matching_parameters ) == 2:
+                if len( forward_rate_matching_parameters ) > 2 and len( forward_rate_matching_parameters ) <= MAX_RECURSION:
 
-                    k_plus_1 = str(forward_rate_matching_parameters[0])
+                    parameters_list = [str(p) for p in forward_rate_matching_parameters]
 
-                    k_plus_2 = str(forward_rate_matching_parameters[1])
+                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
 
-                    forward_pattern = rf"(?:{re.escape(k_plus_1)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_2)}|{re.escape(k_plus_2)}[\w\s]*([\+\-\*/])[\w\s]*{re.escape(k_plus_1)})"
-
-                    forward_match = re.search( forward_pattern, str(forward_rate_expression) )
-
-                    forward_match_str = forward_match.group()
-
-                    if "*" in forward_match_str:
-                        temp_forward_rate_constant = "(" + k_plus_1 + " * " + k_plus_2 + ")"
-                        forward_rate_constant_value = parameters_values[k_plus_1] *  parameters_values[k_plus_2]
-
-                    elif "+" in forward_match_str:
-                        temp_forward_rate_constant = "(" + k_plus_1 + " + " + k_plus_2 + ")"
-                        temp_forward_rate_constant_value = parameters_values[k_plus_1] +  parameters_values[k_plus_2]
-
-                    elif "-" in forward_match_str:
-                        temp_forward_rate_constant = "(" + k_plus_1 + " - " + k_plus_2 + ")"
-                        temp_forward_rate_constant_value = parameters_values[k_plus_1] -  parameters_values[k_plus_2]
-
-                    elif "/" in forward_match_str:
-                        temp_forward_rate_constant = "(" + k_plus_1 + " / " + k_plus_2 + ")"
-                        temp_forward_rate_constant_value = parameters_values[k_plus_1] /  parameters_values[k_plus_2]
-
-                    else:
-                        
-                        raise ValueError(f"Operand not found in the reaction rate composition expression: {forward_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
+                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value)
                 
-                elif len( forward_rate_matching_parameters ) > 2:
+                elif len( forward_rate_matching_parameters ) > MAX_RECURSION:
 
-                    raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                    raise ValueError(f"Number of reaction rate constants are more than {MAX_RECURSION} which is not supported!")
                 
                 forward_rate_constant += " + " + temp_forward_rate_constant
                 forward_rate_constant_value += temp_forward_rate_constant_value
@@ -565,7 +669,7 @@ class MatrixConstructor:
                 
                     reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
 
-                    reverse_rate_matching_parameters = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+                    reverse_rate_matching_parameters = set(reverse_variables_as_strings) & set(parameters_values.keys())
 
                     
                     if isinstance(reverse_rate_matching_parameters, str):
@@ -573,48 +677,22 @@ class MatrixConstructor:
                     else:
                         reverse_rate_matching_parameters = list(reverse_rate_matching_parameters)
 
-                    temp_reverse_rate_constant = reverse_rate_matching_parameters[0]
-                    temp_reverse_rate_constant_value = parameters_values[temp_reverse_rate_constant]
+                    reverse_rate_constant = reverse_rate_matching_parameters[0]
+                    reverse_rate_constant_value = parameters_values[reverse_rate_constant]
+
+                    if len( reverse_rate_matching_parameters ) > 2 and len( reverse_rate_matching_parameters ) <= MAX_RECURSION:
+
+                        parameters_list = [str(p) for p in reverse_rate_matching_parameters]
+
+                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
+
+                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value)
                     
-                    
-                    if len( reverse_rate_matching_parameters ) == 2:
+                    elif len( reverse_rate_matching_parameters ) > MAX_RECURSION:
 
-                        k_minus_1 = reverse_rate_matching_parameters[0]
-
-                        k_minus_2 = reverse_rate_matching_parameters[1]
-
-                        reverse_pattern = rf"(?:{re.escape(k_minus_1)}\s*([\+\-\*/])\s*{re.escape(k_minus_2)}|{re.escape(k_minus_2)}\s*([\+\-\*/])\s*{re.escape(k_minus_1)})"
-
-                        reverse_match = re.search( reverse_pattern,  str(reverse_rate_expression) )
-
-                        reverse_match_str = reverse_match.group()
-
-                        if "*" in reverse_match_str:
-                            temp_reverse_rate_constant = "(" + k_minus_1 + " * " + k_minus_2 + ")"
-                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] *  parameters_values[k_minus_2]
-
-                        elif "+" in reverse_match_str:
-                            temp_reverse_rate_constant = "(" + k_minus_1 + " + " + k_minus_2 + ")"
-                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] +  parameters_values[k_minus_2]
-
-                        elif "-" in reverse_match_str:
-                            temp_reverse_rate_constant = "(" + k_minus_1 + " - " + k_minus_2 + ")"
-                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] -  parameters_values[k_minus_2]
-
-                        elif "/" in reverse_match_str:
-                            temp_reverse_rate_constant = "(" + k_minus_1 + " / " + k_minus_2 + ")"
-                            temp_reverse_rate_constant_value = parameters_values[k_minus_1] /  parameters_values[k_minus_2]
-
-                        else:
-                            raise ValueError(f"Operand not found in the reaction rate composition expression: {reverse_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
-                        
-                    elif len( reverse_rate_matching_parameters ) > 2:
-
-                        raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                        raise ValueError(f"Number of reaction rate constants are more than {MAX_RECURSION} which is not supported!")
                     
 
-                    reverse_rate_constant = temp_reverse_rate_constant
-                    reverse_rate_constant_value = temp_reverse_rate_constant_value
 
                     for reverse_rate_expression in reverse_rate_expressions[1:]:
 
@@ -622,7 +700,7 @@ class MatrixConstructor:
                 
                         reverse_variables_as_strings = [str(symbol) for symbol in reverse_variables_symbols]
 
-                        reverse_rate_matching_parameters = next(iter(set(reverse_variables_as_strings) & set(parameters_values.keys())), None)
+                        reverse_rate_matching_parameters = set(reverse_variables_as_strings) & set(parameters_values.keys())
 
                         
                         if isinstance(reverse_rate_matching_parameters, str):
@@ -634,48 +712,25 @@ class MatrixConstructor:
                         temp_reverse_rate_constant_value = parameters_values[temp_reverse_rate_constant]
                         
                         
-                        if len( reverse_rate_matching_parameters ) == 2:
+                        if len( reverse_rate_matching_parameters ) > 2 and len( reverse_rate_matching_parameters ) <= MAX_RECURSION:
 
-                            k_minus_1 = reverse_rate_matching_parameters[0]
+                            parameters_list = [str(p) for p in reverse_rate_matching_parameters]
 
-                            k_minus_2 = reverse_rate_matching_parameters[1]
+                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
 
-                            reverse_pattern = rf"(?:{re.escape(k_minus_1)}\s*([\+\-\*/])\s*{re.escape(k_minus_2)}|{re.escape(k_minus_2)}\s*([\+\-\*/])\s*{re.escape(k_minus_1)})"
-
-                            reverse_match = re.search( reverse_pattern,  str(reverse_rate_expression) )
-
-                            reverse_match_str = reverse_match.group()
-
-                            if "*" in reverse_match_str:
-                                temp_reverse_rate_constant = "(" + k_minus_1 + " * " + k_minus_2 + ")"
-                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] *  parameters_values[k_minus_2]
-
-                            elif "+" in reverse_match_str:
-                                temp_reverse_rate_constant = "(" + k_minus_1 + " + " + k_minus_2 + ")"
-                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] +  parameters_values[k_minus_2]
-
-                            elif "-" in reverse_match_str:
-                                temp_reverse_rate_constant = "(" + k_minus_1 + " - " + k_minus_2 + ")"
-                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] -  parameters_values[k_minus_2]
-
-                            elif "/" in reverse_match_str:
-                                temp_reverse_rate_constant = "(" + k_minus_1 + " / " + k_minus_2 + ")"
-                                temp_reverse_rate_constant_value = parameters_values[k_minus_1] /  parameters_values[k_minus_2]
-
-                            else:
-                                raise ValueError(f"Operand not found in the reaction rate composition expression: {reverse_rate_expression} in line {inspect.currentframe().f_lineno()} in \"matrix_constructor.py\"")
-                            
-                        elif len( reverse_rate_matching_parameters ) > 2:
-
-                            raise ValueError("Number of reaction rate constants are more than two which is not supported!")
+                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value)
                         
+                        elif len( reverse_rate_matching_parameters ) > MAX_RECURSION:
+
+                            raise ValueError(f"Number of reaction rate constants are more than {MAX_RECURSION} which is not supported!")
+                                
                         reverse_rate_constant += " + " + temp_reverse_rate_constant
                         reverse_rate_constant_value += temp_reverse_rate_constant_value
                         
 
+                    individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
+                    individual_reaction_class.kinetic_reverse_rate_constant_value = reverse_rate_constant_value
 
-                individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
-                individual_reaction_class.kinetic_reverse_rate_constant_value = reverse_rate_constant_value
 
 
                 if forward_rate_constant is not None:
@@ -905,7 +960,7 @@ class MatrixConstructor:
         if num_recursions > MAX_RECURSION:
             return formula, {}
         
-        input_symbols_dict = {}  # To collect input symbols
+        input_symbols_dict = {}
         done = True
         for function_definition in function_definitions:
         
@@ -916,10 +971,10 @@ class MatrixConstructor:
 
             done = False
             for function_call in function_calls:
-                # Find argument call. Ex: '(a, b)'
+                
                 call_arguments = re.findall(r'\(.*?\)', function_call)[0]
                 call_arguments = call_arguments.strip()
-                call_arguments = call_arguments[1:-1]  # Eliminate parentheses
+                call_arguments = call_arguments[1:-1]
                 input_arguments = call_arguments.split(',')
                 input_arguments = [a.strip() for a in input_arguments]
                 for arg in input_arguments:
