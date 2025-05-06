@@ -412,6 +412,8 @@ class BioModel(object):
         try:
             comatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomodel, printing)
 
+            utility.display_warnings()
+
             return comatibility
         
         except exceptions.NoModel as e:

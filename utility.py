@@ -23,6 +23,8 @@ style_map = {
     "dim": Style.DIM
 }
 
+warnings = []
+
 
 def printer(descrip, text_to_print, descript_color = "white", text_color = "blue", text_style = "normal"):
 
@@ -43,3 +45,22 @@ def message_printer(message, color="yellow", style = "bold"):
     message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
 
     print(f"{message}")
+
+
+
+def add_warning(message):
+
+    warnings.append(message)
+
+def display_warnings():
+
+    if len(warnings) == 0:
+        return
+    else:
+
+        print("\n" + "!"*60)
+        print( "There is/are warning(s) for your compatibility check that need(s) to be investigated for accurate results. The warning(s) is/are listed below:")
+
+        for warning in warnings:
+
+            print( Fore.LIGHTCYAN_EX + warning )

@@ -617,6 +617,12 @@ class MatrixConstructor:
                 expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
 
                 expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value)
+
+                if len(new_parameters) > 1:
+
+                    message = f"\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
+
+                    utility.add_warning(message)
             
             elif len( forward_rate_matching_parameters ) >= MAX_RECURSION:
 
@@ -645,13 +651,23 @@ class MatrixConstructor:
                     expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
 
                     expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value)
-                
+
+                    message = f"\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
+
+                    utility.add_warning(message)
+
                 elif len( forward_rate_matching_parameters ) > MAX_RECURSION:
 
                     raise ValueError(f"Number of reaction rate constants are more than {MAX_RECURSION} which is not supported!")
                 
                 forward_rate_constant += " + " + temp_forward_rate_constant
                 forward_rate_constant_value += temp_forward_rate_constant_value
+
+                message = f"\nWARNING:\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
+
+                utility.message_printer(message, color="light_red", style ="normal")
+
+                utility.add_warning(message)
             
 
             if forward_rate_constant:
@@ -689,7 +705,11 @@ class MatrixConstructor:
                         expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
 
                         expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value)
-                    
+
+                        message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
+
+                        utility.add_warning(message)
+
                     elif len( reverse_rate_matching_parameters ) > MAX_RECURSION:
 
                         raise ValueError(f"Number of reaction rate constants are more than {MAX_RECURSION} which is not supported!")
@@ -721,6 +741,10 @@ class MatrixConstructor:
                             expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
 
                             expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value)
+
+                            message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
+
+                            utility.add_warning(message)
                         
                         elif len( reverse_rate_matching_parameters ) > MAX_RECURSION:
 
@@ -728,6 +752,10 @@ class MatrixConstructor:
                                 
                         reverse_rate_constant += " + " + temp_reverse_rate_constant
                         reverse_rate_constant_value += temp_reverse_rate_constant_value
+
+                        message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
+
+                        utility.add_warning(message)
                         
 
                     individual_reaction_class.kinetic_reverse_rate_constant = reverse_rate_constant
