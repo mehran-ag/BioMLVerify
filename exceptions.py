@@ -24,6 +24,12 @@ class Warning(Exception):
 
 class WrongInitializationInput(Exception):
     '''
-    Thierror will be raised when initialization of a class fails
+    This error will be raised when initialization of a class fails
+    '''
+    pass
+
+class NoReverseRateConstant(Exception):
+    '''
+    This error will be raised when there is no reverse reaction rate constant in constructing the kinetic constants vector and will be useful when checking thermo compatibility
     '''
     pass

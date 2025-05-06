@@ -386,6 +386,12 @@ class BioModel(object):
             utility.message_printer("Equation couldn't be converted to Sympy expression for reaction", color="red", style="normal")
             utility.message_printer("Unable to complete the query\!", color="red", style="normal")
 
+        except exceptions.NoReverseRateConstant as e:
+            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
+            utility.error_printer("ERROR: ", e)
+            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            return
+
         except Exception as e:
             utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
             tb = traceback.extract_tb(sys.exc_info()[2])

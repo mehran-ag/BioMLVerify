@@ -12,6 +12,8 @@ import inspect
 from constants import *
 from collections import defaultdict
 
+from scipy.linalg import null_space
+
 import itertools
     
 
@@ -581,7 +583,7 @@ class MatrixConstructor:
             else:
 
                 if printing.lower() == 'on':
-                    utility.printer("\nThe simplified reaction rate expression is:\n", simplified_formula, text_color="yellow")
+                    utility.printer(f"\nThe simplified reaction rate expression for reaction {reaction_name} is:\n", simplified_formula, text_color="yellow")
 
             
 
@@ -824,7 +826,7 @@ class MatrixConstructor:
 
         reactions_number = Reaction.getCurrentIndex()
 
-        kinetic_vector_length = 2 * reactions_number
+        kinetic_vector_length = reactions_number
 
         vector_of_kinetic_constants = np.zeros(kinetic_vector_length)
 
@@ -834,13 +836,16 @@ class MatrixConstructor:
 
                 index = biomodel_reaction.index
 
+                name = biomodel_reaction.getId()
+
                 k_plus_value = biomodel_reaction.kinetic_forward_rate_constant_value if biomodel_reaction.kinetic_forward_rate_constant_value is not None else 0.0
 
                 k_minus_value = biomodel_reaction.kinetic_reverse_rate_constant_value if biomodel_reaction.kinetic_reverse_rate_constant_value is not None else 0.0
 
-                vector_of_kinetic_constants[index] = k_plus_value
+                if k_minus_value == 0.:
+                    raise exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no reverse reaction rate constant for reaction {name}")
 
-                vector_of_kinetic_constants[index + reactions_number] = k_minus_value
+                vector_of_kinetic_constants[index] = k_plus_value / k_minus_value
 
         if printing.lower() == "on":
             utility.printer("\nKinetic Constants Vector is:\n",vector_of_kinetic_constants, text_color="green")
@@ -883,8 +888,19 @@ class MatrixConstructor:
 
         if biomodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
+        
+        try:
 
-        kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomodel)
+            kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomodel)
+
+        except exceptions.NoReverseRateConstant as e:
+
+            utility.error_printer(f"\nCaught an error: ", e)
+
+            if printing.lower() == "on":
+                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
+
+                return False
 
         with warnings.catch_warnings():
 
@@ -914,13 +930,17 @@ class MatrixConstructor:
 
         logn_kinetic_rates_vector = logn_kinetic_rates_vector.reshape(-1,1)
 
-        reactions_number = Reaction.getCurrentIndex()
+        stoichiometric_matrix = self.stoichiometric_matrix_constructor(biomodel)
 
-        ones_array = np.concatenate((np.ones(reactions_number), -np.ones(reactions_number)))
+        minus_stoichiometric_matrix = -1 * stoichiometric_matrix
 
-        result = (ones_array @ logn_kinetic_rates_vector).item()
+        minus_stoichiometric_null_space = null_space(minus_stoichiometric_matrix)
 
-        if abs(result) < 1e-6:
+        transposed_minus_stoichiometric_null_space = minus_stoichiometric_null_space.T
+
+        result = transposed_minus_stoichiometric_null_space @ logn_kinetic_rates_vector
+
+        if np.all(np.abs(result) <= 1e-2):
 
             if printing.lower() == "on":
                 utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints", text_color="green", text_style="bold")
