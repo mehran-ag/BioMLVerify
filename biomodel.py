@@ -40,6 +40,9 @@ class BioModel(object):
         self._model_checker = model_checker.ModelChecker()
         self._sbml_reader = sbml_reader.SbmlReader()
         self._cellml_reader = cellml_reader.CellmlReader()
+        self._cellml_compartments = []
+        self._cellml_variables = []
+
 
 
     @property
@@ -87,17 +90,76 @@ class BioModel(object):
 
                 utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
-                self._biomodel =  self._sbml_reader._read_file(self._file_path)
+                try:
 
-                if self._biomodel is not None:
+                    self._biomodel =  self._sbml_reader._read_file(self._file_path)
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The SBML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
+                except ValueError as e:
+                    utility.message_printer("\nAn error has been raised when reading file", color='white', style='normal')
+                    utility.error_printer("ERROR: ", e)
+
+                except Exception as e:
+                    utility.printer("\nAn error has been raised reading file")
+                    tb = traceback.extract_tb(sys.exc_info()[2])
+                    file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
+                    file_name = os.path.basename(file_path)
+                    utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
+                    utility.error_printer(", line: ", lineno, error_color="yellow")
+                    utility.error_printer("Unexpected Error: ", e)
+                    utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
+                    utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+
+                else:
+
+                    if self._biomodel is not None:
+
+                        utility.message_printer(f"\n\u27A4\u27A4\u27A4 The SBML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
+
+                    else:
+
+                        utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported SBML model has not been converted to a BioModel\u27A4\u27A4\u27A4", color="red", style="bold")
+
+                        time.sleep(3)
+
+
 
             elif self._file_format == 'cellml':
 
                 utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
-                self._biomodel = self._cellml_reader._read_file(self._file_path)
+                try:
+
+                    self._biomodel = self._cellml_reader._read_file(self._file_path)
+
+                except ValueError as e:
+                    utility.message_printer("\nAn error has been raised when reading file", color='white', style='normal')
+                    utility.error_printer("ERROR: ", e)
+
+                except Exception as e:
+                    utility.printer("\nAn error has been raised reading file")
+                    tb = traceback.extract_tb(sys.exc_info()[2])
+                    file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
+                    file_name = os.path.basename(file_path)
+                    utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
+                    utility.error_printer(", line: ", lineno, error_color="yellow")
+                    utility.error_printer("Unexpected Error: ", e)
+                    utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
+                    utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+
+                else:
+
+                    if self._biomodel is not None:
+
+                        utility.message_printer(f"\n\u27A4\u27A4\u27A4 The CellML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
+
+                    else:
+                        
+                        utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported CellML model has not been converted to a BioModel\u27A4\u27A4\u27A4", color="red", style="bold")
+
+                        time.sleep(3)
+
+
+
 
 
 

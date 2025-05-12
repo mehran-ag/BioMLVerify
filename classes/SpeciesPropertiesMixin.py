@@ -83,3 +83,36 @@ class SpeciesPropertiesMixin:
             self._thermodynamic_rate_constant = trc
         else:
             raise ValueError("Input must be a number")
+        
+    @property
+    def compound(self):
+        return self._compound
+    
+    @compound.setter
+    def compound(self, new_compound):
+        if isinstance(new_compound, str):
+            self._compound = new_compound
+        else:
+            raise ValueError("Input must be a string")
+
+    @property
+    def composition(self):
+        return self._composition
+    
+    @composition.setter
+    def composition(self, new_comp):
+        if isinstance(new_comp, dict):
+            self._composition = new_comp
+        else:
+            raise ValueError("Input must be a dictionary mapping elements to their corresponding quantity in the species")
+        
+    @property
+    def chebi_code(self):
+        return self._chebi_code
+    
+    @chebi_code.setter
+    def chebi_code(self, new_code):
+        if isinstance(new_code, str):
+            self._chebi_code = new_code
+        else:
+            raise ValueError("Input must be a string")

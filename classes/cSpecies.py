@@ -20,6 +20,9 @@ class Species(SpeciesPropertiesMixin):
         self._annotations = None
         self._charge = None
         self._thermodynamic_rate_constant = None
+        self._compound = None  #This is the scientific name of the species like CO2, H2O, CH4
+        self._composition = None
+        self._chebi_code = None
 
     @classmethod
     def getCurrentIndex(cls):
