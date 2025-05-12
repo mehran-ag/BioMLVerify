@@ -3,3 +3,6 @@
 
 
 MAX_RECURSION = 4
+
+
+WARNINGS = []

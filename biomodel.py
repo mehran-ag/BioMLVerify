@@ -10,6 +10,10 @@ import warnings
 import time
 import sympy as sp
 
+import sbml_reader
+
+import cellml_reader
+
 from classes.cReaction import *
 from classes.cModel import *
 from classes.cSpecies import *
@@ -34,6 +38,8 @@ class BioModel(object):
         self._biomodel = None
         self._matrix_constructor = matrix_constructor.MatrixConstructor()
         self._model_checker = model_checker.ModelChecker()
+        self._sbml_reader = sbml_reader.SbmlReader()
+        self._cellml_reader = cellml_reader.CellmlReader()
 
 
     @property
@@ -81,38 +87,21 @@ class BioModel(object):
 
                 utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
-                self._biomodel =  self._SBML_reader()
+                self._biomodel =  self._sbml_reader._read_file(self._file_path)
 
                 if self._biomodel is not None:
 
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The SBML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
 
+            elif self._file_format == 'cellml':
+
+                utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4", color="green", style="normal")
+
+                self._biomodel = self._cellml_reader._read_file(self._file_path)
 
 
-    def _SBML_reader(self):
 
-        """
-        Reads an SBML file using libSBML.
-
-        :return: SBML model if successful, None otherwise.
-        """
-
-        reader = libsbml.SBMLReader()
-        document = reader.readSBML(self._file_path)
-        if document.getNumErrors() > 0:
-            utility.error_printer("\nERROR: ", f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
-            utility.message_printer("Model not read", color="red")
-            return None
-        else:
-            sbmodel = document.getModel()
-            biomodel = Model(sbmodel.getId())
-            biomodel.species = self.SBML_to_BioModel_species_tranfer(sbmodel)
-            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(sbmodel)
-            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(sbmodel)
-            biomodel.function_definitions = self.SBML_to_BioModel_function_definition_transfer(sbmodel)
-            biomodel.compartments = self.SBML_to_BioModel_compartments_transfer(sbmodel)
-        
-            return biomodel
+    
         
 
     # ********************************
@@ -438,309 +427,3 @@ class BioModel(object):
             utility.error_printer("Unexpected Error: ", e)
             utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
             utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-
-
-
-
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def SBML_to_BioModel_compartments_transfer(self, libsbml_model):
-
-        compartments = [comp.getId()
-                        for comp in libsbml_model.getListOfCompartments()]
-        
-        return compartments
-
-
-
-
-
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def SBML_to_BioModel_species_tranfer(self, libsbml_model):
-        '''
-        This function gets a SBML model, reads the required information for the species and creates a Species class for each one
-        Then, it returns a list that contains the classes of species for this tool
-        '''
-
-        self._biomodel_species_list = []
-
-        list_of_libsbml_species = libsbml_model.getListOfSpecies()
-
-
-
-        for libsbml_species_class in list_of_libsbml_species:
-
-            species_id = libsbml_species_class.getId()
-
-            biomodel_species = Species(species_id)
-
-            biomodel_species.initial_concentration = libsbml_species_class.getInitialConcentration()
-
-            biomodel_species.compartment = libsbml_species_class.getCompartment()
-
-            biomodel_species.charge = libsbml_species_class.getCharge()
-
-            self._biomodel_species_list.append(biomodel_species)
-
-        if not self._biomodel_species_list:
-            utility.message_printer("\nWARNING: ", "No species imported from SBML model!", color="yellow")
-
-        return self._biomodel_species_list
-    
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def SBML_to_BioModel_parameter_transfer(self, libsbml_model):
-
-        biomodel_parameters_list = []
-
-        libsbml_parameters_list = libsbml_model.getListOfParameters()
-
-        for libsbml_parameter_class in libsbml_parameters_list:
-
-            parameter_id = libsbml_parameter_class.getId()
-
-            parameter_value = libsbml_parameter_class.getValue()
-
-            biomodel_parameter = Parameter(parameter_id)
-
-            biomodel_parameter.value = parameter_value
-
-            biomodel_parameters_list.append(biomodel_parameter)
-
-        try:
-
-            if not biomodel_parameters_list:
-                utility.error_printer("\nWARNING: ", "No GLOBAL parameters found in the SBML model!", error_color = "yellow")
-                time.sleep(3)
-
-                biomodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
-            
-        except exceptions.LocalParameterConflict as e:
-
-            utility.error_printer("\nWARNING: ", e)
-
-            return biomodel_parameters_list
-        
-        except exceptions.EmptyList as e:
-
-            utility.error_printer("\nWARNING: ", e)
-
-            return biomodel_parameters_list
-
-
-        return biomodel_parameters_list
-    
-
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def SBML_to_BioModel_reaction_tranfer(self, libsbml_model):
-
-        biomodel_reactions_list = []
-
-        libsbml_reactions = libsbml_model.getListOfReactions()
-
-        for libsbml_reaction_class in libsbml_reactions:
-
-            biomodel_products_list =[]
-            biomodel_reactants_list = []
-
-            libsbml_reactants = libsbml_reaction_class.getListOfReactants()
-
-            libsbml_products = libsbml_reaction_class.getListOfProducts()
-
-            reaction_id = libsbml_reaction_class.getId()
-
-            index = Reaction.getCurrentIndex()
-
-            biomodel_reaction = Reaction(reaction_id)
-
-            biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
-
-            biomodel_reaction.kinetic_law = libsbml_reaction_class.getKineticLaw().getFormula()
-
-            sbml_level = libsbml_model.getLevel()
-
-            if sbml_level == 3:
-
-                biomodel_reaction.local_parameters = libsbml_reaction_class.getKineticLaw().getListOfLocalParameters()
-
-                local_parameters = []
-
-                for sbml_local_parameter in sbml_local_parameters:
-
-                    local_parameter_id = sbml_local_parameter.getId()
-
-                    local_parameter_value = sbml_local_parameter.getValue()
-
-                    biomodel_parameter = Parameter(local_parameter_id)
-
-                    biomodel_parameter.value = local_parameter_value
-
-                    local_parameters.append(biomodel_parameter)
-
-                biomodel_reaction.local_parameters = local_parameters
-
-            elif sbml_level == 1 or sbml_level == 2:
-
-                sbml_local_parameters = libsbml_reaction_class.getKineticLaw().getListOfParameters()
-
-                local_parameters = []
-
-                for sbml_local_parameter in sbml_local_parameters:
-
-                    local_parameter_id = sbml_local_parameter.getId()
-
-                    local_parameter_value = sbml_local_parameter.getValue()
-
-                    biomodel_parameter = Parameter(local_parameter_id)
-
-                    biomodel_parameter.value = local_parameter_value
-
-                    local_parameters.append(biomodel_parameter)
-
-                biomodel_reaction.local_parameters = local_parameters
-
-            for libsbml_reactant_class in libsbml_reactants:
-
-                id = libsbml_reactant_class.getSpecies()
-
-                if id == "empty":
-
-                    Reaction.ResetCounter(index)
-
-                    biomodel_reaction.ResetIndex()
-
-                    biomodel_reaction.boundary_condition = True
-
-                for biomodel_species in self._biomodel_species_list:
-
-                    if id == biomodel_species.ID:
-
-                        biomodel_species_reference = SpeciesReference(biomodel_species)
-
-                        biomodel_species_reference.reaction_id = reaction_id
-
-                        biomodel_species_reference.stoichiometry = libsbml_reactant_class.getStoichiometry()
-
-                        biomodel_reactants_list.append(biomodel_species_reference)
-
-            for libsbml_product_class in libsbml_products:
-
-                id = libsbml_product_class.getSpecies()
-
-                if id == "empty":
-
-                    Reaction.ResetCounter(index)
-
-                    biomodel_reaction.ResetIndex()
-
-                    biomodel_reaction.boundary_condition = True
-
-                for biomodel_species in self._biomodel_species_list:
-
-                    if id == biomodel_species.ID:
-
-                        biomodel_species_reference = SpeciesReference(biomodel_species)
-
-                        biomodel_species_reference.reaction_id = reaction_id
-
-                        biomodel_species_reference.stoichiometry = libsbml_product_class.getStoichiometry()
-
-                        biomodel_products_list.append(biomodel_species_reference)
-
-            biomodel_reaction.reactants = biomodel_reactants_list
-
-            biomodel_reaction.products = biomodel_products_list
-
-            biomodel_reactions_list.append(biomodel_reaction)
-
-        if not biomodel_reactions_list:
-            warnings.warn("No reactions imported from SBML model!", UserWarning)
-
-        return biomodel_reactions_list
-    
-
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def SBML_to_BioModel_function_definition_transfer(self, libsbml_model):
-
-        sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
-                                    for i in range(libsbml_model.getNumFunctionDefinitions())]
-        
-        function_definitions = [FunctionDefinition(sb)
-                                for sb in sbml_function_definitons]
-        
-        return function_definitions
-    
-
-
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def _sbml_local_parameter_finder(self, libsbml_model):
-
-        local_parameters_strings = []
-
-        libsbml_reactions_list = libsbml_model.getListOfReactions()
-
-        conflicting_parameter_IDs = False
-
-        for libsbml_reaction_class in libsbml_reactions_list:
-
-            libsbml_reaction_parameters_list = libsbml_reaction_class.getKineticLaw().getListOfParameters()
-
-            for libsbml_reaction_parameter_class in libsbml_reaction_parameters_list:
-
-                parameter_id = libsbml_reaction_parameter_class.getId()
-
-                if parameter_id not in local_parameters_strings:
-
-                    local_parameters_strings.append(parameter_id)
-
-                else:
-
-                    conflicting_parameter_IDs = True
-
-        if conflicting_parameter_IDs is False:
-                    
-            local_biomodel_parameters_list = []
-
-            for libsbml_reaction_class in libsbml_reactions_list:
-
-                libsbml_reaction_parameters_list = libsbml_reaction_class.getKineticLaw().getListOfParameters()
-                    
-                for libsbml_reaction_parameter_class in libsbml_reaction_parameters_list:
-                        
-                    parameter_id = libsbml_reaction_parameter_class.getId()
-
-                    parameter_value = libsbml_reaction_parameter_class.getValue()
-
-                    biomodel_parameter = Parameter(parameter_id)
-
-                    biomodel_parameter.value = parameter_value
-
-                    local_biomodel_parameters_list.append(biomodel_parameter)
-
-            if not local_biomodel_parameters_list:
-                raise exceptions.EmptyList("There are no local parameters!")
-            else:
-                utility.message_printer("\nLocal parameters are stored as global parameters, too!", color="magenta", style="normal")
-                time.sleep(3)
-
-            return local_biomodel_parameters_list
-
-        else:
-
-            raise exceptions.LocalParameterConflict("Global parameters list cannot be created from local parameters!\nThere are conflictions in local parameter names in different reactions!")

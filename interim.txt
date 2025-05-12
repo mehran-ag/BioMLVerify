@@ -1,5 +1,0 @@
-# ********************************
-    # *           Function           *
-    # ********************************
-def conversion_matrix_constructor(self, biomodel):
-    return None
