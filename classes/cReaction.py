@@ -25,8 +25,8 @@ class Reaction(ReactionPropertiesMixin):
         self._kinetic_law: str = None
         self._sp_kinetic_law = None #sympy expression
         self._kinetic_law_type: str = None
-        self._reactants: list = None
-        self._products: list = None
+        self._reactants: list = []
+        self._products: list = []
         self._boundary_condition: bool = False
         self._local_parameters: list = None
 

@@ -210,9 +210,7 @@ class MatrixConstructor:
 
         for reaction in reactions_list:
 
-            if reaction.index:
-
-                column_indices_names[reaction.index] = reaction.ID
+            column_indices_names[reaction.index] = reaction.ID
 
         return column_indices_names
     
@@ -233,7 +231,11 @@ class MatrixConstructor:
 
         for species in species_list:
 
-            if species.index:
+            if species.compound:
+
+                row_indices_names[species.index] = species.compound
+
+            else:
 
                 row_indices_names[species.index] = species.ID
 

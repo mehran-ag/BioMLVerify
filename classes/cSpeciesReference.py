@@ -18,7 +18,7 @@ class SpeciesReference(Species):
         if isinstance(stoichiometry, (int, float)):
             self._stoichiometry = stoichiometry
         else:
-            raise ValueError("Input for Stoichiometry must be an integer!")
+            raise ValueError("Input for Stoichiometry must be a number!")
         
     @property
     def reaction_id(self):

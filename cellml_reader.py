@@ -27,6 +27,10 @@ class CellmlReader:
         self._cellml_model = None
         self._model_name = None
 
+        self._biomodel_species_list = []
+
+        self._biomodel_reactions_list = []
+
         self._cellml_components = []
         self._cellml_variables = []
 
@@ -66,6 +70,16 @@ class CellmlReader:
         self._species_identifier()
 
         self._reaction_identifier()
+
+        self._boundary_condition_identifier()
+
+        self._biomodel = Model(self._cellml_model.id())
+
+        self._biomodel.species = self._biomodel_species_list
+
+        self._biomodel.reactions = self._biomodel_reactions_list
+
+        return self._biomodel
 
 
 
@@ -126,22 +140,22 @@ class CellmlReader:
 
     def _species_identifier(self):
 
-        self._biomodel_species_list = []
-
-        # This function determines if the characters used in a variable are all digits or alphabets
-        def all_digits( word ):
-
-            return all( char.isdigit() for char in word )
+        
 
         for variable in self._variables:
 
             name = variable.name()
 
+            matched_species = next( ( species_instance for species_instance in self._biomodel_reactions_list if species_instance.ID == name ), None )
+
+            if matched_species is not None:
+                continue
+
             biomodel_species = Species(name)
 
             name_code = variable.id().split('_')[1]
 
-            if all_digits(name_code):
+            if all( char.isdigit() for char in name_code ):
 
                 compound, composition = CellmlReader.chebi_comp_parser(name_code)
 
@@ -170,27 +184,189 @@ class CellmlReader:
 
             self._biomodel_species_list.append(biomodel_species)
 
+        return self._biomodel_species_list
+
 
 
     def _reaction_identifier(self):
-
-        self._biomodel_reactions_list = []
 
         for coefficient in self._coefficients:
             
             name_code = coefficient.id().split('_')[1]
 
+            if all( char.isdigit() for char in name_code ):
+
+                compound, _ = CellmlReader.chebi_comp_parser(name_code)
+
+            else:
+
+                compound = name_code
+
+            matched_biomodel_species =  next( ( species_instance for species_instance in self._biomodel_species_list if species_instance.compound == compound ), None )
+
+            if matched_biomodel_species is None:
+                raise ValueError(f"There is no match for species {compound} in the list of species")
+            
+
             reaction_number_parts = coefficient.id().split('_')[2]
 
-            for reaction_number_part in reaction_number_parts.split('-'):
+            for i, reaction_number_part in enumerate(reaction_number_parts.split('-')):
 
                 reaction_number = reaction_number_part.split('.')[0]
 
-                if not any(biomodel_reaction.ID == reaction_number for biomodel_reaction in self._biomodel_reactions_list):
+                matched_biomodel_reaction = next( ( reaction_instance for reaction_instance in self._biomodel_reactions_list if reaction_instance.ID == reaction_number ), None )
+
+                if matched_biomodel_reaction is None:
                     
                     biomodel_reaction = Reaction(reaction_number)
 
+                    biomodel_species_ref = SpeciesReference(matched_biomodel_species)
+
+                    biomodel_species_ref.reaction_id = reaction_number
+
+                    stoichiometry = float(coefficient.initialValue())
+
+                    if stoichiometry > 0:
+
+                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+
+                        biomodel_reaction.products.append(biomodel_species_ref)
+
+                    elif stoichiometry < 0:
+
+                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+
+                        biomodel_reaction.reactants.append(biomodel_species_ref)
+
+                    else:
+
+                        raise ValueError(f"The value of stoichiometric coefficient is not acceptable: {coefficient.initialValue()}")
+
                     self._biomodel_reactions_list.append(biomodel_reaction)
+
+                else:
+
+                    if i > 0:
+                        continue
+
+                    biomodel_species_ref = SpeciesReference(matched_biomodel_species)
+
+                    biomodel_species_ref.reaction_id = reaction_number
+
+                    stoichiometry = float(coefficient.initialValue())
+
+                    if stoichiometry > 0:
+
+                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+
+                        matched_biomodel_reaction.products.append(biomodel_species_ref)
+
+                    elif stoichiometry < 0:
+
+                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+
+                        matched_biomodel_reaction.reactants.append(biomodel_species_ref)
+
+                    else:
+
+                        raise ValueError(f"The value of stoichiometric coefficient is not acceptable: {coefficient.initialValue()}")
+                    
+        return self._biomodel_reactions_list
+
+
+
+    def _boundary_condition_identifier(self):
+
+        if self._boundary_conditions:
+
+            for bc in self._boundary_conditions:
+
+                reaction_number = bc.id()
+
+                if not any(biomodel_reaction.ID == reaction_number for biomodel_reaction in self._biomodel_reactions_list):
+                        
+                    biomodel_reaction = Reaction(reaction_number)
+
+                    biomodel_reaction.boundary_condition = True
+
+
+
+                    name_code =  bc.id().split('_')[1].split('.')[0]
+
+                    flow_direction = bc.id().split('_')[2].split('.')[0]
+
+                    if all( char.isdigit() for char in name_code ):
+
+                        compound, _ = CellmlReader.chebi_comp_parser(name_code)
+
+                    else:
+
+                        compound = name_code
+
+
+                    matched_species = next( ( species_instance for species_instance in self._biomodel_species_list if species_instance.compound == compound ), None )
+
+                    if matched_species is None:
+                        raise ValueError(f"The Species for the boundary condition {reaction_number} can't be found!")
+                    
+                    
+                    biomodel_species_ref = SpeciesReference(matched_species)
+
+                    biomodel_species_ref.reaction_id = reaction_number
+
+                    biomodel_species_ref.stoichiometry = 1
+
+                    if flow_direction == 'i':
+
+                        biomodel_reaction.products.append(biomodel_species_ref)
+
+                    elif flow_direction == 'o':
+
+                        biomodel_reaction.reactants.append(biomodel_species_ref)
+
+                    else:
+
+                        biomodel_reaction.reactants.append(biomodel_species_ref)
+                    
+
+                    # Now, we will create the virtual internal and external species for the compound
+                    compound_bc = compound + '_e'
+
+                    matched_bc_species =  next( ( species_instance for species_instance in self._biomodel_species_list if species_instance.compound == compound_bc ), None )
+
+                    if matched_bc_species is None:
+
+                        biomodel_species = Species(compound_bc)
+
+                        biomodel_species.compound = compound_bc
+
+                        self._biomodel_species_list.append(biomodel_species)
+
+                    else:
+
+                        biomodel_species = matched_bc_species
+
+                    biomodel_species_ref = SpeciesReference(biomodel_species)
+
+                    biomodel_species_ref.reaction_id = reaction_number
+
+                    biomodel_species_ref.stoichiometry = 1
+
+                    if flow_direction == 'i':
+
+                        biomodel_reaction.reactants.append(biomodel_species_ref)
+
+                    elif flow_direction == 'o':
+
+                        biomodel_reaction.products.append(biomodel_species_ref)
+
+                    else:
+
+                        biomodel_reaction.products.append(biomodel_species_ref)
+
+                    self._biomodel_reactions_list.append(biomodel_reaction)
+
+
 
 
 

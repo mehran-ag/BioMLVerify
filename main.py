@@ -17,7 +17,13 @@ folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 
 # file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000500.xml"
 
-file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
+
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
+
+file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/aguda_b_1999.cellml"
+
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
 biomodel = BioModel()
 
@@ -31,14 +37,20 @@ biomodel.getForwardStoichiometricMatrix("on")
 
 biomodel.getReverseStoichiometricMatrix("on")
 
-large_array = biomodel.getThermoConversionMatrix("on")
+print(biomodel.getStoichiometricColumnNamesIndices())
 
-df = pd.DataFrame(large_array)
+print("\n")
 
-print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
+print(biomodel.getStoichiometricRowNamesIndices())
 
-biomodel.checkModelReversibility(printing="on")
+# large_array = biomodel.getThermoConversionMatrix("on")
 
-biomodel.getKineticRateConstantsVector("on")
+# # df = pd.DataFrame(large_array)
 
-biomodel.KineticConstantsThermoCompatibilty("on")
+# # print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
+
+# biomodel.checkModelReversibility(printing="on")
+
+# biomodel.getKineticRateConstantsVector("on")
+
+# biomodel.KineticConstantsThermoCompatibilty("on")

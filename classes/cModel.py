@@ -5,11 +5,11 @@ class Model(ModelPropertiesMixin):
     def __init__(self, ID):
 
         self._ID = ID
-        self._compartments = None
-        self._reactions = None
-        self._species = None
-        self._parameters = None
-        self._function_definitions = None
+        self._compartments = []
+        self._reactions = []
+        self._species = []
+        self._parameters = []
+        self._function_definitions = []
         self._kinetic_rate_constants_vector: np.ndarray = None
         self._reaction_indices: dict = None
         self._species_indices: dict = None
