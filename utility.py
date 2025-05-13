@@ -1,5 +1,10 @@
 from colorama import Fore, Back, Style, init
 
+import traceback
+import sys
+import os
+import exceptions
+
 init( autoreset=True )
 
 color_map = {
@@ -48,6 +53,8 @@ def message_printer(message, color="yellow", style = "bold"):
 
 
 
+
+
 def add_warning(message):
 
     warnings.append(message)
@@ -64,3 +71,24 @@ def display_warnings():
         for warning in warnings:
 
             print( Fore.LIGHTCYAN_EX + warning )
+
+
+
+
+
+def error_handler(e, function=None, print_trace=True):
+    message_printer("Operation failed!", color="red")
+
+    if isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
+        printer("\nERROR: ", e)
+    
+    elif print_trace:
+        tb = traceback.extract_tb(sys.exc_info()[2])
+        file_path, lineno, _, _ = tb[-1]
+        file_name = os.path.basename(file_path)
+        
+        error_printer("Error occurred in file: ", file_name, u_end="", error_color='yellow')
+        error_printer(", line: ", lineno, error_color="yellow")
+        error_printer("Unexpected Error: ", e)
+        error_printer("Error type: ", sys.exc_info()[0].__name__)
+        message_printer("Unable to complete the query!", color="red", style="normal")

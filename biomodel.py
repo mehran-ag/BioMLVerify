@@ -63,26 +63,9 @@ class BioModel(object):
             self._file_name = os.path.basename(file_path)
             self._file_format = os.path.splitext(file_path)[1][1:]
             
-        except TypeError as e:
-            utility.message_printer("File not read!", color="red")
-            utility.printer("\nERROR: ", e)
-            return
-
-        except FileNotFoundError as e:
-            utility.message_printer("File not read!", color="red")
-            utility.printer("\nERROR: ", e)
-            return
         
         except Exception as e:
-            utility.message_printer("File not read!", color="red")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            utility.handle_error(e)
             return
 
         else:
@@ -94,31 +77,16 @@ class BioModel(object):
 
                     self._biomodel =  self._sbml_reader._read_file(self._file_path)
 
-                except ValueError as e:
-                    utility.message_printer("\nAn error has been raised when reading file", color='white', style='normal')
-                    utility.error_printer("ERROR: ", e)
-
                 except Exception as e:
-                    utility.printer("\nAn error has been raised reading file")
-                    tb = traceback.extract_tb(sys.exc_info()[2])
-                    file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-                    file_name = os.path.basename(file_path)
-                    utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-                    utility.error_printer(", line: ", lineno, error_color="yellow")
-                    utility.error_printer("Unexpected Error: ", e)
-                    utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-                    utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+                    utility.handle_error(e)
+                    return
 
                 else:
 
                     if self._biomodel is not None:
-
                         utility.message_printer(f"\n\u27A4\u27A4\u27A4 The SBML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
-
                     else:
-
                         utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported SBML model has not been converted to a BioModel\u27A4\u27A4\u27A4", color="red", style="bold")
-
                         time.sleep(3)
 
 
@@ -128,38 +96,18 @@ class BioModel(object):
                 utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
                 try:
-
                     self._biomodel = self._cellml_reader._read_file(self._file_path)
 
-                except ValueError as e:
-                    utility.message_printer("\nAn error has been raised when reading file", color='white', style='normal')
-                    utility.error_printer("ERROR: ", e)
-
                 except Exception as e:
-                    utility.printer("\nAn error has been raised reading file")
-                    tb = traceback.extract_tb(sys.exc_info()[2])
-                    file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-                    file_name = os.path.basename(file_path)
-                    utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-                    utility.error_printer(", line: ", lineno, error_color="yellow")
-                    utility.error_printer("Unexpected Error: ", e)
-                    utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-                    utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+                    utility.error_handler(e, "read_file")
+                    return
 
                 else:
-
                     if self._biomodel is not None:
-
                         utility.message_printer(f"\n\u27A4\u27A4\u27A4 The CellML model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
-
-                    else:
-                        
+                    else:     
                         utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported CellML model has not been converted to a BioModel\u27A4\u27A4\u27A4", color="red", style="bold")
-
                         time.sleep(3)
-
-
-
 
 
 
@@ -180,11 +128,8 @@ class BioModel(object):
                 if printing.lower() == "on":
 
                     if reversibility:
-
                         utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
-
                     else:
-
                         utility.message_printer("\nAll reactions in the model are NOT reversible!")
 
                 return reversibility, irreversibles
@@ -194,21 +139,20 @@ class BioModel(object):
                 reversibility = self._model_checker.check_model_reversibility(self._biomodel)
 
                 if printing.lower() == "on":
-
                     if reversibility:
-
                         utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
-
                     else:
-
                         utility.message_printer("\nAll reactions in the model are NOT reversible!")
 
                 return reversibility
 
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "checkModelConsistency")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+        except Exception as e:
+            utility.error_handler(e, "checkModelReversibility")
+            return
+
+
+
+
 
 
     # ********************************
@@ -219,6 +163,11 @@ class BioModel(object):
         return self._biomodel._reactions
     
 
+
+
+
+
+
     # ********************************
     # *           Function           *
     # ********************************
@@ -227,6 +176,10 @@ class BioModel(object):
         return self._biomodel._species
 
     
+
+
+
+
     # ********************************
     # *           Function           *
     # ********************************
@@ -238,33 +191,16 @@ class BioModel(object):
 
             if printing.lower() == "on":
                 utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
-                #time.sleep(2)
 
             return stoichiometric_matrix
 
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "getStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+        except Exception as e:
+            utility.error_handler(e, "getStoichiometricMatrix")
             return
 
-        except exceptions.EmptyList as e:
-            utility.printer("\nAn error has been raised in function: ", "getStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-        
-        except Exception as e:
-            utility.printer("\nAn error has been raised in function: ", "getStoichiometricMatrix")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
+
+
+
 
 
     # ********************************
@@ -277,34 +213,17 @@ class BioModel(object):
 
             if printing.lower() == "on":
                 utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
-                #time.sleep(5)
 
             return forward_stoichiometric_matrix
 
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "getForwardStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-        
-        except exceptions.EmptyList as e:
-            utility.printer("\nAn error has been raised in function: ", "getForwardStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            print("Unable to complete the query\!")
-            return
-        
         except Exception as e:
-            utility.printer("\nAn error has been raised in function: ", "getForwardStoichiometricMatrix")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            utility.error_handler(e, "getForwardStoichiometricMatrix")
             return
         
+
+
+
+
 
     # ********************************
     # *           Function           *
@@ -316,35 +235,18 @@ class BioModel(object):
 
             if printing.lower() == "on":
                 utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
-                #time.sleep(5)
 
             return reverse_stoichiometric_matrix
 
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "getReverseStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-        
-        except exceptions.EmptyList as e:
-            utility.printer("\nAn error has been raised in function: ", "getReverseStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-        
         except Exception as e:
-            utility.printer("\nAn error has been raised in function: ", "getReverseStoichiometricMatrix")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            utility.error_handler(e, "getReverseStoichiometricMatrix")
             return
         
     
+
+
+
+
     # ********************************
     # *           Function           *
     # ********************************
@@ -353,6 +255,11 @@ class BioModel(object):
         return self._matrix_constructor.stoichiometric_matrix_column_names(self._biomodel)
     
 
+
+
+
+
+
     # ********************************
     # *           Function           *
     # ********************************
@@ -360,6 +267,11 @@ class BioModel(object):
 
         return self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
     
+
+
+
+
+
 
     # ********************************
     # *           Function           *
@@ -373,12 +285,14 @@ class BioModel(object):
 
             return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomodel, printing = printing)
         
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "getElementInformationInStoichiometricMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+        except Exception as e:
+            utility.error_handler(e, "getElementInformationInStoichiometricMatrix")
             return
         
+
+
+
+
 
     # ********************************
     # *           Function           *
@@ -390,25 +304,15 @@ class BioModel(object):
 
             return conversion_matrix
             
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "getThermoConversionMatrix")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-        
         except Exception as e:
-            utility.printer("\nAn error has been raised in function: ", "getThermoConversionMatrix")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            utility.error_handler(e, "getThermoConversionMatrix")
             return
 
     
+
+
+
+
     # ********************************
     # *           Function           *
     # ********************************
@@ -418,43 +322,15 @@ class BioModel(object):
             kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._biomodel, printing)
 
             return kinetic_constants_vector
-
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-
-        except ValueError as e:
-            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
         
-        except sp.SympifyError as e:
-            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
-            utility.error_printer("Sympify Error: ", e)
-            utility.message_printer("Equation couldn't be converted to Sympy expression for reaction", color="red", style="normal")
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-
-        except exceptions.NoReverseRateConstant as e:
-            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-
         except Exception as e:
-            utility.printer("\nAn error has been raised in function: ", "getKineticRateConstantsVector")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            utility.error_handler(e, "getKineticRateConstantsVector")
+            return
 
     
+
+
+
     # ********************************
     # *           Function           *
     # ********************************
@@ -467,25 +343,6 @@ class BioModel(object):
 
             return comatibility
         
-        except exceptions.NoModel as e:
-            utility.printer("\nAn error has been raised in function: ", "KineticConstantsThermoCompatibilty")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-
-        except ValueError as e:
-            utility.printer("\nAn error has been raised in function: ", "KineticConstantsThermoCompatibilty")
-            utility.error_printer("ERROR: ", e)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
-            return
-        
         except Exception as e:
-            utility.printer("\nAn error has been raised in function: ", "KineticConstantsThermoCompatibilty")
-            tb = traceback.extract_tb(sys.exc_info()[2])
-            file_path, lineno, _, _ = tb[-1]  # Get the last entry in the traceback
-            file_name = os.path.basename(file_path)
-            utility.error_printer("Error occurred in file: ", file_name, u_end = "", error_color='yellow')
-            utility.error_printer(", line: ", lineno, error_color="yellow")
-            utility.error_printer("Unexpected Error: ", e)
-            utility.error_printer("Error type: ", sys.exc_info()[0].__name__)
-            utility.message_printer("Unable to complete the query\!", color="red", style="normal")
+            utility.error_handler(e, "KineticConstantsThermoCompatibilty")
+            return

@@ -19,9 +19,9 @@ folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
+file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
 
-file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/aguda_b_1999.cellml"
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/aguda_b_1999.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
@@ -37,13 +37,7 @@ biomodel.getForwardStoichiometricMatrix("on")
 
 biomodel.getReverseStoichiometricMatrix("on")
 
-print(biomodel.getStoichiometricColumnNamesIndices())
-
-print("\n")
-
-print(biomodel.getStoichiometricRowNamesIndices())
-
-# large_array = biomodel.getThermoConversionMatrix("on")
+large_array = biomodel.getThermoConversionMatrix("on")
 
 # # df = pd.DataFrame(large_array)
 

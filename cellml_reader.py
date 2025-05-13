@@ -293,7 +293,13 @@ class CellmlReader:
 
                     name_code =  bc.id().split('_')[1].split('.')[0]
 
-                    flow_direction = bc.id().split('_')[2].split('.')[0]
+                    try:
+
+                        flow_direction = bc.id().split('_')[2].split('.')[0]
+
+                    except IndexError:
+
+                        flow_direction = ''
 
                     if all( char.isdigit() for char in name_code ):
 
