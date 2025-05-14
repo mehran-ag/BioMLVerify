@@ -48,7 +48,7 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _read_file( self, file_path, cellml_strict_mode = False):
+    def read_file( self, file_path, cellml_strict_mode = False):
 
         base_dir = os.path.dirname(file_path)
 
@@ -441,8 +441,6 @@ class CellmlReader:
                     matched_reaction.kinetic_reverse_rate_constant_value = float(rate_constant.initialValue())
 
                     matched_reaction.reversible = True
-
-        return
 
 
 

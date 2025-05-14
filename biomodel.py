@@ -82,7 +82,7 @@ class BioModel(object):
 
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
-                    self._biomodel =  self._sbml_reader._read_file(self._file_path)
+                    self._biomodel =  self._sbml_reader.read_file(self._file_path)
 
                     file_type = 'SBML'
 
@@ -90,7 +90,7 @@ class BioModel(object):
 
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4", color="green", style="normal")
 
-                    self._biomodel = self._cellml_reader._read_file(self._file_path)
+                    self._biomodel = self._cellml_reader.read_file(self._file_path)
 
                     file_type = 'CellML'
 
@@ -343,4 +343,5 @@ class BioModel(object):
         
         except Exception as e:
             utility.error_handler(e, "KineticConstantsThermoCompatibilty")
+            utility.printer("\nCompatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
             return

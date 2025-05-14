@@ -15,11 +15,11 @@ folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 # read_files_in_folder(folder_path)
 
 
-# file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000500.xml"
+file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000500.xml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
-file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/aguda_b_1999.cellml"
 
@@ -37,7 +37,7 @@ biomodel.getForwardStoichiometricMatrix("on")
 
 biomodel.getReverseStoichiometricMatrix("on")
 
-large_array = biomodel.getThermoConversionMatrix("on")
+# large_array = biomodel.getThermoConversionMatrix("on")
 
 # # df = pd.DataFrame(large_array)
 

@@ -29,7 +29,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _read_file(self, file_path):
+    def read_file(self, file_path):
 
         """
         Reads an SBML file using libSBML.
@@ -48,12 +48,12 @@ class SbmlReader:
         else:
             sbmodel = document.getModel()
             biomodel = Model(sbmodel.getId())
-            biomodel.species = self.SBML_to_BioModel_species_tranfer(sbmodel)
-            biomodel.reactions = self.SBML_to_BioModel_reaction_tranfer(sbmodel)
-            biomodel.parameters = self.SBML_to_BioModel_parameter_transfer(sbmodel)
-            biomodel.function_definitions = self.SBML_to_BioModel_function_definition_transfer(sbmodel)
-            biomodel.compartments = self.SBML_to_BioModel_compartments_transfer(sbmodel)
-            self.forward_reverse_rate_finder(biomodel, "on")
+            biomodel.species = self._SBML_to_BioModel_species_tranfer(sbmodel)
+            biomodel.reactions = self._SBML_to_BioModel_reaction_tranfer(sbmodel)
+            biomodel.parameters = self._SBML_to_BioModel_parameter_transfer(sbmodel)
+            biomodel.function_definitions = self._SBML_to_BioModel_function_definition_transfer(sbmodel)
+            biomodel.compartments = self._SBML_to_BioModel_compartments_transfer(sbmodel)
+            self._forward_reverse_rate_finder(biomodel, "on")
         
             return biomodel
         
@@ -64,7 +64,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def SBML_to_BioModel_species_tranfer(self, libsbml_model):
+    def _SBML_to_BioModel_species_tranfer(self, libsbml_model):
         '''
         This function gets a SBML model, reads the required information for the species and creates a Species class for each one
         Then, it returns a list that contains the classes of species for this tool
@@ -73,8 +73,6 @@ class SbmlReader:
         self._biomodel_species_list = []
 
         list_of_libsbml_species = libsbml_model.getListOfSpecies()
-
-
 
         for libsbml_species_class in list_of_libsbml_species:
 
@@ -103,7 +101,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def SBML_to_BioModel_parameter_transfer(self, libsbml_model):
+    def _SBML_to_BioModel_parameter_transfer(self, libsbml_model):
 
         biomodel_parameters_list = []
 
@@ -152,7 +150,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def SBML_to_BioModel_reaction_tranfer(self, libsbml_model):
+    def _SBML_to_BioModel_reaction_tranfer(self, libsbml_model):
 
         biomodel_reactions_list = []
 
@@ -286,7 +284,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def SBML_to_BioModel_function_definition_transfer(self, libsbml_model):
+    def _SBML_to_BioModel_function_definition_transfer(self, libsbml_model):
 
         sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
                                     for i in range(libsbml_model.getNumFunctionDefinitions())]
@@ -370,7 +368,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def SBML_to_BioModel_compartments_transfer(self, libsbml_model):
+    def _SBML_to_BioModel_compartments_transfer(self, libsbml_model):
 
         compartments = [comp.getId()
                         for comp in libsbml_model.getListOfCompartments()]
@@ -384,7 +382,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def forward_reverse_rate_finder(self, biomodel, printing = "off") -> dict:
+    def _forward_reverse_rate_finder(self, biomodel, printing = "off") -> dict:
         """
         Input of this function is a BioModel class instance
         This function extracts the rate constants for each reaction in the given model, 
@@ -663,34 +661,14 @@ class SbmlReader:
 
             string_to_sympy_symbols.update(function_symbols)
 
-            try:
-                sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
+            sp_reaction_rate_formula = sp.sympify(reaction_rate_formula, locals = string_to_sympy_symbols, evaluate = False)
 
-                simplified_formula = sp.cancel(sp_reaction_rate_formula)
+            simplified_formula = sp.cancel(sp_reaction_rate_formula)
 
-                expanded_formula = sp.expand(simplified_formula)
+            expanded_formula = sp.expand(simplified_formula)
 
-            except sp.SympifyError as e:
-
-                print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
-                print(f"\nThe string for equation is: {reaction_rate_formula}")
-                raise ValueError(f"\nSympify Error: {e}")
-
-            except ValueError as v:
-                utility.error_printer("\nValue Error: ", e)
-                print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
-                print(f"\nThe string for equation is: {reaction_rate_formula}")
-                raise ValueError(f"\nValue Error: {e}")
-
-            except Exception as e:
-                print(f"\nEquation couldn't be converted to Sympy expression for reaction: {reaction_name}")
-                print(f"\nThe string for equation is: {reaction_rate_formula}")
-                raise ValueError(f"\nUnexpected Error: {e}")
-
-            else:
-
-                if printing.lower() == 'on':
-                    utility.printer(f"\nThe simplified reaction rate expression for reaction {reaction_name} is:\n", simplified_formula, text_color="yellow")
+            if printing.lower() == 'on':
+                utility.printer(f"\nThe simplified reaction rate expression for reaction {reaction_name} is:\n", simplified_formula, text_color="yellow")
 
             
 

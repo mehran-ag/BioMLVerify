@@ -14,6 +14,7 @@ color_map = {
     "red": Fore.RED,
     "green": Fore.GREEN,
     "yellow": Fore.YELLOW,
+    "cyan": Fore.CYAN,
     "magenta": Fore.MAGENTA,
     "light_blue": Fore.LIGHTBLUE_EX,
     "light_cyan": Fore.LIGHTCYAN_EX,
@@ -80,15 +81,19 @@ def display_warnings():
 def error_handler(e, function=None, print_trace=True):
     
     if function:
-        printer("\nAn error has been raised in function: ", function)
+        printer("\nAn error has been raised in function: ", function, text_color='white')
     else:
         message_printer("\nOperation failed!", color="red")
 
     if isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
-        printer("\nERROR: ", e)
+        printer("ERROR: ", e, text_color='cyan')
+
     elif isinstance(sp.SympifyError):
         error_printer("Sympify Error: ", e)
         message_printer("Equation couldn't be converted to Sympy expression for reaction", color="red", style="normal")
+
+    elif isinstance(e, RuntimeWarning):
+        error_printer(f"\nCaught an error: ", e)
     
     elif print_trace:
         tb = traceback.extract_tb(sys.exc_info()[2])

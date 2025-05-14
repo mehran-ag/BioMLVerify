@@ -13,8 +13,6 @@ from constants import *
 from collections import defaultdict
 
 from scipy.linalg import null_space
-
-import itertools
     
 
 
@@ -352,44 +350,14 @@ class MatrixConstructor:
         if biomodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
         
-        try:
 
-            kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomodel)
-
-        except exceptions.NoReverseRateConstant as e:
-
-            utility.error_printer(f"\nCaught an error: ", e)
-
-            if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
-
-                return False
+        kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomodel)
 
         with warnings.catch_warnings():
 
             warnings.simplefilter('error', RuntimeWarning)
 
-            try:
-
-                logn_kinetic_rates_vector = np.log(kinetic_rates_vector)
-
-            except ValueError as e:
-                utility.printer(f"\nCaught an error: ", e)
-                print(f"\nCaught an error: {e}")
-
-                if printing.lower() == "on":
-                    utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
-
-                raise ValueError(f"\nCaught an error: ", e)
-
-            except RuntimeWarning as e:
-
-                utility.error_printer(f"\nCaught an error: ", e)
-
-                if printing.lower() == "on":
-                    utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints", text_color="red", text_style="bold")
-
-                return False
+            logn_kinetic_rates_vector = np.log(kinetic_rates_vector)
 
         logn_kinetic_rates_vector = logn_kinetic_rates_vector.reshape(-1,1)
 
