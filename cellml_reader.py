@@ -44,6 +44,10 @@ class CellmlReader:
         self._enzymes = []
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _read_file( self, file_path, cellml_strict_mode = False):
 
         base_dir = os.path.dirname(file_path)
@@ -71,7 +75,9 @@ class CellmlReader:
 
         self._reaction_identifier()
 
-        self._boundary_condition_identifier()
+        # self._boundary_condition_identifier()
+
+        self._kinetic_rate_constant_finder()
 
         self._biomodel = Model(self._cellml_model.id())
 
@@ -84,7 +90,9 @@ class CellmlReader:
 
 
 
-    
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _cellml_elements_reader(self):
 
         number_of_components = self._cellml_model.componentCount()
@@ -110,6 +118,12 @@ class CellmlReader:
         return self._cellml_components, self._cellml_variables
     
 
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _variable_distinguisher(self):
 
         variable_classifier = {
@@ -138,9 +152,11 @@ class CellmlReader:
 
 
 
-    def _species_identifier(self):
 
-        
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _species_identifier(self):
 
         for variable in self._variables:
 
@@ -188,6 +204,11 @@ class CellmlReader:
 
 
 
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _reaction_identifier(self):
 
         for coefficient in self._coefficients:
@@ -275,6 +296,13 @@ class CellmlReader:
 
 
 
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _boundary_condition_identifier(self):
 
         if self._boundary_conditions:
@@ -288,8 +316,6 @@ class CellmlReader:
                     biomodel_reaction = Reaction(reaction_number)
 
                     biomodel_reaction.boundary_condition = True
-
-
 
                     name_code =  bc.id().split('_')[1].split('.')[0]
 
@@ -376,6 +402,58 @@ class CellmlReader:
 
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _kinetic_rate_constant_finder(self):
+
+        for rate_constant in self._rate_constants:
+
+            rc_id = rate_constant.id()
+
+            reaction_number_parts = rc_id.split('_')[2]
+
+            read_reactions = []
+
+            for reaction_number_part in reaction_number_parts.split('-'):
+
+                reaction_name = reaction_number_part.split('.')[0]
+
+                if reaction_name in read_reactions:
+                    continue
+                else:
+                    read_reactions.append(reaction_name)
+
+                direction = rc_id.split('_')[1]
+
+                matched_reaction =  next( ( reaction_instance for reaction_instance in self._biomodel_reactions_list if reaction_instance.ID == reaction_name ), None )
+
+                if matched_reaction is None:
+                    raise ValueError(f"Reaction {reaction_name} cannot be found in the reaction list")
+                
+                if direction == "f":
+                    matched_reaction.kinetic_forward_rate_constant = rate_constant.name()
+                    matched_reaction.kinetic_forward_rate_constant_value = float(rate_constant.initialValue())
+
+                elif direction == "r":
+                    matched_reaction.kinetic_reverse_rate_constant = rate_constant.name()
+                    matched_reaction.kinetic_reverse_rate_constant_value = float(rate_constant.initialValue())
+
+                    matched_reaction.reversible = True
+
+        return
+
+
+
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def chebi_comp_parser( chebi_code ):
 
@@ -413,6 +491,11 @@ class CellmlReader:
 
 
 
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def chebi_formula ( chebi_code ):
     
@@ -444,6 +527,10 @@ class CellmlReader:
 
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _read_analyse_cellml_model( file_path, cellml_strict_mode ):
 
@@ -527,6 +614,14 @@ class CellmlReader:
 
 
 
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _ext_var_dic(flatModel,external_variables_info={}):
         """

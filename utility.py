@@ -4,6 +4,7 @@ import traceback
 import sys
 import os
 import exceptions
+import sympy as sp
 
 init( autoreset=True )
 
@@ -77,10 +78,17 @@ def display_warnings():
 
 
 def error_handler(e, function=None, print_trace=True):
-    message_printer("Operation failed!", color="red")
+    
+    if function:
+        printer("\nAn error has been raised in function: ", function)
+    else:
+        message_printer("\nOperation failed!", color="red")
 
     if isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
         printer("\nERROR: ", e)
+    elif isinstance(sp.SympifyError):
+        error_printer("Sympify Error: ", e)
+        message_printer("Equation couldn't be converted to Sympy expression for reaction", color="red", style="normal")
     
     elif print_trace:
         tb = traceback.extract_tb(sys.exc_info()[2])

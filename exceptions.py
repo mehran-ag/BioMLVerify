@@ -4,11 +4,15 @@ class EmptyList(Exception):
     '''
     pass
 
+
+
 class NoModel(Exception):
     '''
     This exception is raised when there is no model to read for a function
     '''
     pass
+
+
 
 class LocalParameterConflict(Exception):
     '''
@@ -16,17 +20,24 @@ class LocalParameterConflict(Exception):
     '''
     pass
 
+
+
 class Warning(Exception):
     '''
     This type of error will be considered as a warning and will not stop the execution.
     '''
     pass
 
+
+
 class WrongInitializationInput(Exception):
     '''
     This error will be raised when initialization of a class fails
     '''
     pass
+
+
+
 
 class NoReverseRateConstant(Exception):
     '''

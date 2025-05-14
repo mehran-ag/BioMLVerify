@@ -29,7 +29,7 @@ class BioModel(object):
 
     def __init__(self):
         '''
-        Initializes the ModelReader by reading path for a file or a container of files
+        Initializes the ModelReader by reading path for a file
         '''
         
         self._file_path = None
@@ -55,7 +55,9 @@ class BioModel(object):
 
 
 
-
+    # ********************************
+    # *           Function           *
+    # ********************************
     def read_file(self, file_path):
 
         try:

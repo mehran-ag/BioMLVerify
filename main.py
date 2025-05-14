@@ -43,8 +43,8 @@ large_array = biomodel.getThermoConversionMatrix("on")
 
 # # print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
 
-# biomodel.checkModelReversibility(printing="on")
+biomodel.checkModelReversibility(printing="on")
 
-# biomodel.getKineticRateConstantsVector("on")
+biomodel.getKineticRateConstantsVector("on")
 
-# biomodel.KineticConstantsThermoCompatibilty("on")
+biomodel.KineticConstantsThermoCompatibilty("on")
