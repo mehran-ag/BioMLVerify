@@ -117,7 +117,7 @@ class BioModel(object):
     # ********************************
     def checkMassActionKinetics(self):
 
-        self._model_checker.findVariables(self._biomodel)
+        self._model_checker.checkMassActionKinetics(self._biomodel)
 
 
 

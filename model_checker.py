@@ -40,17 +40,145 @@ class ModelChecker(object):
         
 
 
+
+
     def findVariables( self, biomodel ):
 
         biomodel_reactions_list = biomodel.getListOfReactions()
 
         for biomodel_reaction in biomodel_reactions_list:
 
-            expanded_kinetic_law_string = biomodel_reaction.expanded_kinetic_law
+            if biomodel_reaction.expanded_kinetic_law:
 
-            variables = ModelChecker.getVariables(expanded_kinetic_law_string)
+                expanded_kinetic_law_string = biomodel_reaction.expanded_kinetic_law
 
-            biomodel_reaction.variables = list(dict.fromkeys(variables))
+                variables = ModelChecker.getVariables(expanded_kinetic_law_string)
+
+            else:
+
+                kinetic_law_string = biomodel_reaction.kinetic_law
+
+                variables = ModelChecker.getVariables(kinetic_law_string)
+
+
+            biomodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+
+    
+    def checkMassActionKinetics(self, biomodel):
+
+        self.findVariables( biomodel )
+
+        biomodel_reactions_list = biomodel.getListOfReactions()
+
+        for biomodel_reaction in biomodel_reactions_list:
+
+            self._makeCheckArguments( biomodel, biomodel_reaction )
+
+
+
+
+
+
+
+
+    def _makeCheckArguments(self, biomodel, bm_reaction):
+
+
+        reactants = []
+
+        products = []
+
+        species = []
+
+        parameters = []
+
+        compartments = []
+        
+        for bm_species in biomodel.getListOfSpecies():
+
+            species.append(bm_species.getId())
+
+        for bm_parameter in biomodel.getListOfParameters():
+
+            parameters.append(bm_parameter.getId())
+
+        for lcl_bm_parameter in bm_reaction.local_parameters:
+
+            parameters.append(lcl_bm_parameter.getId())
+
+        for compartment in biomodel.getListOfCompartments():
+
+            compartments.append(compartment)
+
+        parameters = list(dict.fromkeys(parameters))
+
+        klaw_variables = bm_reaction.klaw_variables
+
+        species_in_kinetic_law = []
+
+        parameters_in_kinetic_law = []
+
+        compartments_in_kinetic_law = []
+
+        others_in_kinetic_law = []
+
+        for klaw_variable in klaw_variables:
+
+            if klaw_variable in species:
+
+                species_in_kinetic_law.append(klaw_variable)
+
+            elif klaw_variable in parameters:
+
+                parameters_in_kinetic_law.append(klaw_variable)
+
+            elif klaw_variable in compartments:
+
+                compartments_in_kinetic_law.append(klaw_variable)
+
+            else:
+
+                others_in_kinetic_law.append(klaw_variable)
+
+        
+        for reactant_class in bm_reaction.getListOfReactants():
+
+            reactants.append(reactant_class.getId())
+
+        for product_class in bm_reaction.getListOfProducts():
+
+            products.append(product_class.getId())
+
+
+        if bm_reaction.expanded_kinetic_law:
+
+            kinetic_formula = bm_reaction.expanded_kinetic_law
+
+        elif bm_reaction.kinetic_law:
+
+            kinetic_formula = bm_reaction.kinetic_law
+
+        else:
+
+            raise ValueError(f"There is not a kinetic formula for reaction {bm_reaction.getId()}")
+        
+        sp_kinetic_formula = kinetic_formula.replace("^", "**")
+
+        
+
+        return {
+            "species_in_kinetic_law":species_in_kinetic_law,
+            "parameters_in_kinetic_law": parameters_in_kinetic_law,
+            "compartments_in_kinetic_law": compartments_in_kinetic_law,
+            "others_in_kinetic_law": others_in_kinetic_law,
+            "reactants": reactants,
+            "products": products,
+            "sp_kinetic_formula": sp_kinetic_formula
+        }
+
+
+
+
 
             
 

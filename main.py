@@ -15,7 +15,7 @@ folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 # read_files_in_folder(folder_path)
 
 
-file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000692.xml"
+file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000038.xml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 

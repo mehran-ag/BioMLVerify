@@ -274,12 +274,12 @@ class ReactionPropertiesMixin:
         
     
     @property
-    def variables(self):
-        return self._variables
+    def klaw_variables(self):
+        return self._klaw_variables
     
-    @variables.setter
-    def variables(self, vars):
+    @klaw_variables.setter
+    def klaw_variables(self, vars):
         if isinstance(vars, list):
-            self._variables = vars
+            self._klaw_variables = vars
         else:
             raise ValueError("Input for variables must be a list!")

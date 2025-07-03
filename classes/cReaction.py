@@ -30,7 +30,7 @@ class Reaction(ReactionPropertiesMixin):
         self._products: list = []
         self._boundary_condition: bool = False
         self._local_parameters: list = None
-        self._variables: list = []
+        self._klaw_variables: list = []
 
 
     @classmethod
