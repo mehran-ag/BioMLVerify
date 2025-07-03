@@ -24,11 +24,13 @@ class Reaction(ReactionPropertiesMixin):
         self._kappa: Union[int, float] = None
         self._kinetic_law: str = None
         self._sp_kinetic_law = None #sympy expression
+        self._expanded_kinetic_law: str = None #Not set yet
         self._kinetic_law_type: str = None
         self._reactants: list = []
         self._products: list = []
         self._boundary_condition: bool = False
         self._local_parameters: list = None
+        self._variables: list = []
 
 
     @classmethod

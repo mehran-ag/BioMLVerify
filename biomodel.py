@@ -95,8 +95,8 @@ class BioModel(object):
                     file_type = 'CellML'
 
             except Exception as e:
-                utility.error_handler(e)
-                return
+                utility.error_handler(e, function="reading_file")
+                sys.exit("\n\nExecution terminated as there is no file read to continue process!!\n\n")
             
             else:
 
@@ -105,6 +105,21 @@ class BioModel(object):
                 else:
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel\u27A4\u27A4\u27A4", color="red", style="bold")
                     time.sleep(3)
+
+
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def checkMassActionKinetics(self):
+
+        self._model_checker.findVariables(self._biomodel)
+
+
 
 
 
@@ -248,9 +263,15 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getStoichiometricColumnNamesIndices(self):
+    def getStoichiometricColumnNamesIndices(self, printing="off"):
 
-        return self._matrix_constructor.stoichiometric_matrix_column_names(self._biomodel)
+        columns = self._matrix_constructor.stoichiometric_matrix_column_names(self._biomodel)
+
+        if printing.lower() == "on":
+
+            utility.printer("\nThe Columns are:", columns )
+
+        return columns
     
 
 
@@ -261,9 +282,15 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getStoichiometricRowNamesIndices(self):
+    def getStoichiometricRowNamesIndices(self, printing="off"):
 
-        return self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
+        rows = self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
+
+        if printing.lower() == "on":
+
+            utility.printer("\nThe Rows are:", rows )
+
+        return rows
     
 
 

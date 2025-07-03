@@ -6,3 +6,6 @@ MAX_RECURSION = 4
 
 
 WARNINGS = []
+
+
+MAX_DEPTH = 20

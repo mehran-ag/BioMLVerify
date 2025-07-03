@@ -15,7 +15,7 @@ folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 # read_files_in_folder(folder_path)
 
 
-file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000500.xml"
+file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000692.xml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
@@ -31,7 +31,13 @@ biomodel.read_file(file_path)
 
 print("\n")
 
+biomodel.checkMassActionKinetics()
+
 biomodel.getStoichiometricMatrix("on")
+
+biomodel.getStoichiometricColumnNamesIndices("on")
+
+biomodel.getStoichiometricRowNamesIndices("on")
 
 biomodel.getForwardStoichiometricMatrix("on")
 
@@ -48,3 +54,4 @@ biomodel.checkModelReversibility(printing="on")
 biomodel.getKineticRateConstantsVector("on")
 
 biomodel.KineticConstantsThermoCompatibilty("on")
+

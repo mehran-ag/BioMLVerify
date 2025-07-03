@@ -48,10 +48,10 @@ class SbmlReader:
         else:
             sbmodel = document.getModel()
             biomodel = Model(sbmodel.getId())
-            biomodel.species = self._SBML_to_BioModel_species_tranfer(sbmodel)
-            biomodel.reactions = self._SBML_to_BioModel_reaction_tranfer(sbmodel)
-            biomodel.parameters = self._SBML_to_BioModel_parameter_transfer(sbmodel)
             biomodel.function_definitions = self._SBML_to_BioModel_function_definition_transfer(sbmodel)
+            biomodel.species = self._SBML_to_BioModel_species_tranfer(sbmodel)
+            biomodel.reactions = self._SBML_to_BioModel_reaction_tranfer(sbmodel, biomodel.function_definitions)
+            biomodel.parameters = self._SBML_to_BioModel_parameter_transfer(sbmodel)
             biomodel.compartments = self._SBML_to_BioModel_compartments_transfer(sbmodel)
             self._forward_reverse_rate_finder(biomodel, "on")
         
@@ -150,7 +150,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _SBML_to_BioModel_reaction_tranfer(self, libsbml_model):
+    def _SBML_to_BioModel_reaction_tranfer(self, libsbml_model, function_definitions):
 
         biomodel_reactions_list = []
 
@@ -174,6 +174,8 @@ class SbmlReader:
             biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
 
             biomodel_reaction.kinetic_law = libsbml_reaction_class.getKineticLaw().getFormula()
+
+            biomodel_reaction.expanded_kinetic_law , _ = SbmlReader._expandFormula(biomodel_reaction.kinetic_law, function_definitions)
 
             sbml_level = libsbml_model.getLevel()
 

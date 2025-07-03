@@ -209,6 +209,18 @@ class ReactionPropertiesMixin:
             raise ValueError("input for kinetic law type must be a string")
         
 
+    @property
+    def expanded_kinetic_law(self):
+        return self._expanded_kinetic_law
+    
+    @expanded_kinetic_law.setter
+    def expanded_kinetic_law(self, ex_k_law):
+        if isinstance(ex_k_law, str):
+            self._expanded_kinetic_law = ex_k_law
+        else:
+            raise ValueError("input for expanded kinetic law type must be a string")
+        
+
 
     @property
     def reactants(self):
@@ -259,3 +271,15 @@ class ReactionPropertiesMixin:
             self._local_parameters = lp
         else:
             raise ValueError("Input for local parameters must be a list!")
+        
+    
+    @property
+    def variables(self):
+        return self._variables
+    
+    @variables.setter
+    def variables(self, vars):
+        if isinstance(vars, list):
+            self._variables = vars
+        else:
+            raise ValueError("Input for variables must be a list!")

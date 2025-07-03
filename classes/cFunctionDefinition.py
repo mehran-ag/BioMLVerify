@@ -21,13 +21,6 @@ class FunctionDefinition():
         
 
 
-        def __repr__(self):
-            argument_call = ", ".join(self.arguments)
-            call_str = "%s(%s)" % (self.ID, argument_call)
-            return "%s: %s" % (call_str, self.formula)
-        
-
-
         @property
         def name(self):
             return self.name

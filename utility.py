@@ -88,7 +88,7 @@ def error_handler(e, function=None, print_trace=True):
     if isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
         printer("ERROR: ", e, text_color='cyan')
 
-    elif isinstance(sp.SympifyError):
+    elif isinstance(e, sp.SympifyError):
         error_printer("Sympify Error: ", e)
         message_printer("Equation couldn't be converted to Sympy expression for reaction", color="red", style="normal")
 
