@@ -53,7 +53,7 @@ class SbmlReader:
             biomodel.reactions = self._SBML_to_BioModel_reaction_tranfer(sbmodel, biomodel.function_definitions)
             biomodel.parameters = self._SBML_to_BioModel_parameter_transfer(sbmodel)
             biomodel.compartments = self._SBML_to_BioModel_compartments_transfer(sbmodel)
-            self._forward_reverse_rate_finder(biomodel, "on")
+            self._forward_reverse_rate_finder(biomodel)
         
             return biomodel
         
@@ -181,7 +181,7 @@ class SbmlReader:
 
             if sbml_level == 3:
 
-                biomodel_reaction.local_parameters = libsbml_reaction_class.getKineticLaw().getListOfLocalParameters()
+                sbml_local_parameters = libsbml_reaction_class.getKineticLaw().getListOfLocalParameters()
 
                 local_parameters = []
 

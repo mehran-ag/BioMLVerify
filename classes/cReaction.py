@@ -31,6 +31,7 @@ class Reaction(ReactionPropertiesMixin):
         self._boundary_condition: bool = False
         self._local_parameters: list = None
         self._klaw_variables: list = []
+        self._mass_action: bool = None
 
 
     @classmethod

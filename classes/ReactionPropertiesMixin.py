@@ -63,7 +63,7 @@ class ReactionPropertiesMixin:
         if isinstance(kfrc, str):
             self._kinetic_forward_rate_constant = kfrc
         else:
-            raise ValueError(f"Input for kinetic rate constant must be a string!\nEntered:\"{kfrc}\"")
+            raise ValueError(f"Input for forward kinetic rate constant must be a string!\nEntered:\"{kfrc}\"")
         
 
 
@@ -76,7 +76,7 @@ class ReactionPropertiesMixin:
         if isinstance(krrc, str):
             self._kinetic_reverse_rate_constant = krrc
         else:
-            raise ValueError("Input for kinetic rate constant must be a string")
+            raise ValueError("Input for reverse kinetic rate constant must be a string")
         
 
 
@@ -89,7 +89,7 @@ class ReactionPropertiesMixin:
         if isinstance(kfrc, (int, float)):
             self._kinetic_forward_rate_constant_value = kfrc
         else:
-            raise ValueError(f"Input for kinetic rate constant value must be a number!\nEntered: \"{kfrc}\"")
+            raise ValueError(f"Input for forward kinetic rate constant value must be a number!\nEntered: \"{kfrc}\"")
 
 
 
@@ -102,7 +102,7 @@ class ReactionPropertiesMixin:
         if isinstance(krrc, (int, float)):
             self._kinetic_reverse_rate_constant_value = krrc
         else:
-            raise ValueError("Input for kinetic rate constant value must be a number")
+            raise ValueError("Input for reverse kinetic rate constant value must be a number")
       
 
 
@@ -128,7 +128,7 @@ class ReactionPropertiesMixin:
         if isinstance(trrc, str):
             self._thermo_reverse_rate_constant = trrc
         else:
-            raise ValueError("Input for thermodynamic rate constant must be a string")
+            raise ValueError("Input for reverse thermodynamic rate constant must be a string")
         
 
 
@@ -141,7 +141,7 @@ class ReactionPropertiesMixin:
         if isinstance(tfrc, (int, float)):
             self._thermo_forward_rate_constant_value = tfrc
         else:
-            raise ValueError("Input for thermodynamic rate constant value must be a number")
+            raise ValueError("Input for forward thermodynamic rate constant value must be a number")
         
 
 
@@ -154,7 +154,7 @@ class ReactionPropertiesMixin:
         if isinstance(trrc, (int, float)):
             self._thermo_reverse_rate_constant_value = trrc
         else:
-            raise ValueError("Input for thermodynamic rate constant value must be a number")
+            raise ValueError("Input for reverse thermodynamic rate constant value must be a number")
         
 
 
@@ -167,7 +167,7 @@ class ReactionPropertiesMixin:
         if isinstance(kp, (int, float)):
             self._kappa = kp
         else:
-            raise ValueError("Input must be a numnber")
+            raise ValueError("Input for Kappa must be a numnber")
         
 
 
@@ -206,7 +206,7 @@ class ReactionPropertiesMixin:
         if isinstance(klt, str):
             self._kinetic_law_type = klt
         else:
-            raise ValueError("input for kinetic law type must be a string")
+            raise ValueError("Input for kinetic law type must be a string")
         
 
     @property
@@ -218,7 +218,7 @@ class ReactionPropertiesMixin:
         if isinstance(ex_k_law, str):
             self._expanded_kinetic_law = ex_k_law
         else:
-            raise ValueError("input for expanded kinetic law type must be a string")
+            raise ValueError("Input for expanded kinetic law type must be a string")
         
 
 
@@ -283,3 +283,15 @@ class ReactionPropertiesMixin:
             self._klaw_variables = vars
         else:
             raise ValueError("Input for variables must be a list!")
+        
+
+    @property
+    def mass_action(self):
+        return self._mass_action
+    
+    @mass_action.setter
+    def mass_action(self, flag):
+        if isinstance(flag, bool):
+            self._mass_action = flag
+        else:
+            raise ValueError("Input for \"mass\" actions must be a Boolean!")

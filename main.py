@@ -10,12 +10,22 @@ from functions import *
 
 os.system("cls" if os.name == "nt" else "clear")
 
-folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
+file_path = "/Users/makb047/UoA/Codes/Mass_Actions"
+
+file_name = "BIOMD0000000260.xml"
+
+verify_model(file_path, file_name)
+
+
+
+
+
+# folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 
 # read_files_in_folder(folder_path)
 
 
-file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000038.xml"
+# file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
@@ -25,33 +35,33 @@ file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000038.xml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-biomodel = BioModel()
+# biomodel = BioModel()
 
-biomodel.read_file(file_path)
+# biomodel.read_file(file_path)
 
-print("\n")
+# print("\n")
 
-biomodel.checkMassActionKinetics()
+# biomodel.checkMassActionKinetics()
 
-biomodel.getStoichiometricMatrix("on")
+# biomodel.getStoichiometricMatrix("on")
 
-biomodel.getStoichiometricColumnNamesIndices("on")
+# biomodel.getStoichiometricColumnNamesIndices("on")
 
-biomodel.getStoichiometricRowNamesIndices("on")
+# biomodel.getStoichiometricRowNamesIndices("on")
 
-biomodel.getForwardStoichiometricMatrix("on")
+# biomodel.getForwardStoichiometricMatrix("on")
 
-biomodel.getReverseStoichiometricMatrix("on")
+# biomodel.getReverseStoichiometricMatrix("on")
 
-# large_array = biomodel.getThermoConversionMatrix("on")
+# # large_array = biomodel.getThermoConversionMatrix("on")
 
-# # df = pd.DataFrame(large_array)
+# # # df = pd.DataFrame(large_array)
 
-# # print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
+# # # print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
 
-biomodel.checkModelReversibility(printing="on")
+# biomodel.checkModelReversibility(printing="on")
 
-biomodel.getKineticRateConstantsVector("on")
+# biomodel.getKineticRateConstantsVector("on")
 
-biomodel.KineticConstantsThermoCompatibilty("on")
+# biomodel.KineticConstantsThermoCompatibilty("on")
 

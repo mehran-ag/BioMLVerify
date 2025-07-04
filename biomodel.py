@@ -115,9 +115,27 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def checkMassActionKinetics(self):
+    def checkMassActionKinetics(self, printing = "off"):
 
-        self._model_checker.checkMassActionKinetics(self._biomodel)
+        if self._model_checker.check_mass_action_kinetics(self._biomodel):
+
+            if printing.lower() == "on":
+
+                utility.message_printer(f"ALL reactions in the model are \"Mass Action\" kinetics\n\n\n", color='green', style='normal')
+
+                time.sleep(10)
+
+            return True
+
+        else:
+
+            if printing.lower() == "on":
+
+                utility.message_printer(f"Model has (a) reaction(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red', style='normal')        
+
+                time.sleep(10)
+
+            return False
 
 
 
