@@ -3,7 +3,9 @@ from libcellml import  Parser, Validator, Analyser, AnalyserExternalVariable, Im
 import numpy as np
 import chemparse as chp
 import libchebipy as chb
-import warnings
+import libsbml
+
+from lxml import etree
 
 # Importing internal packages
 import sys
@@ -11,6 +13,9 @@ import exceptions
 import os
 import utility
 from pathlib import Path, PurePath
+import constants as cn
+
+from xml.dom.minidom import parseString
 
 from classes.cReaction import *
 from classes.cModel import *
@@ -21,27 +26,6 @@ from classes.cSpeciesReference import *
 
 
 class CellmlReader:
-
-    def __init__(self):
-
-        self._cellml_model = None
-        self._model_name = None
-
-        self._biomodel_species_list = []
-
-        self._biomodel_reactions_list = []
-
-        self._cellml_components = []
-        self._cellml_variables = []
-
-        self._variables = []
-        self._coefficients = []
-        self._rates = []
-        self._rate_constants = []
-        self._boundary_conditions = []
-        self._equation_variables = []
-        self._boundary_values = []
-        self._enzymes = []
 
 
 
@@ -63,29 +47,63 @@ class CellmlReader:
         if not os.path.isfile(file_path):
             raise FileNotFoundError('Model source file `{}` does not exist.'.format(file_path))
         
-        self._model_name = os.path.basename(file_path)
+        cellml_model_name = os.path.basename(file_path)
 
-        self._cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
+        cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
 
-        self._cellml_elements_reader()
+        cellml_contents = self._extract_cellml_content(cellml_model)
 
-        self._variable_distinguisher()
+        print("here")
 
-        self._species_identifier()
 
-        self._reaction_identifier()
 
-        # self._boundary_condition_identifier()
+        
 
-        self._kinetic_rate_constant_finder()
+        return
 
-        self._biomodel = Model(self._cellml_model.id())
 
-        self._biomodel.species = self._biomodel_species_list
 
-        self._biomodel.reactions = self._biomodel_reactions_list
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def read_file_old( self, file_path, cellml_strict_mode = False):
 
-        return self._biomodel
+        base_dir = os.path.dirname(file_path)
+
+        if not isinstance(base_dir, str):
+            if isinstance(base_dir, Path):
+                base_dir = str(base_dir)
+            elif isinstance(base_dir,PurePath):
+                base_dir = str(base_dir)
+            else:
+                raise TypeError('The file path should be a string or a Path object.')
+
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError('Model source file `{}` does not exist.'.format(file_path))
+        
+        cellml_model_name = os.path.basename(file_path)
+
+        cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
+
+        cellml_components, cellml_variables = self._cellml_elements_reader(cellml_model, cellml_model_name)
+
+        variable_type_buckets = self._variable_distinguisher(cellml_variables)
+
+        biomodel_species_list = self._species_identifier(variable_type_buckets['va'])
+
+        biomodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomodel_species_list)
+
+        # biomodel_reactions_list, biomodel_species_list = self._boundary_condition_identifier(variable_type_buckets['bc'], biomodel_reactions_list, biomodel_species_list)
+
+        self._kinetic_rate_constant_finder(variable_type_buckets['rc'], biomodel_reactions_list)
+
+        biomodel = Model(cellml_model.id())
+
+        biomodel.species = biomodel_species_list
+
+        biomodel.reactions = biomodel_reactions_list
+
+        return biomodel
 
 
 
@@ -93,29 +111,36 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _cellml_elements_reader(self):
+    def _cellml_elements_reader(self, cellml_model, cellml_model_name):
+        '''
+        
+        '''
 
-        number_of_components = self._cellml_model.componentCount()
+        cellml_variables = []
+
+        cellml_components = []
+
+        number_of_components = cellml_model.componentCount()
 
         if number_of_components >= 1 :
 
             for i in range(number_of_components):
 
-                self._cellml_components.append( self._cellml_model.component( i ) )
+                cellml_components.append( cellml_model.component( i ) )
 
         else:
-            raise ValueError(f"There is no component in {self._model_name}")
+            raise ValueError(f"There is no component in {cellml_model_name}")
         
 
-        for component in self._cellml_components:
+        for component in cellml_components:
 
             number_of_variables = component.variableCount()
 
             for i in range(number_of_variables):
 
-                self._cellml_variables.append(component.variable(i))
+                cellml_variables.append(component.variable(i))
 
-        return self._cellml_components, self._cellml_variables
+        return cellml_components, cellml_variables
     
 
 
@@ -124,20 +149,31 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _variable_distinguisher(self):
+    def _variable_distinguisher(self, cellml_variables):
 
-        variable_classifier = {
-            'va': lambda v: self._variables.append(v),
-            'co': lambda v: self._coefficients.append(v),
-            'rc': lambda v: self._rate_constants.append(v),
-            'ra': lambda v: self._rates.append(v),
-            'bc': lambda v: self._boundary_conditions.append(v),
-            'ev': lambda v: self._equation_variables.append(v),
-            'bv': lambda v: self._boundary_values.append(v),
-            'en': lambda v: self._enzymes.append(v)
+        variable_type_buckets = {
+            'va': [],  # variables
+            'co': [],  # coefficients
+            'rc': [],  # rate constants
+            'ra': [],  # rates
+            'bc': [],  # boundary conditions
+            'ev': [],  # equation variables
+            'bv': [],  # boundary values
+            'en': []   # enzymes
         }
 
-        for cellml_variable in self._cellml_variables:
+        variable_classifier = {
+            'va': lambda v: variable_type_buckets['va'].append(v),
+            'co': lambda v: variable_type_buckets['co'].append(v),
+            'rc': lambda v: variable_type_buckets['rc'].append(v),
+            'ra': lambda v: variable_type_buckets['ra'].append(v),
+            'bc': lambda v: variable_type_buckets['bc'].append(v),
+            'ev': lambda v: variable_type_buckets['ev'].append(v),
+            'bv': lambda v: variable_type_buckets['bv'].append(v),
+            'en': lambda v: variable_type_buckets['en'].append(v)
+        }
+
+        for cellml_variable in cellml_variables:
 
             variable_id = cellml_variable.id()
 
@@ -149,6 +185,8 @@ class CellmlReader:
 
                 operation(cellml_variable)
 
+        return variable_type_buckets
+
 
 
 
@@ -156,13 +194,15 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _species_identifier(self):
+    def _species_identifier(self, variables):
 
-        for variable in self._variables:
+        biomodel_species_list = []
+
+        for variable in variables:
 
             name = variable.name()
 
-            matched_species = next( ( species_instance for species_instance in self._biomodel_reactions_list if species_instance.ID == name ), None )
+            matched_species = next( ( species_instance for species_instance in biomodel_species_list if species_instance.ID == name ), None )
 
             if matched_species is not None:
                 continue
@@ -173,7 +213,7 @@ class CellmlReader:
 
             if all( char.isdigit() for char in name_code ):
 
-                compound, composition = CellmlReader.chebi_comp_parser(name_code)
+                compound, composition = CellmlReader._chebi_comp_parser(name_code)
 
                 biomodel_species.chebi_code = name_code
 
@@ -198,9 +238,9 @@ class CellmlReader:
             biomodel_species.compound = compound
             biomodel_species.composition = composition
 
-            self._biomodel_species_list.append(biomodel_species)
+            biomodel_species_list.append(biomodel_species)
 
-        return self._biomodel_species_list
+        return biomodel_species_list
 
 
 
@@ -209,21 +249,23 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _reaction_identifier(self):
+    def _reaction_identifier(self, coefficients, biomodel_species_list ):
 
-        for coefficient in self._coefficients:
+        biomodel_reactions_list = []
+
+        for coefficient in coefficients:
             
             name_code = coefficient.id().split('_')[1]
 
             if all( char.isdigit() for char in name_code ):
 
-                compound, _ = CellmlReader.chebi_comp_parser(name_code)
+                compound, _ = CellmlReader._chebi_comp_parser(name_code)
 
             else:
 
                 compound = name_code
 
-            matched_biomodel_species =  next( ( species_instance for species_instance in self._biomodel_species_list if species_instance.compound == compound ), None )
+            matched_biomodel_species =  next( ( species_instance for species_instance in biomodel_species_list if species_instance.compound == compound ), None )
 
             if matched_biomodel_species is None:
                 raise ValueError(f"There is no match for species {compound} in the list of species")
@@ -235,7 +277,7 @@ class CellmlReader:
 
                 reaction_number = reaction_number_part.split('.')[0]
 
-                matched_biomodel_reaction = next( ( reaction_instance for reaction_instance in self._biomodel_reactions_list if reaction_instance.ID == reaction_number ), None )
+                matched_biomodel_reaction = next( ( reaction_instance for reaction_instance in biomodel_reactions_list if reaction_instance.ID == reaction_number ), None )
 
                 if matched_biomodel_reaction is None:
                     
@@ -263,7 +305,7 @@ class CellmlReader:
 
                         raise ValueError(f"The value of stoichiometric coefficient is not acceptable: {coefficient.initialValue()}")
 
-                    self._biomodel_reactions_list.append(biomodel_reaction)
+                    biomodel_reactions_list.append(biomodel_reaction)
 
                 else:
 
@@ -292,7 +334,7 @@ class CellmlReader:
 
                         raise ValueError(f"The value of stoichiometric coefficient is not acceptable: {coefficient.initialValue()}")
                     
-        return self._biomodel_reactions_list
+        return biomodel_reactions_list
 
 
 
@@ -303,15 +345,15 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _boundary_condition_identifier(self):
+    def _boundary_condition_identifier(self, boundary_conditions, biomodel_reactions_list, biomodel_species_list):
 
-        if self._boundary_conditions:
+        if boundary_conditions:
 
-            for bc in self._boundary_conditions:
+            for bc in boundary_conditions:
 
                 reaction_number = bc.id()
 
-                if not any(biomodel_reaction.ID == reaction_number for biomodel_reaction in self._biomodel_reactions_list):
+                if not any(biomodel_reaction.ID == reaction_number for biomodel_reaction in biomodel_reactions_list):
                         
                     biomodel_reaction = Reaction(reaction_number)
 
@@ -329,14 +371,14 @@ class CellmlReader:
 
                     if all( char.isdigit() for char in name_code ):
 
-                        compound, _ = CellmlReader.chebi_comp_parser(name_code)
+                        compound, _ = CellmlReader._chebi_comp_parser(name_code)
 
                     else:
 
                         compound = name_code
 
 
-                    matched_species = next( ( species_instance for species_instance in self._biomodel_species_list if species_instance.compound == compound ), None )
+                    matched_species = next( ( species_instance for species_instance in biomodel_species_list if species_instance.compound == compound ), None )
 
                     if matched_species is None:
                         raise ValueError(f"The Species for the boundary condition {reaction_number} can't be found!")
@@ -372,7 +414,7 @@ class CellmlReader:
 
                         biomodel_species.compound = compound_bc
 
-                        self._biomodel_species_list.append(biomodel_species)
+                        biomodel_species_list.append(biomodel_species)
 
                     else:
 
@@ -396,7 +438,9 @@ class CellmlReader:
 
                         biomodel_reaction.products.append(biomodel_species_ref)
 
-                    self._biomodel_reactions_list.append(biomodel_reaction)
+                    biomodel_reactions_list.append(biomodel_reaction)
+
+        return biomodel_reactions_list, biomodel_species_list
 
 
 
@@ -406,9 +450,9 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _kinetic_rate_constant_finder(self):
+    def _kinetic_rate_constant_finder(self, rate_constants, biomodel_reactions_list):
 
-        for rate_constant in self._rate_constants:
+        for rate_constant in rate_constants:
 
             rc_id = rate_constant.id()
 
@@ -427,7 +471,7 @@ class CellmlReader:
 
                 direction = rc_id.split('_')[1]
 
-                matched_reaction =  next( ( reaction_instance for reaction_instance in self._biomodel_reactions_list if reaction_instance.ID == reaction_name ), None )
+                matched_reaction =  next( ( reaction_instance for reaction_instance in biomodel_reactions_list if reaction_instance.ID == reaction_name ), None )
 
                 if matched_reaction is None:
                     raise ValueError(f"Reaction {reaction_name} cannot be found in the reaction list")
@@ -446,6 +490,156 @@ class CellmlReader:
 
 
 
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _extract_cellml_content(self, cellml):
+
+        cellml_vars = []
+
+        cellml_species = []
+
+        cellml_eqs = []
+
+        for i in range(cellml.componentCount()):
+
+            component = cellml.component(i)
+
+            component_name = component.name()
+
+            component_id = component.id()
+
+            num_vars = component.variableCount()
+
+            for i in range(num_vars):
+
+                variable = component.variable(i)
+
+                variable_id = variable.id()
+
+                if variable_id:
+
+                    cellml_species.append(variable)
+
+                else:
+
+                    cellml_vars.append(variable)
+ 
+
+            raw_mathml = component.math()
+
+            if raw_mathml!= '':
+
+                if self._has_multiple_equations(raw_mathml):
+
+                    cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
+
+                    result = self._split_equations(cleaned_mathml)
+
+                    for i in range(len(result)):
+
+                        ast_node = libsbml.readMathMLFromString(result[i])
+
+                        if ast_node:
+
+                            string_formula = libsbml.formulaToL3String(ast_node)
+
+                            string_formula = string_formula.replace('==', '=')
+
+                            cellml_eqs.append(string_formula)
+
+                else:
+
+                    cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
+
+                    ast_node = libsbml.readMathMLFromString(cleaned_mathml)
+
+                    if ast_node:
+
+                        string_formula = libsbml.formulaToL3String(ast_node)
+
+                        string_formula = string_formula.replace('==', '=')
+
+                        cellml_eqs.append(string_formula)
+
+            else:
+
+                continue
+
+        return {
+            "cellml_eqs": cellml_eqs,
+            "cellml_species": cellml_species,
+            "cellml_vars": cellml_vars
+        }
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _has_multiple_equations(self, mathml_str):
+        """
+        Checks whether there are more than one <apply><eq/>...</apply> elements in the MathML.
+        """
+        root = etree.fromstring(mathml_str.encode())
+        NSMAP = {'m': 'http://www.w3.org/1998/Math/MathML'}
+        eq_applies = root.xpath(".//m:apply[m:eq]", namespaces=NSMAP)
+        return len(eq_applies) > 1
+    
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _split_equations(self, mathml_str):
+        """
+        Splits a MathML script containing multiple equations into individual <math> blocks.
+        Returns a list of MathML strings.
+        """
+        root = etree.fromstring(mathml_str.encode())
+        NSMAP = {'m': 'http://www.w3.org/1998/Math/MathML'}
+        equations = root.xpath(".//m:apply[m:eq]", namespaces=NSMAP)
+
+        result = []
+        for eq in equations:
+            # Create a new <math> element
+            MATHML_NS = "http://www.w3.org/1998/Math/MathML"
+            math_elem = etree.Element("math")
+            math_elem.set("xmlns", MATHML_NS)
+            # Append a deep copy of the equation node
+            math_elem.append(eq)
+            mathml = etree.tostring(math_elem, pretty_print=True, xml_declaration=False).decode()
+            result.append(mathml.strip())
+        return result
+    
+
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _remove_units_from_mathml(seflf, mathml_str):
+        root = etree.fromstring(mathml_str.encode())
+
+        ns = {
+            "m": "http://www.w3.org/1998/Math/MathML",
+        }
+
+        for cn in root.xpath(".//m:cn", namespaces=ns):
+            cn.attrib.pop('{http://www.cellml.org/cellml/1.0#}units', None)
+            cn.attrib.pop('{http://www.cellml.org/cellml/2.0#}units', None)
+
+        return etree.tostring(root).decode()
+
+
+
 
 
 
@@ -453,7 +647,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def chebi_comp_parser( chebi_code ):
+    def _chebi_comp_parser( chebi_code ):
 
         """
         This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compounds chemical composition and fetches it
@@ -495,7 +689,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def chebi_formula ( chebi_code ):
+    def _chebi_formula ( chebi_code ):
     
         """
         This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compound's chemical composition and fetches it
@@ -657,3 +851,47 @@ class CellmlReader:
                                 .format(ext_var_info['component'],ext_var_info['name']))
 
         return external_variables_dic
+    
+
+
+    @staticmethod
+    def _variable_identifier(ast_node, result):
+    
+        global cur_depth
+        cur_depth += 1
+        
+        if cur_depth > cn.MAX_DEPTH:
+            raise ValueError(f"Number of recursions exceeded the maximum depth, which is {cn.MAX_DEPTH}")
+        
+        for idx in range(ast_node.getNumChildren()):
+            child_node = ast_node.getChild(idx)
+
+            if child_node.getName() is None:
+                additions = CellmlReader._variable_identifier(child_node, [])
+                result.extend(additions)
+            else:
+                if child_node.isFunction():
+                    additions = CellmlReader._variable_identifier(child_node, [])
+                    result.extend(additions)
+                else:
+                    result.append(child_node.getName())
+        return result
+
+
+
+    @staticmethod
+    def _get_variables(ast_node):
+
+
+        global cur_depth
+        
+        cur_depth = 0
+    
+        if ast_node.getName() is None:
+            variables = []
+        else:
+            variables = [ast_node.getName()]
+
+        result = CellmlReader._variable_identifier(ast_node, variables)
+
+        return result

@@ -1,18 +1,14 @@
-import libsbml
 import sys
 import os
-import traceback
+import time
+
+import sbml_reader
+import cellml_reader
 import matrix_constructor
 import model_checker
 import exceptions
 import utility
-import warnings
-import time
-import sympy as sp
 
-import sbml_reader
-
-import cellml_reader
 
 from classes.cReaction import *
 from classes.cModel import *
@@ -40,8 +36,6 @@ class BioModel(object):
         self._model_checker = model_checker.ModelChecker()
         self._sbml_reader = sbml_reader.SbmlReader()
         self._cellml_reader = cellml_reader.CellmlReader()
-        self._cellml_compartments = []
-        self._cellml_variables = []
 
 
 
@@ -117,25 +111,33 @@ class BioModel(object):
     # ********************************
     def checkMassActionKinetics(self, printing = "off"):
 
-        if self._model_checker.check_mass_action_kinetics(self._biomodel):
+        try:
 
-            if printing.lower() == "on":
+            is_mass_action = self._model_checker.check_mass_action_kinetics(self._biomodel)
 
-                utility.message_printer(f"ALL reactions in the model are \"Mass Action\" kinetics\n\n\n", color='green', style='normal')
+            if is_mass_action:
 
-                time.sleep(10)
+                if printing.lower() == "on":
 
-            return True
+                    utility.message_printer(f"ALL reactions in the model are \"Mass Action\" kinetics\n\n\n", color='green', style='normal')
 
-        else:
+                    time.sleep(10)
 
-            if printing.lower() == "on":
+                return True
 
-                utility.message_printer(f"Model has (a) reaction(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red', style='normal')        
+            else:
 
-                time.sleep(10)
+                if printing.lower() == "on":
 
-            return False
+                    utility.message_printer(f"Model has (a) reaction(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red', style='normal')        
+
+                    time.sleep(10)
+
+                return False
+            
+        except Exception as e:
+            utility.error_handler(e, "checkMassActionKinetics")
+            return
 
 
 
