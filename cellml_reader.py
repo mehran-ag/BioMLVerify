@@ -4,6 +4,7 @@ import numpy as np
 import chemparse as chp
 import libchebipy as chb
 import libsbml
+import sympy as sp
 
 from lxml import etree
 
@@ -51,15 +52,15 @@ class CellmlReader:
 
         cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
 
-        cellml_contents = self._extract_cellml_content(cellml_model)
+        cellml_contents = self._extract_cellml_content(cellml_model) #returns a dictionary containing "cellml_eqs", "cellml_species", "cellml_vars"
 
-        print("here")
+        mass_action = self._find_cellml_mass_actions(**cellml_contents)
 
+        if not mass_action:
 
+            print(f"\n\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\n\n")
 
         
-
-        return
 
 
 
@@ -88,6 +89,21 @@ class CellmlReader:
         cellml_components, cellml_variables = self._cellml_elements_reader(cellml_model, cellml_model_name)
 
         variable_type_buckets = self._variable_distinguisher(cellml_variables)
+        
+        '''
+        "variables_type_buckets" is a dictionary as shown below. It contains all kinds of variables encoded in the CellML file
+
+        variable_type_buckets = {
+            'va': list of variables
+            'co': list of coefficients
+            'rc': list of rate constants
+            'ra': list of rates
+            'bc': list of boundary conditions
+            'ev': list of equation variables
+            'bv': list of boundary values
+            'en': list of enzymes
+        }
+        '''
 
         biomodel_species_list = self._species_identifier(variable_type_buckets['va'])
 
@@ -495,11 +511,13 @@ class CellmlReader:
     # ********************************
     def _extract_cellml_content(self, cellml):
 
-        cellml_vars = []
+        cellml_vars_instances = []
 
-        cellml_species = []
+        cellml_species_instances = []
 
         cellml_eqs = []
+
+        cellml_ast_nodes = []
 
         for i in range(cellml.componentCount()):
 
@@ -517,13 +535,11 @@ class CellmlReader:
 
                 variable_id = variable.id()
 
+                cellml_vars_instances.append(variable)
+
                 if variable_id:
 
-                    cellml_species.append(variable)
-
-                else:
-
-                    cellml_vars.append(variable)
+                    cellml_species_instances.append(variable)
  
 
             raw_mathml = component.math()
@@ -548,6 +564,8 @@ class CellmlReader:
 
                             cellml_eqs.append(string_formula)
 
+                            cellml_ast_nodes.append(ast_node)
+
                 else:
 
                     cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
@@ -562,18 +580,158 @@ class CellmlReader:
 
                         cellml_eqs.append(string_formula)
 
+                        cellml_ast_nodes.append(ast_node)
+
             else:
 
                 continue
 
         return {
             "cellml_eqs": cellml_eqs,
-            "cellml_species": cellml_species,
-            "cellml_vars": cellml_vars
+            "cellml_species_instances": cellml_species_instances,
+            "cellml_vars_instances": cellml_vars_instances,
+            "cellml_ast_nodes": cellml_ast_nodes
         }
 
 
 
+
+    def _find_cellml_mass_actions(self, **contents):
+
+        cellml_species_instances = contents["cellml_species_instances"]
+
+        cellml_vars_instances = contents["cellml_vars_instances"]
+
+        cellml_ast_nodes = contents["cellml_ast_nodes"]
+
+        species_in_cellml_eq = []
+
+        mass_action = True
+
+        cellml_vars = [var_instance.name() for var_instance in cellml_vars_instances]
+
+        cellml_species = [species_instance.name() for species_instance in cellml_species_instances]
+
+        # Prepare a space-separated and comma-separated version
+        symbol_dict = {cellml_var: sp.symbols(cellml_var) for cellml_var in cellml_vars}
+
+        for cellml_ast_node in cellml_ast_nodes:
+
+            cellml_eq_vars = CellmlReader._get_variables(cellml_ast_node)
+
+            for cellml_eq_var in cellml_eq_vars:
+
+                if cellml_eq_var in cellml_species:
+
+                    species_in_cellml_eq.append(cellml_eq_var)
+
+            cellml_eq = libsbml.formulaToL3String(cellml_ast_node)
+
+            if '==' in cellml_eq:
+
+                cellml_eq_rhs = cellml_eq.split('==')[1].strip()
+
+
+            symp_cellml_eq = sp.sympify(cellml_eq_rhs.replace("^", "**"), locals = symbol_dict)
+
+            simp_cellml_eq = str(sp.simplify(symp_cellml_eq))
+
+            eq_mass_action = self._check_mass_action( cellml_eq_rhs, simp_cellml_eq, cellml_vars, species_in_cellml_eq )
+
+            if not eq_mass_action:
+
+                mass_action = eq_mass_action
+
+        return mass_action
+
+
+    
+
+
+    def _check_mass_action(self, cellml_eq, simp_cellml_eq, cellml_vars, species_in_cellml_eq):
+
+        flag = False
+
+        if self._single_product( cellml_eq, simp_cellml_eq ) or \
+            self._diff_of_products( cellml_eq, simp_cellml_eq ):
+
+                if len( species_in_cellml_eq ) != 0:
+
+                    flag = True
+
+                    if len( species_in_cellml_eq ) == 1:
+
+                        if cellml_eq.count(species_in_cellml_eq[0]) != 1 or simp_cellml_eq.count(species_in_cellml_eq[0]) != 1:
+                            flag = False
+        
+        try:
+            fracs = self._frac_parts(simp_cellml_eq, cellml_vars)
+            if len(species_in_cellml_eq) > 0:
+                for i in range(len(species_in_cellml_eq)):
+                    if species_in_cellml_eq[i] in fracs["denominator"]:
+                        flag = False
+
+        except:
+            pass
+
+        return flag
+
+
+
+
+
+    def _single_product(self, kinetic_law, simple_kinetic_law):
+
+        flag = True
+
+        if "+" in kinetic_law or "-" in kinetic_law:
+            flag = False
+            if "e-" in kinetic_law or "exp(-" in kinetic_law:
+                flag = True
+        elif "+" in simple_kinetic_law or "-" in simple_kinetic_law:
+            flag = False
+            if "e-" in simple_kinetic_law or "exp(-" in simple_kinetic_law:
+                flag = True
+
+        return flag
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _diff_of_products(self, kinetic_law, simple_kinetic_law):
+
+        flag = False
+
+        if self._single_product(kinetic_law, simple_kinetic_law) == False:
+            terms = kinetic_law.split("-")
+            if len(terms) == 2:
+                flag = True
+
+        return flag
+    
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _frac_parts( self, simp_cellml_eq, cellml_vars ):
+
+        fracs = {"numerator": '', "denominator": ''}
+
+        try:
+            symbol_dict = {cellml_var: sp.symbols(cellml_var) for cellml_var in cellml_vars}
+            cellml_sympy_eq = sp.sympify(simp_cellml_eq, locals=symbol_dict)
+            numerator, denominator = cellml_sympy_eq.as_numer_denom()
+            fracs["numerator"] = str(numerator)
+            fracs["denominator"] = str(denominator)
+        except Exception:
+            pass
+
+        return fracs
+    
+
+
+    
 
 
     # ********************************
