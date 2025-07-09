@@ -123,7 +123,7 @@ class SbmlReader:
 
             if not biomodel_parameters_list:
                 utility.error_printer("\nWARNING: ", "No GLOBAL parameters found in the SBML model!", error_color = "yellow")
-                time.sleep(3)
+                time.sleep(1)
 
                 biomodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
             
@@ -353,7 +353,7 @@ class SbmlReader:
                 raise exceptions.EmptyList("There are no local parameters!")
             else:
                 utility.message_printer("\nLocal parameters are stored as global parameters, too!", color="magenta", style="normal")
-                time.sleep(3)
+                time.sleep(1)
 
             return local_biomodel_parameters_list
 
@@ -412,21 +412,30 @@ class SbmlReader:
             # Separate positive and negative terms manually
             rates = defaultdict(list)
 
-            if expression.is_Mul:
+            # rates = {
+            #     "forward_rate": [],
+            #     "reverse_rate": []
+            # }
 
+            # Check for invalid or empty expressions
+            if expression is None or expression == 0:
+                return rates  # Nothing to do
+
+            if not isinstance(expression, sp.Expr):
+                raise TypeError("Expected a sympy expression.")
+
+            if expression.is_Mul:
                 rates["forward_rate"].append(expression)
 
             elif expression.is_Add:
-
                 for argument in expression.args:
-
                     if "-" in str(argument):
-
                         rates["reverse_rate"].append(argument)
-
                     else:
-
                         rates["forward_rate"].append(argument)
+
+            else:
+                rates["forward_rate"].append(expression)
 
             return rates
         # --------------------------------------------------

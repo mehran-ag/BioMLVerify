@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path, PurePath
 
+import gc
+
 
 
 def read_files_in_folder(path):
@@ -69,7 +71,74 @@ def verify_model(file_path, file_name):
 
         return
     
-    biomodel.KineticConstantsThermoCompatibilty("on")
+    biomodel.KineticConstantsThermoCompatibility("on")
+    del biomodel
 
 
 
+
+
+def verify_bunch_SBML_models(folder_path):
+
+    check_results = pd.DataFrame(columns=["Model Name", "Mass Action", "Reversible", "Plausible"])
+
+
+
+    for file_name in os.listdir(folder_path):
+
+        if not file_name.endswith('.xml'): continue
+
+        full_path = os.path.join(folder_path, file_name)
+
+        if not os.path.isfile(full_path):
+            raise FileNotFoundError(f'Model source file `{full_path}` does not exist.')
+        
+        
+        biomodel = BioModel()
+
+        biomodel.read_file(full_path)
+
+        mass_action: bool = None
+
+        reversible: bool = None
+
+        plausible: bool = None
+
+        error: str = None
+
+        try:
+
+
+            if biomodel.checkMassActionKinetics():
+
+                mass_action = True
+
+                if biomodel.checkModelReversibility():
+
+                    reversible = True
+
+                    if biomodel.KineticConstantsThermoCompatibility():
+
+                        plausible = True
+
+                    else:
+
+                        plausible = False
+
+                else:
+
+                    reversible = False
+
+            else:
+
+                mass_action = False
+
+        except Exception as e:
+
+            error = str(e)
+
+        check_results.loc[len(check_results)] = [file_name, mass_action, reversible, plausible]
+
+    excel_full_path = os.path.join(folder_path, "check_results.xlsx")
+        
+    check_results.to_excel(excel_full_path, index=False)

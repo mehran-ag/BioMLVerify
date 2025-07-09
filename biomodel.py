@@ -27,7 +27,8 @@ class BioModel(object):
         '''
         Initializes the ModelReader by reading path for a file
         '''
-        
+        Species.reset_counter()
+        Reaction.reset_counter()
         self._file_path = None
         self._file_name= None
         self._file_format = None
@@ -74,7 +75,7 @@ class BioModel(object):
             try:
                 if self._file_format == 'xml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4", color="green", style="normal")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n\n", color="green", style="normal")
 
                     self._biomodel =  self._sbml_reader.read_file(self._file_path)
 
@@ -82,7 +83,7 @@ class BioModel(object):
 
                 elif self._file_format == 'cellml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4", color="green", style="normal")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n\n", color="green", style="normal")
 
                     self._biomodel = self._cellml_reader.read_file(self._file_path)
 
@@ -90,15 +91,17 @@ class BioModel(object):
 
             except Exception as e:
                 utility.error_handler(e, function="reading_file")
-                sys.exit("\n\nExecution terminated as there is no file read to continue process!!\n\n")
+                # sys.exit("\n\nExecution terminated as there is no file read to continue process!!\n\n")
+
+                return
             
             else:
 
                 if self._biomodel is not None:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4", color="green", style="normal")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="green", style="normal")
                 else:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel\u27A4\u27A4\u27A4", color="red", style="bold")
-                    time.sleep(3)
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="red", style="bold")
+                    time.sleep(1)
 
 
 
@@ -113,27 +116,61 @@ class BioModel(object):
 
         try:
 
-            is_mass_action = self._model_checker.check_mass_action_kinetics(self._biomodel)
+            if self._biomodel:
 
-            if is_mass_action:
+                if self._biomodel.is_mass_action is None:
 
-                if printing.lower() == "on":
+                    is_mass_action = False
 
-                    utility.message_printer(f"ALL reactions in the model are \"Mass Action\" kinetics\n\n\n", color='green', style='normal')
+                    is_mass_action = self._model_checker.check_mass_action_kinetics(self._biomodel)
 
-                    time.sleep(10)
 
-                return True
+                    if is_mass_action:
 
-            else:
+                        if printing.lower() == "on":
 
-                if printing.lower() == "on":
+                            utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n\n\n", color='green')
 
-                    utility.message_printer(f"Model has (a) reaction(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red', style='normal')        
+                            time.sleep(10)
 
-                    time.sleep(10)
+                        return True
 
-                return False
+                    else:
+
+                        if printing.lower() == "on":
+
+                            utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red')        
+
+                            time.sleep(10)
+
+                        return False
+                    
+                else:
+
+                    if self._biomodel.is_mass_action:
+
+                        if printing.lower() == "on":
+
+                            utility.message_printer(f"\nWARNING:\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
+
+                            utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n\n\n", color='green')
+
+                            time.sleep(10)
+
+                        return True
+
+                    else:
+
+                        utility.message_printer(f"\nWARNING:\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
+
+                        utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red')        
+
+                        time.sleep(10)
+
+                        return False
+
+                
+
             
         except Exception as e:
             utility.error_handler(e, "checkMassActionKinetics")
@@ -160,10 +197,16 @@ class BioModel(object):
 
                 if printing.lower() == "on":
 
-                    if reversibility:
-                        utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
+                    if reversibility is not None:
+
+                        if reversibility:
+                            utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
+                        else:
+                            utility.message_printer("\nAll reactions in the model are NOT reversible!", color='red')
+
                     else:
-                        utility.message_printer("\nAll reactions in the model are NOT reversible!")
+
+                        utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='red')
 
                 return reversibility, irreversibles
             
@@ -171,11 +214,17 @@ class BioModel(object):
 
                 reversibility = self._model_checker.check_model_reversibility(self._biomodel)
 
-                if printing.lower() == "on":
-                    if reversibility:
-                        utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
-                    else:
-                        utility.message_printer("\nAll reactions in the model are NOT reversible!")
+                if reversibility is not None:
+
+                    if printing.lower() == "on":
+                        if reversibility:
+                            utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
+                        else:
+                            utility.message_printer("\nAll reactions in the model are NOT reversible!")
+
+                else:
+
+                    utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='red')
 
                 return reversibility
 
@@ -379,16 +428,16 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def KineticConstantsThermoCompatibilty(self, printing = "off"):
+    def KineticConstantsThermoCompatibility(self, printing = "off"):
 
         try:
-            comatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomodel, printing)
+            compatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomodel, printing)
 
             utility.display_warnings()
 
-            return comatibility
+            return compatibility
         
         except Exception as e:
-            utility.error_handler(e, "KineticConstantsThermoCompatibilty")
+            utility.error_handler(e, "KineticConstantsThermoCompatibility")
             utility.printer("\nCompatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
             return

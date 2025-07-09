@@ -4,6 +4,7 @@ import constants as cn
 from typing import Union
 import sympy as sp
 from sympy import symbols
+import utility
 
 
 
@@ -31,9 +32,21 @@ class ModelChecker(object):
 
         for biomodel_reaction in biomodel_reactions:
 
-            if not biomodel_reaction.reversible:
-                reversible = False
-                irreversible_reactions.append(biomodel_reaction.ID)
+            if biomodel_reaction.reversible is not None:
+
+                if not biomodel_reaction.reversible:
+                    reversible = False
+                    irreversible_reactions.append(biomodel_reaction.ID)
+
+            else:
+
+                if return_irreversibles:
+
+                    return None, irreversible_reactions
+                
+                else:
+
+                    return None
 
         if return_irreversibles:
 
@@ -54,6 +67,8 @@ class ModelChecker(object):
     # ********************************
     def _find_variables_in_klaw( self, biomodel ):
 
+        done = True
+
         biomodel_reactions_list = biomodel.getListOfReactions()
 
         for biomodel_reaction in biomodel_reactions_list:
@@ -64,14 +79,22 @@ class ModelChecker(object):
 
                 variables = ModelChecker._getVariables(expanded_kinetic_law_string)
 
-            else:
+                biomodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+
+            elif biomodel_reaction.kinetic_law:
 
                 kinetic_law_string = biomodel_reaction.kinetic_law
 
                 variables = ModelChecker._getVariables(kinetic_law_string)
 
+                biomodel_reaction.klaw_variables = list(dict.fromkeys(variables))
 
-            biomodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+            else:
+
+                done = False
+            
+
+        return done
 
     
 
@@ -302,6 +325,10 @@ class ModelChecker(object):
         reactants = args["reactants"]
         products = args["products"]
 
+        species_in_kinetic_law = species_in_kinetic_law + reactants + products
+
+        species_in_kinetic_law = list(dict.fromkeys(species_in_kinetic_law))
+
     
 
         flag = False
@@ -321,13 +348,10 @@ class ModelChecker(object):
         try:
             fracs = self._frac_parts(simp_kinetic_formula, klaw_variables)
             if len(species_in_kinetic_law) > 0:
-                for i in range(len(reactants)):
-                    if reactants[i] in fracs["denominator"]:
+                for i in range(len(species_in_kinetic_law)):
+                    if species_in_kinetic_law[i] in fracs["denominator"]:
                         flag = False
 
-                for i in range(len(products)):
-                    if products[i] in fracs["denominator"]:
-                        flag = False
         except:
             pass
 

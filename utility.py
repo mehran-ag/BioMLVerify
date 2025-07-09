@@ -47,7 +47,7 @@ def error_printer(message, error, message_color = 'white', error_color = "red", 
 
     print(f"{message} {error}", end=u_end)
 
-def message_printer(message, color="yellow", style = "bold"):
+def message_printer(message, color="yellow", style = "normal"):
 
     message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
 

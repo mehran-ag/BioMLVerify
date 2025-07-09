@@ -13,6 +13,7 @@ class Model(ModelPropertiesMixin):
         self._kinetic_rate_constants_vector: np.ndarray = None
         self._reaction_indices: dict = None
         self._species_indices: dict = None
+        self._is_mass_action: bool = None
 
     def getId(self):
 

@@ -87,3 +87,8 @@ class Reaction(ReactionPropertiesMixin):
     def getListOfReactants(self):
 
         return self._reactants
+    
+    @staticmethod
+    def reset_counter():
+
+        Reaction._counter = 0

@@ -87,3 +87,15 @@ class ModelPropertiesMixin:
             self._kinetic_rate_constants_vector = vec
         else:
             raise ValueError("Input must be a numpy 1D array")
+        
+
+    @property
+    def is_mass_action(self):
+        return self._is_mass_action
+    
+    @is_mass_action.setter
+    def is_mass_action(self, flag):
+        if isinstance(flag, bool):
+            self._is_mass_action = flag
+        else:
+            raise ValueError("Input for \"is_mass_action\" must be a boolean")

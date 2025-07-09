@@ -52,13 +52,71 @@ class CellmlReader:
 
         cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
 
-        cellml_contents = self._extract_cellml_content(cellml_model) #returns a dictionary containing "cellml_eqs", "cellml_species", "cellml_vars"
+        cellml_contents = self._extract_cellml_content(cellml_model, cellml_model_name) #returns a dictionary containing "cellml_eqs", "cellml_species_instances", "cellml_vars_instances", and "cellml_ast_nodes"
 
-        mass_action = self._find_cellml_mass_actions(**cellml_contents)
+        cellml_vars_instances = cellml_contents["cellml_vars_instances"]
 
-        if not mass_action:
+        variable_type_buckets = self._variable_distinguisher(cellml_vars_instances)
+        
+        '''
+        "variables_type_buckets" is a dictionary as shown below. It contains all kinds of variables encoded in the CellML file
 
-            print(f"\n\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\n\n")
+        variable_type_buckets = {
+            'va': list of variables
+            'co': list of coefficients
+            'rc': list of rate constants
+            'ra': list of rates
+            'bc': list of boundary conditions
+            'ev': list of equation variables
+            'bv': list of boundary values
+            'en': list of enzymes
+        }
+        '''
+
+        keys_to_check = ['va', 'co', 'rc', 'ra']
+
+        if all(variable_type_buckets.get(k) for k in keys_to_check):
+
+
+            biomodel_species_list = self._species_identifier(variable_type_buckets['va'])
+
+            biomodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomodel_species_list)
+
+            # biomodel_reactions_list, biomodel_species_list = self._boundary_condition_identifier(variable_type_buckets['bc'], biomodel_reactions_list, biomodel_species_list)
+
+            self._kinetic_rate_constant_finder(variable_type_buckets['rc'], biomodel_reactions_list)
+
+            biomodel = Model(cellml_model.id())
+
+            biomodel.species = biomodel_species_list
+
+            biomodel.reactions = biomodel_reactions_list
+
+            mass_action = self._find_cellml_mass_actions(**cellml_contents)
+
+            if mass_action:
+            
+                biomodel.is_mass_action = True
+
+            else:
+
+                biomodel.is_mass_action = False
+
+            return biomodel
+            
+        else:
+
+            mass_action = self._find_cellml_mass_actions(**cellml_contents)
+
+            if mass_action:
+
+                print("It is mass action")
+
+            else:
+
+                print(f"\n\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\n\n")
+
+                return
 
         
 
@@ -509,7 +567,7 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _extract_cellml_content(self, cellml):
+    def _extract_cellml_content(self, cellml_model, cellml_model_name):
 
         cellml_vars_instances = []
 
@@ -519,9 +577,9 @@ class CellmlReader:
 
         cellml_ast_nodes = []
 
-        for i in range(cellml.componentCount()):
+        for i in range(cellml_model.componentCount()):
 
-            component = cellml.component(i)
+            component = cellml_model.component(i)
 
             component_name = component.name()
 

@@ -10,24 +10,28 @@ from functions import *
 
 os.system("cls" if os.name == "nt" else "clear")
 
-# file_path = "/Users/makb047/UoA/Codes/Mass_Actions"
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs"
 
-# file_name = "BIOMD0000000574.xml"
+# file_name = "modified_huang_ferrell_1996.cellml"
+
+
+
+
+file_path = "/Users/makb047/UoA/Codes/Mass_Actions"
+
+file_name = "BIOMD0000000019.xml"
 
 # verify_model(file_path, file_name)
 
+verify_bunch_SBML_models(file_path)
 
 
 
-
-# folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
-
-# read_files_in_folder(folder_path)
 
 
 # file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
 
-file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
+# file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml"
 
@@ -39,13 +43,13 @@ file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioM
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-biomodel = BioModel()
+# biomodel = BioModel()
 
-biomodel.read_file(file_path)
+# biomodel.read_file(file_path)
 
 # print("\n")
 
-# biomodel.checkMassActionKinetics()
+# biomodel.checkMassActionKinetics("on")
 
 # biomodel.getStoichiometricMatrix("on")
 

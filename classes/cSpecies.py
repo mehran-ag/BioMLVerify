@@ -47,3 +47,8 @@ class Species(SpeciesPropertiesMixin):
     def getCompartment(self):
 
         return self._compartment
+    
+
+    @staticmethod
+    def reset_counter():
+        Species._counter = 0
