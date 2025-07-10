@@ -85,12 +85,19 @@ def error_handler(e, function=None, print_trace=True):
     else:
         message_printer("\nOperation failed!", color="red")
 
-    if isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
-        printer("ERROR: ", e, text_color='cyan')
+    if  isinstance(e, sp.SympifyError):
+        message_printer("\nThere are variables in the reaction rate equations that are in Python's Keyword list. This prevents Sympify from converting the equation to Sympy equation to be studied!", color='cyan')
 
-    elif isinstance(e, sp.SympifyError):
-        error_printer("Sympify Error: ", e)
-        message_printer("Equation couldn't be converted to Sympy expression for reaction", color="red", style="normal")
+    elif isinstance(e, exceptions.NotParsable):
+        error_printer("libsbml error: ", e)
+
+    elif isinstance(e, exceptions.MaxDepth):
+        error_printer("Max Recursion Error: ", e)
+        message_printer("There are too many variables in the equation!", color='red')
+
+
+    elif isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
+        printer("ERROR: ", e, text_color='cyan')
 
     elif isinstance(e, RuntimeWarning):
         error_printer(f"\nCaught an error: ", e)
@@ -104,4 +111,4 @@ def error_handler(e, function=None, print_trace=True):
         error_printer(", line: ", lineno, error_color="yellow")
         error_printer("Unexpected Error: ", e)
         error_printer("Error type: ", sys.exc_info()[0].__name__)
-        message_printer("Unable to complete the query!", color="red", style="normal")
+        message_printer("Unable to complete the query!", color="red")

@@ -954,7 +954,7 @@ class CellmlReader:
             if no_parser_warnings > 0:
 
                 for i in range(no_parser_warnings):
-                    utility.message_printer("\n" + parser.issue(i).description(), color="white", style='normal')
+                    utility.message_printer( parser.issue(i).description(), color="white")
 
         validator = Validator()
         validator.validateModel(cellml_model)
@@ -964,7 +964,7 @@ class CellmlReader:
         if no_validator_warnings > 0:
 
             for i in range(no_validator_warnings):
-                utility.message_printer("\n" + validator.issue(i).description(), color="magenta", style="normal")
+                utility.message_printer(validator.issue(i).description(), color="magenta")
 
             raise ValueError(f"Model {model_name} has validation issues and cannot be imported!")
 
@@ -979,13 +979,13 @@ class CellmlReader:
         if no_importer_warnings > 0:
 
             for i in range(no_importer_warnings):
-                utility.message_printer("\n" + importer.issue(i).description(), color="magenta", style="normal")
+                utility.message_printer( importer.issue(i).description(), color="magenta")
 
             raise ValueError(f"Model {model_name} has import issues and cannot be imported!")
 
         else:
             if cellml_model.hasUnresolvedImports():
-                utility.message_printer("There are Unresolved Import Issues", color="magenta", style="normal")
+                utility.message_printer("There are Unresolved Import Issues", color="magenta")
 
                 raise ValueError(f"Model {model_name} has import issues and cannot be imported!")
 

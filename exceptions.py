@@ -44,3 +44,15 @@ class NoReverseRateConstant(Exception):
     This error will be raised when there is no reverse reaction rate constant in constructing the kinetic constants vector and will be useful when checking thermo compatibility
     '''
     pass
+
+class MaxDepth(Exception):
+    '''
+    This error catches the error in the recursive functions
+    '''
+    pass
+
+class NotParsable(Exception):
+    '''
+    This exception is raised when the string cannot be parsed by libsbml FormulatoL3String function
+    '''
+    pass

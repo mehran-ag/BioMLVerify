@@ -104,7 +104,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_mass_action_kinetics(self, biomodel):
+    def check_mass_action_kinetics(self, biomodel, immediate_return = False):
 
         self._find_variables_in_klaw( biomodel )
 
@@ -121,6 +121,9 @@ class ModelChecker(object):
             if not status:
 
                 flag = status
+
+                if immediate_return:
+                    return flag
 
             biomodel_reaction.mass_action = status
 
@@ -221,6 +224,7 @@ class ModelChecker(object):
 
         # Prepare a space-separated and comma-separated version
         symbol_dict = {klaw_variable: sp.symbols(klaw_variable) for klaw_variable in klaw_variables}
+
 
         symp_kinetic_formula = sp.sympify(kinetic_formula.replace("^", "**"), locals = symbol_dict)
 
@@ -373,7 +377,7 @@ class ModelChecker(object):
         cur_depth += 1
         
         if cur_depth > cn.MAX_DEPTH:
-            raise Exception
+            raise exceptions.MaxDepth(f"The number of recursions reached maximum depth, {cn.MAX_DEPTH}, but all variables in couldn't be found.")
         
         for idx in range(ast_node.getNumChildren()):
             child_node = ast_node.getChild(idx)
@@ -400,6 +404,9 @@ class ModelChecker(object):
         cur_depth = 0
 
         ast_node = libsbml.parseL3Formula(kinetic_law_string)
+
+        if ast_node is None:
+            raise exceptions.NotParsable("libsbml.parseL3Formula() couldn't parse the kinetic law for the reaction")
     
         if ast_node.getName() is None:
             variables = []

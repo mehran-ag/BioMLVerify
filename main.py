@@ -17,13 +17,13 @@ os.system("cls" if os.name == "nt" else "clear")
 
 
 
-file_path = "/Users/makb047/UoA/Codes/Mass_Actions"
+folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-file_name = "BIOMD0000000019.xml"
+file_name = "BIOMD0000000470.xml"
 
-# verify_model(file_path, file_name)
+# verify_model(folder_path, file_name)
 
-verify_bunch_SBML_models(file_path)
+verify_bunch_SBML_models(folder_path)
 
 
 

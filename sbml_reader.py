@@ -17,6 +17,8 @@ import exceptions
 import time
 import warnings
 
+import model_checker
+
 
 
 
@@ -53,9 +55,14 @@ class SbmlReader:
             biomodel.reactions = self._SBML_to_BioModel_reaction_tranfer(sbmodel, biomodel.function_definitions)
             biomodel.parameters = self._SBML_to_BioModel_parameter_transfer(sbmodel)
             biomodel.compartments = self._SBML_to_BioModel_compartments_transfer(sbmodel)
-            self._forward_reverse_rate_finder(biomodel)
-        
-            return biomodel
+            _model_checker = model_checker.ModelChecker()
+            if (_model_checker.check_mass_action_kinetics(biomodel, immediate_return=True)):
+                self._forward_reverse_rate_finder(biomodel)
+                return biomodel
+            else:
+                utility.message_printer(f"Model {self._file_name} has equation(s) not governed by Mass Action Kinetics")
+
+                return None
         
 
 
@@ -89,7 +96,7 @@ class SbmlReader:
             self._biomodel_species_list.append(biomodel_species)
 
         if not self._biomodel_species_list:
-            utility.message_printer("\nWARNING: ", "No species imported from SBML model!", color="yellow")
+            utility.message_printer("\nWARNING: No species imported from SBML model!")
 
         return self._biomodel_species_list
     
@@ -173,7 +180,15 @@ class SbmlReader:
 
             biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
 
-            biomodel_reaction.kinetic_law = libsbml_reaction_class.getKineticLaw().getFormula()
+            libsbml_klaw = libsbml_reaction_class.getKineticLaw()
+
+            if libsbml_klaw:
+
+                biomodel_reaction.kinetic_law = libsbml_klaw.getFormula()
+
+            else:
+
+                raise ValueError(f"Reaction {reaction_id} does not have a reaction rate formula")
 
             biomodel_reaction.expanded_kinetic_law , _ = SbmlReader._expandFormula(biomodel_reaction.kinetic_law, function_definitions)
 
@@ -274,7 +289,7 @@ class SbmlReader:
             biomodel_reactions_list.append(biomodel_reaction)
 
         if not biomodel_reactions_list:
-            warnings.warn("No reactions imported from SBML model!", UserWarning)
+            warnings.warn("\nNo reactions imported from SBML model!", UserWarning)
 
         return biomodel_reactions_list
     
@@ -425,7 +440,17 @@ class SbmlReader:
                 raise TypeError("Expected a sympy expression.")
 
             if expression.is_Mul:
-                rates["forward_rate"].append(expression)
+                flag = True
+                for argument in expression.args:
+                    if argument.is_Add:
+                        flag = False
+                        for arg in expression.args:
+                            if "-" in str(argument):
+                                rates["reverse_rate"].append(arg)
+                            else:
+                                rates["forward_rate"].append(arg)
+                if flag:
+                    rates["forward_rate"].append(expression)
 
             elif expression.is_Add:
                 for argument in expression.args:
@@ -474,7 +499,9 @@ class SbmlReader:
 
                     power_match_str = str(power_match.group(0))
 
-                    used_elements.update(pair[0], pair[1])
+                    used_elements.add(pair[0])
+                    
+                    used_elements.add(pair[1])
 
                     parameters.remove(pair[0])
 
@@ -554,7 +581,9 @@ class SbmlReader:
 
                     match_str = str(match.group(0))
 
-                    used_elements.update(pair[0], pair[1])
+                    used_elements.add(pair[0])
+
+                    used_elements.add(pair[1])
 
                     parameters.remove(pair[0])
 
@@ -609,8 +638,10 @@ class SbmlReader:
         function_definitions_list = biomodel.getListOfFunctionDefinitions()
         compartments_list = biomodel.getListOfCompartments()
 
+        empty_species_list = False
+
         if not species_classes_list:
-            raise ValueError("Species list is empty.")
+            empty_species_list = True
 
         if not parameter_classes_list:
             empty_global_parameters = True
@@ -664,6 +695,24 @@ class SbmlReader:
 
                 if empty_global_parameters == True:
                     raise ValueError(f"There are no global parameters defined for the model, nor are there any local parameters defined for {reaction_name}!")
+                
+            reactant_classes_list = individual_reaction_class.getListOfReactants()
+                
+            for individual_reactant_class in reactant_classes_list:
+                reactant_name = individual_reactant_class.getId()
+                string_to_sympy_symbols[reactant_name] = sp.symbols(reactant_name)
+                empty_species_list = False
+
+            product_classes_list = individual_reaction_class.getListOfProducts()
+                
+            for individual_product_class in product_classes_list:
+                product_name = individual_product_class.getId()
+                string_to_sympy_symbols[product_name] = sp.symbols(product_name)
+                empty_species_list = False
+
+            if empty_species_list:
+                raise ValueError(f"There are no species to be checked for reaction {reactant_name}")
+
 
             reaction_name = individual_reaction_class.getId()
             reaction_rate_formula = individual_reaction_class.getKineticLaw()
@@ -703,6 +752,9 @@ class SbmlReader:
             else:
                 forward_rate_matching_parameters = list(forward_rate_matching_parameters)
 
+            if not forward_rate_matching_parameters:
+                raise ValueError(f"There is not a forward reaction rate constant in reaction {reaction_name}")
+
             forward_rate_constant = forward_rate_matching_parameters[0]
             forward_rate_constant_value = parameters_values[forward_rate_constant]
 
@@ -737,6 +789,9 @@ class SbmlReader:
                 else:
                     forward_rate_matching_parameters = list(forward_rate_matching_parameters)
 
+                if not forward_rate_matching_parameters:
+                    raise ValueError(f"There is not a forward reaction rate constant in reaction {reaction_name}")
+
                 temp_forward_rate_constant = forward_rate_matching_parameters[0]
                 temp_forward_rate_constant_value = parameters_values[temp_forward_rate_constant]
 
@@ -761,7 +816,7 @@ class SbmlReader:
 
                 message = f"\nWARNING:\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
 
-                utility.message_printer(message, color="light_red", style ="normal")
+                utility.message_printer(message, color="light_red")
 
                 utility.add_warning(message)
             
@@ -790,6 +845,9 @@ class SbmlReader:
                         reverse_rate_matching_parameters = [reverse_rate_matching_parameters]
                     else:
                         reverse_rate_matching_parameters = list(reverse_rate_matching_parameters)
+
+                    if not forward_rate_matching_parameters:
+                        raise ValueError(f"There is not a reverse reaction rate constant in reaction {reaction_name}")
 
                     reverse_rate_constant = reverse_rate_matching_parameters[0]
                     reverse_rate_constant_value = parameters_values[reverse_rate_constant]
@@ -825,6 +883,9 @@ class SbmlReader:
                             reverse_rate_matching_parameters = [reverse_rate_matching_parameters]
                         else:
                             reverse_rate_matching_parameters = list(reverse_rate_matching_parameters)
+
+                        if not forward_rate_matching_parameters:
+                            raise ValueError(f"There is not a reverse reaction rate constant in reaction{reaction_name}")
 
                         temp_reverse_rate_constant = reverse_rate_matching_parameters[0]
                         temp_reverse_rate_constant_value = parameters_values[temp_reverse_rate_constant]

@@ -75,7 +75,7 @@ class BioModel(object):
             try:
                 if self._file_format == 'xml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n\n", color="green", style="normal")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n\n", color="green")
 
                     self._biomodel =  self._sbml_reader.read_file(self._file_path)
 
@@ -83,7 +83,7 @@ class BioModel(object):
 
                 elif self._file_format == 'cellml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n\n", color="green", style="normal")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n\n", color="green")
 
                     self._biomodel = self._cellml_reader.read_file(self._file_path)
 
@@ -98,7 +98,7 @@ class BioModel(object):
             else:
 
                 if self._biomodel is not None:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="green", style="normal")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="green")
                 else:
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="red", style="bold")
                     time.sleep(1)

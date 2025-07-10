@@ -61,13 +61,13 @@ def verify_model(file_path, file_name):
 
     if not biomodel.checkMassActionKinetics():
 
-        utility.message_printer(f"\nModel {file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\nis not eligible for verification check\n\n\n", color='red', style='normal')
+        utility.message_printer(f"\nModel {file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\nis not eligible for verification check\n\n\n", color='red')
 
         return
     
     if not biomodel.checkModelReversibility():
 
-        utility.message_printer(f"\nModel {file_name} has (a) irrversible reaction(s) and\nis not eligible for verification check\n\n\n", color='red', style='normal')
+        utility.message_printer(f"\nModel {file_name} has (a) irrversible reaction(s) and\nis not eligible for verification check\n\n\n", color='red')
 
         return
     
