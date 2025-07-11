@@ -255,7 +255,7 @@ class MatrixConstructor:
 
         if i > highest_i or j > highest_j:
 
-            utility.error_printer("\nError: ", "Invlaid indices provided!")
+            utility.error_printer("Invlaid indices provided!")
             
             print(f"\nThe highest value for i (rows), j (columns) are {highest_i} and {highest_j}, respectively")
             return
@@ -269,7 +269,7 @@ class MatrixConstructor:
             reaction = column_indices_names[j]
 
             if printing.lower() == "on":
-                utility.printer(f"\nThe stoichiometric coefficient for {species} in reaction {reaction} is: ", f"{self.stoichiometric_matrix[i][j]}", text_color="yellow")
+                utility.printer(f"\nThe stoichiometric coefficient for {species} in reaction {reaction} is: ", f"{self.stoichiometric_matrix[i][j]}")
 
             return f"The stoichiometric coefficient for {species} in reaction {reaction} is: {self.stoichiometric_matrix[i][j]}"
     
@@ -309,7 +309,7 @@ class MatrixConstructor:
                 vector_of_kinetic_constants[index] = k_plus_value / k_minus_value
 
         if printing.lower() == "on":
-            utility.printer("\nKinetic Constants Vector is:\n",vector_of_kinetic_constants, text_color="green")
+            utility.printer("\nKinetic Constants Vector is:\n",vector_of_kinetic_constants)
 
         return vector_of_kinetic_constants
     
@@ -337,7 +337,7 @@ class MatrixConstructor:
         conversion_matrix = np.block( [ [ identity_array, transposed_forward_stoichiometric_matrix ], [ identity_array, transposed_reverse_stoichiometric_matrix ] ] )
 
         if printing.lower() == "on":
-            utility.printer("\nConversion Matrix is\n:",conversion_matrix, text_color="magenta", text_style="bold")
+            utility.printer("\nConversion Matrix is\n:", conversion_matrix)
 
         return conversion_matrix
     
@@ -374,13 +374,13 @@ class MatrixConstructor:
         if np.all(np.abs(result) <= 1e-2):
 
             if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints\n\n", text_color="green", text_style="bold")
+                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints\n", text_color="green", text_style="bold")
 
             return True
         
         else:
 
             if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n\n", text_color="red", text_style="bold")
+                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
             
             return False

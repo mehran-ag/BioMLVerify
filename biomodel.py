@@ -75,7 +75,7 @@ class BioModel(object):
             try:
                 if self._file_format == 'xml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n\n", color="green")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n", color="green")
 
                     self._biomodel =  self._sbml_reader.read_file(self._file_path)
 
@@ -83,7 +83,7 @@ class BioModel(object):
 
                 elif self._file_format == 'cellml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n\n", color="green")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n", color="green")
 
                     self._biomodel = self._cellml_reader.read_file(self._file_path)
 
@@ -91,16 +91,15 @@ class BioModel(object):
 
             except Exception as e:
                 utility.error_handler(e, function="reading_file")
-                # sys.exit("\n\nExecution terminated as there is no file read to continue process!!\n\n")
 
                 return
             
             else:
 
                 if self._biomodel is not None:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="green")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel \u27A4\u27A4\u27A4\n", color="green")
                 else:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel\u27A4\u27A4\u27A4\n\n", color="red", style="bold")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel \u27A4\u27A4\u27A4\n", color="red", style="bold")
                     time.sleep(1)
 
 
@@ -129,7 +128,7 @@ class BioModel(object):
 
                         if printing.lower() == "on":
 
-                            utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n\n\n", color='green')
+                            utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
 
                             time.sleep(10)
 
@@ -139,7 +138,7 @@ class BioModel(object):
 
                         if printing.lower() == "on":
 
-                            utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red')        
+                            utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
                             time.sleep(10)
 
@@ -151,21 +150,21 @@ class BioModel(object):
 
                         if printing.lower() == "on":
 
-                            utility.message_printer(f"\nWARNING:\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
+                            utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
 
-                            utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n\n\n", color='green')
+                            utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
 
-                            time.sleep(10)
+                            time.sleep(5)
 
                         return True
 
                     else:
 
-                        utility.message_printer(f"\nWARNING:\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
+                        utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
 
-                        utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n\n\n", color='red')        
+                        utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
-                        time.sleep(10)
+                        time.sleep(5)
 
                         return False
 
@@ -202,11 +201,11 @@ class BioModel(object):
                         if reversibility:
                             utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
                         else:
-                            utility.message_printer("\nAll reactions in the model are NOT reversible!", color='red')
+                            utility.message_printer("\nAll reactions in the model are NOT reversible!", color='magenta')
 
                     else:
 
-                        utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='red')
+                        utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='magenta')
 
                 return reversibility, irreversibles
             
@@ -224,7 +223,7 @@ class BioModel(object):
 
                 else:
 
-                    utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='red')
+                    utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='magenta')
 
                 return reversibility
 

@@ -114,7 +114,7 @@ class CellmlReader:
 
             else:
 
-                print(f"\n\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\n\n")
+                print(f"\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\n")
 
                 return
 
@@ -954,7 +954,7 @@ class CellmlReader:
             if no_parser_warnings > 0:
 
                 for i in range(no_parser_warnings):
-                    utility.message_printer( parser.issue(i).description(), color="white")
+                    utility.message_printer(parser.issue(i).description())
 
         validator = Validator()
         validator.validateModel(cellml_model)
@@ -964,7 +964,7 @@ class CellmlReader:
         if no_validator_warnings > 0:
 
             for i in range(no_validator_warnings):
-                utility.message_printer(validator.issue(i).description(), color="magenta")
+                utility.message_printer(validator.issue(i).description(), color="yellow")
 
             raise ValueError(f"Model {model_name} has validation issues and cannot be imported!")
 
@@ -979,7 +979,7 @@ class CellmlReader:
         if no_importer_warnings > 0:
 
             for i in range(no_importer_warnings):
-                utility.message_printer( importer.issue(i).description(), color="magenta")
+                utility.message_printer( importer.issue(i).description(), color="yellow")
 
             raise ValueError(f"Model {model_name} has import issues and cannot be imported!")
 
@@ -1013,7 +1013,7 @@ class CellmlReader:
         if no_analyser_warnings > 0:
 
             for i in range(no_analyser_warnings):
-                utility.message_printer("\n" + analyser.issue(i).description(), color="magenta", style="normal")
+                utility.message_printer("\n" + analyser.issue(i).description(), color="yellow")
 
             #raise ValueError(f"Model {model_name} has analyse issues and cannot be imported!")
         

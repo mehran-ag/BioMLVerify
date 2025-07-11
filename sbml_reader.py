@@ -44,8 +44,8 @@ class SbmlReader:
         reader = libsbml.SBMLReader()
         document = reader.readSBML(file_path)
         if document.getNumErrors() > 0:
-            utility.error_printer("\nERROR: ", f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
-            utility.message_printer("Model not read", color="red")
+            utility.error_printer(f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
+            utility.message_printer("\n>>>>> Model not read <<<<<<", color="red", style='bold')
             return None
         else:
             sbmodel = document.getModel()
@@ -60,7 +60,7 @@ class SbmlReader:
                 self._forward_reverse_rate_finder(biomodel)
                 return biomodel
             else:
-                utility.message_printer(f"Model {self._file_name} has equation(s) not governed by Mass Action Kinetics")
+                utility.message_printer(f"\nModel {self._file_name} has equation(s) not governed by Mass Action Kinetics", color='cyan')
 
                 return None
         
@@ -96,7 +96,7 @@ class SbmlReader:
             self._biomodel_species_list.append(biomodel_species)
 
         if not self._biomodel_species_list:
-            utility.message_printer("\nWARNING: No species imported from SBML model!")
+            utility.warning_printer("No species imported from SBML model!")
 
         return self._biomodel_species_list
     
@@ -129,20 +129,20 @@ class SbmlReader:
         try:
 
             if not biomodel_parameters_list:
-                utility.error_printer("\nWARNING: ", "No GLOBAL parameters found in the SBML model!", error_color = "yellow")
+                utility.warning_printer("No GLOBAL parameters found in the SBML model!")
                 time.sleep(1)
 
                 biomodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
             
         except exceptions.LocalParameterConflict as e:
 
-            utility.error_printer("\nWARNING: ", e)
+            utility.warning_printer(e)
 
             return biomodel_parameters_list
         
         except exceptions.EmptyList as e:
 
-            utility.error_printer("\nWARNING: ", e)
+            utility.warning_printer(e)
 
             return biomodel_parameters_list
 
@@ -184,7 +184,12 @@ class SbmlReader:
 
             if libsbml_klaw:
 
-                biomodel_reaction.kinetic_law = libsbml_klaw.getFormula()
+                try:
+
+                    biomodel_reaction.kinetic_law = libsbml_klaw.getFormula()
+
+                except Exception as e:
+                    raise ValueError(f"The formula can't be read from the SBML reaction law. The message from libsbl is: " + str(e))
 
             else:
 
@@ -289,7 +294,7 @@ class SbmlReader:
             biomodel_reactions_list.append(biomodel_reaction)
 
         if not biomodel_reactions_list:
-            warnings.warn("\nNo reactions imported from SBML model!", UserWarning)
+           utility.warning_printer("There are no reactions defined in the SBML file!!!")
 
         return biomodel_reactions_list
     
@@ -367,14 +372,14 @@ class SbmlReader:
             if not local_biomodel_parameters_list:
                 raise exceptions.EmptyList("There are no local parameters!")
             else:
-                utility.message_printer("\nLocal parameters are stored as global parameters, too!", color="magenta", style="normal")
+                utility.message_printer("\nLocal parameters are stored as global parameters, too!", color='blue')
                 time.sleep(1)
 
             return local_biomodel_parameters_list
 
         else:
 
-            raise exceptions.LocalParameterConflict("Global parameters list cannot be created from local parameters!\nThere are conflictions in local parameter names in different reactions!")
+            raise exceptions.LocalParameterConflict("Global parameters list cannot be created from local parameters!\n         There are conflictions in local parameter names in different reactions!")
         
 
 
@@ -728,7 +733,7 @@ class SbmlReader:
             expanded_formula = sp.expand(simplified_formula)
 
             if printing.lower() == 'on':
-                utility.printer(f"\nThe simplified reaction rate expression for reaction {reaction_name} is:\n", simplified_formula, text_color="yellow")
+                utility.printer(f"\nThe simplified reaction rate expression for reaction {reaction_name} is:\n", simplified_formula)
 
             
 
@@ -814,9 +819,7 @@ class SbmlReader:
                 forward_rate_constant += " + " + temp_forward_rate_constant
                 forward_rate_constant_value += temp_forward_rate_constant_value
 
-                message = f"\nWARNING:\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
-
-                utility.message_printer(message, color="light_red")
+                message = f"\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
 
                 utility.add_warning(message)
             
@@ -1031,7 +1034,8 @@ class SbmlReader:
                 input_arguments = call_arguments.split(',')
                 input_arguments = [a.strip() for a in input_arguments]
                 for arg in input_arguments:
-                    input_symbols_dict[arg] = sp.symbols(arg)
+                    if arg:
+                        input_symbols_dict[arg] = sp.symbols(arg)
                 function_formula = function_definition.formula
                 for formal_arg, call_arg in zip(function_definition.arguments, input_arguments):
                     function_formula = function_formula.replace(formal_arg, call_arg)

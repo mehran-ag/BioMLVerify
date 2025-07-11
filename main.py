@@ -1,14 +1,18 @@
 from biomodel import *
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import atexit
 
 from functions import *
+
+from utility import printer
+
+from time import perf_counter as t; t0 = t()
 
 
 
 os.system("cls" if os.name == "nt" else "clear")
+
+atexit.register(lambda: print("\n" * 2))
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs"
 
@@ -19,11 +23,11 @@ os.system("cls" if os.name == "nt" else "clear")
 
 folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-file_name = "BIOMD0000000470.xml"
+file_name = "BIOMD0000000607.xml"
 
-# verify_model(folder_path, file_name)
+verify_model(folder_path, file_name)
 
-verify_bunch_SBML_models(folder_path)
+# verify_bunch_SBML_models(folder_path)
 
 
 
@@ -73,3 +77,4 @@ verify_bunch_SBML_models(folder_path)
 
 # biomodel.KineticConstantsThermoCompatibilty("on")
 
+printer("\n\nElapsed: ", f"{t() - t0:.4f} Seconds", text_color='light_yellow', text_style='dim')

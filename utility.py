@@ -33,25 +33,30 @@ style_map = {
 warnings = []
 
 
-def printer(descrip, text_to_print, descript_color = "white", text_color = "blue", text_style = "normal"):
+def printer(descrip, text_to_print, descript_color = "white", text_color = "blue", text_style = "normal", u_end="\n"):
 
     description = f"{color_map.get(descript_color.lower(), Fore.WHITE)}{descrip}"
     text = f"{style_map.get(text_style.lower(), Style.NORMAL)}{color_map.get(text_color.lower(), Fore.BLUE)}{text_to_print}"
 
-    print(f"{description} {text}")
+    print(f"{description} {text}", end=u_end)
 
-def error_printer(message, error, message_color = 'white', error_color = "red", error_style="normal", u_end="\n"):
+def error_printer(message, error = f"\nERROR: ", error_color = "magenta", error_style="normal", u_end="\n"):
 
-    message = f"{color_map.get(message_color.lower(), Fore.WHITE)}{message}"
-    error = f"{style_map.get(error_style.lower(), Style.NORMAL)}{color_map.get(error_color.lower(), Fore.BLUE)}{error}"
+    message = f"{style_map.get(error_style.lower(), Style.NORMAL)}{color_map.get(error_color.lower(), Fore.BLUE)}{message}"
 
-    print(f"{message} {error}", end=u_end)
+    print(f"{error} {message}", end=u_end)
 
-def message_printer(message, color="yellow", style = "normal"):
+def message_printer(message, color="white", style = "normal"):
 
     message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
 
     print(f"{message}")
+
+def warning_printer(message, warning = f"\nWARNING: ", color="yellow", style = "normal"):
+
+    message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
+
+    print(f"{warning}{message}")
 
 
 
@@ -67,12 +72,12 @@ def display_warnings():
         return
     else:
 
-        print("\n" + "!"*60)
+        print("\n" + "!"*60 + "\n")
         print( "There is/are warning(s) for your compatibility check that need(s) to be investigated for accurate results. The warning(s) is/are listed below:")
 
         for warning in warnings:
 
-            print( Fore.LIGHTCYAN_EX + warning )
+            print( Fore.YELLOW + warning )
 
 
 
@@ -81,34 +86,35 @@ def display_warnings():
 def error_handler(e, function=None, print_trace=True):
     
     if function:
-        printer("\nAn error has been raised in function: ", function, text_color='white')
+        printer("\nAn error has been raised in function: ", function, text_color='magenta')
     else:
         message_printer("\nOperation failed!", color="red")
 
     if  isinstance(e, sp.SympifyError):
-        message_printer("\nThere are variables in the reaction rate equations that are in Python's Keyword list. This prevents Sympify from converting the equation to Sympy equation to be studied!", color='cyan')
+        error_printer("There are variables in the reaction rate equations that are in Python's Keyword list. This prevents Sympify from converting the equation to Sympy equation to be studied!")
+        printer("\nFind the expression below:\n" , e)
 
     elif isinstance(e, exceptions.NotParsable):
-        error_printer("libsbml error: ", e)
+        error_printer(e, "\nLIBSBML ERROR: ")
 
     elif isinstance(e, exceptions.MaxDepth):
-        error_printer("Max Recursion Error: ", e)
-        message_printer("There are too many variables in the equation!", color='red')
+        error_printer(e, "\nMAX RECURSION ERROR: ")
+        message_printer("There are too many variables in the equation!", color='magenta')
 
 
     elif isinstance(e, (TypeError, FileNotFoundError, ValueError, exceptions.NoModel, exceptions.EmptyList, exceptions.NoReverseRateConstant)):
-        printer("ERROR: ", e, text_color='cyan')
+        error_printer(e)
 
     elif isinstance(e, RuntimeWarning):
-        error_printer(f"\nCaught an error: ", e)
+        error_printer(e)
     
     elif print_trace:
         tb = traceback.extract_tb(sys.exc_info()[2])
         file_path, lineno, _, _ = tb[-1]
         file_name = os.path.basename(file_path)
         
-        error_printer("Error occurred in file: ", file_name, u_end="", error_color='yellow')
-        error_printer(", line: ", lineno, error_color="yellow")
-        error_printer("Unexpected Error: ", e)
-        error_printer("Error type: ", sys.exc_info()[0].__name__)
+        error_printer(e, "\nUNEXPECTED ERROR: ")
+        printer("Error occurred in file: ", file_name, u_end="")
+        printer(", line: ", lineno)
+        printer("Error type: ", sys.exc_info()[0].__name__)
         message_printer("Unable to complete the query!", color="red")

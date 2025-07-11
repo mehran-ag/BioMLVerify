@@ -225,10 +225,15 @@ class ModelChecker(object):
         # Prepare a space-separated and comma-separated version
         symbol_dict = {klaw_variable: sp.symbols(klaw_variable) for klaw_variable in klaw_variables}
 
+        try:
 
-        symp_kinetic_formula = sp.sympify(kinetic_formula.replace("^", "**"), locals = symbol_dict)
+            symp_kinetic_formula = sp.sympify(kinetic_formula.replace("^", "**"), locals = symbol_dict)
 
-        simp_kinetic_formula = str(sp.simplify(symp_kinetic_formula))
+            simp_kinetic_formula = str(sp.simplify(symp_kinetic_formula))
+
+        except:
+
+            simp_kinetic_formula = ''
 
         return {
             "species_in_kinetic_law": species_in_kinetic_law,
@@ -406,7 +411,7 @@ class ModelChecker(object):
         ast_node = libsbml.parseL3Formula(kinetic_law_string)
 
         if ast_node is None:
-            raise exceptions.NotParsable("libsbml.parseL3Formula() couldn't parse the kinetic law for the reaction")
+            raise exceptions.NotParsable(f"libsbml.parseL3Formula() couldn't parse the kinetic law, {kinetic_law_string}, for the reaction")
     
         if ast_node.getName() is None:
             variables = []
