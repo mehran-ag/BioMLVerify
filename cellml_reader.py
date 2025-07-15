@@ -654,6 +654,10 @@ class CellmlReader:
 
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _find_cellml_mass_actions(self, **contents):
 
         cellml_species_instances = contents["cellml_species_instances"]
@@ -661,6 +665,10 @@ class CellmlReader:
         cellml_vars_instances = contents["cellml_vars_instances"]
 
         cellml_ast_nodes = contents["cellml_ast_nodes"]
+
+        cellml_eqs = contents["cellml_eqs"]
+
+        flattened_eqs = self._flatten_equations(cellml_eqs, cellml_vars_instances)
 
         species_in_cellml_eq = []
 
@@ -670,35 +678,34 @@ class CellmlReader:
 
         cellml_species = [species_instance.name() for species_instance in cellml_species_instances]
 
-        # Prepare a space-separated and comma-separated version
-        symbol_dict = {cellml_var: sp.symbols(cellml_var) for cellml_var in cellml_vars}
-
         for cellml_ast_node in cellml_ast_nodes:
 
-            cellml_eq_vars = CellmlReader._get_variables(cellml_ast_node)
+            if cellml_ast_node:
 
-            for cellml_eq_var in cellml_eq_vars:
+                cellml_eq_vars = CellmlReader._get_variables(cellml_ast_node)
 
-                if cellml_eq_var in cellml_species:
+                for cellml_eq_var in cellml_eq_vars:
 
-                    species_in_cellml_eq.append(cellml_eq_var)
+                    if cellml_eq_var in cellml_species:
 
-            cellml_eq = libsbml.formulaToL3String(cellml_ast_node)
+                        species_in_cellml_eq.append(cellml_eq_var)
 
-            if '==' in cellml_eq:
+                cellml_eq = libsbml.formulaToL3String(cellml_ast_node)
 
-                cellml_eq_rhs = cellml_eq.split('==')[1].strip()
+                if '==' in cellml_eq:
 
+                    cellml_eq_lhs = cellml_eq.split('==')[0].strip()
 
-            symp_cellml_eq = sp.sympify(cellml_eq_rhs.replace("^", "**"), locals = symbol_dict)
+                if flattened_eqs.get(cellml_eq_lhs) is not None:
+                    cellml_eq_rhs = str(flattened_eqs[cellml_eq_lhs])
 
-            simp_cellml_eq = str(sp.simplify(symp_cellml_eq))
+                    simp_cellml_eq = str(sp.simplify(flattened_eqs[cellml_eq_lhs]))
 
-            eq_mass_action = self._check_mass_action( cellml_eq_rhs, simp_cellml_eq, cellml_vars, species_in_cellml_eq )
+                    eq_mass_action = self._check_mass_action( cellml_eq_rhs, simp_cellml_eq, cellml_vars, species_in_cellml_eq )
 
-            if not eq_mass_action:
+                    if not eq_mass_action:
 
-                mass_action = eq_mass_action
+                        mass_action = eq_mass_action
 
         return mass_action
 
@@ -706,6 +713,10 @@ class CellmlReader:
     
 
 
+
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _check_mass_action(self, cellml_eq, simp_cellml_eq, cellml_vars, species_in_cellml_eq):
 
         flag = False
@@ -737,7 +748,9 @@ class CellmlReader:
 
 
 
-
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _single_product(self, kinetic_law, simple_kinetic_law):
 
         flag = True
@@ -841,7 +854,8 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _remove_units_from_mathml(seflf, mathml_str):
+    def _remove_units_from_mathml(self, mathml_str):
+
         root = etree.fromstring(mathml_str.encode())
 
         ns = {
@@ -854,6 +868,55 @@ class CellmlReader:
 
         return etree.tostring(root).decode()
 
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _flatten_equations(self, cellml_eqs, cellml_vars_instances):
+        '''
+        Returns a dictionary mapping variables (as strings) to flattened equations (sympy expressions) where all variables defined by equations have been substituted by their defnitions
+        '''
+
+        # Step 1: Create symbol dictionary
+        cellml_vars = [var_instance.name() for var_instance in cellml_vars_instances]
+        symbol_dict = {var: sp.symbols(var) for var in cellml_vars}
+
+        # Step 2: Build equation dictionary: LHS string -> RHS sympy expression
+        eq_dict = {}
+        for cellml_eq in cellml_eqs:
+            if '=' in cellml_eq:
+                lhs_str = cellml_eq.split('=')[0].strip()
+                rhs_str = cellml_eq.split('=')[1].strip()
+                rhs_expr = sp.sympify(rhs_str.replace("^", "**"), locals=symbol_dict)
+                eq_dict[lhs_str] = rhs_expr
+
+        # Step 3: Recursive substitution
+        def substitute_all(expr, eq_dict):
+            prev_expr = None
+            while expr != prev_expr:
+                prev_expr = expr
+                for var_str, sub_expr in eq_dict.items():
+                    expr = expr.subs(symbol_dict[var_str], sub_expr)
+            return expr
+
+        # Step 4: Determine which variables are used as intermediate
+        substituted_vars = set()
+        for rhs_expr in eq_dict.values():
+            for symbol in rhs_expr.free_symbols:
+                var_name = str(symbol)
+                if var_name in eq_dict:
+                    substituted_vars.add(var_name)
+
+        # Step 5: Flatten and filter
+        flattened_eqs = {}
+        for var, rhs_expr in eq_dict.items():
+            if var not in substituted_vars:
+                flattened_rhs = substitute_all(rhs_expr, eq_dict)
+                flattened_eqs[var] = sp.simplify(flattened_rhs)
+
+        return flattened_eqs
 
 
 

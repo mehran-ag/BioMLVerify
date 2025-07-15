@@ -21,19 +21,17 @@ atexit.register(lambda: print("\n" * 2))
 
 
 
-folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
+# folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-file_name = "BIOMD0000000607.xml"
+# file_name = "BIOMD0000000607.xml"
 
-verify_model(folder_path, file_name)
+# verify_model(folder_path, file_name)
 
 # verify_bunch_SBML_models(folder_path)
 
 
 
-
-
-# file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
+file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
 
@@ -47,9 +45,9 @@ verify_model(folder_path, file_name)
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-# biomodel = BioModel()
+biomodel = BioModel()
 
-# biomodel.read_file(file_path)
+biomodel.read_file(file_path)
 
 # print("\n")
 
@@ -77,4 +75,11 @@ verify_model(folder_path, file_name)
 
 # biomodel.KineticConstantsThermoCompatibilty("on")
 
-printer("\n\nElapsed: ", f"{t() - t0:.4f} Seconds", text_color='light_yellow', text_style='dim')
+elapsed = t() - t0
+
+elapsed_str = (
+    f"{int(elapsed // 60)} minute{'s' if int(elapsed // 60) != 1 else ''} and "
+    f"{int(elapsed % 60)} second{'s' if int(elapsed % 60) != 1 else ''}"
+) if elapsed >= 60 else f"{int(elapsed)} second{'s' if int(elapsed) != 1 else ''}"
+
+printer("\n\nElapsed: ", elapsed_str, text_color='light_yellow', text_style='dim')
