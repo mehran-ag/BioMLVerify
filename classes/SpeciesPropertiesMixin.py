@@ -60,7 +60,7 @@ class SpeciesPropertiesMixin:
         if isinstance(annots, list):
             self._annotations = annots
         else:
-            raise ValueError("annotations mus tbe stored in a list")
+            raise ValueError("Annotations must be stored in a list")
         
     @property
     def charge(self):

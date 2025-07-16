@@ -31,9 +31,9 @@ atexit.register(lambda: print("\n" * 2))
 
 
 
-file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
+# file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
 
-# file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
+file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml"
 
@@ -63,17 +63,17 @@ biomodel.read_file(file_path)
 
 # biomodel.getReverseStoichiometricMatrix("on")
 
-# # large_array = biomodel.getThermoConversionMatrix("on")
+# large_array = biomodel.getThermoConversionMatrix("on")
 
-# # # df = pd.DataFrame(large_array)
+# df = pd.DataFrame(large_array)
 
-# # # print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
+# print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
 
 # biomodel.checkModelReversibility(printing="on")
 
 # biomodel.getKineticRateConstantsVector("on")
 
-# biomodel.KineticConstantsThermoCompatibilty("on")
+# biomodel.KineticConstantsThermoCompatibility("on")
 
 elapsed = t() - t0
 

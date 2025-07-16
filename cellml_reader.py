@@ -5,6 +5,8 @@ import chemparse as chp
 import libchebipy as chb
 import libsbml
 import sympy as sp
+import re
+from collections import defaultdict
 
 from lxml import etree
 
@@ -52,7 +54,7 @@ class CellmlReader:
 
         cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
 
-        cellml_contents = self._extract_cellml_content(cellml_model, cellml_model_name) #returns a dictionary containing "cellml_eqs", "cellml_species_instances", "cellml_vars_instances", and "cellml_ast_nodes"
+        cellml_contents = self._extract_cellml_content(cellml_model) #returns a dictionary containing "cellml_eqs", "cellml_flattened_eqs", "cellml_species_instances", "cellml_vars_instances", and "cellml_ast_nodes"
 
         cellml_vars_instances = cellml_contents["cellml_vars_instances"]
 
@@ -110,7 +112,9 @@ class CellmlReader:
 
             if mass_action:
 
-                print("It is mass action")
+                biomodel = self._make_biomodel(cellml_model_name, **cellml_contents)
+
+                return biomodel
 
             else:
 
@@ -118,66 +122,103 @@ class CellmlReader:
 
                 return
 
-        
+
+
 
 
 
     # ********************************
     # *           Function           *
     # ********************************
-    def read_file_old( self, file_path, cellml_strict_mode = False):
+    def _extract_cellml_content(self, cellml_model):
 
-        base_dir = os.path.dirname(file_path)
+        cellml_vars_instances = []
 
-        if not isinstance(base_dir, str):
-            if isinstance(base_dir, Path):
-                base_dir = str(base_dir)
-            elif isinstance(base_dir,PurePath):
-                base_dir = str(base_dir)
+        cellml_species_instances = []
+
+        cellml_eqs = []
+
+        cellml_ast_nodes = []
+
+        for i in range(cellml_model.componentCount()):
+
+            component = cellml_model.component(i)
+
+            component_name = component.name()
+
+            component_id = component.id()
+
+            num_vars = component.variableCount()
+
+            for i in range(num_vars):
+
+                variable = component.variable(i)
+
+                variable_id = variable.id()
+
+                cellml_vars_instances.append(variable)
+
+                if variable_id:
+
+                    cellml_species_instances.append(variable)
+ 
+
+            raw_mathml = component.math()
+
+            if raw_mathml!= '':
+
+                if self._has_multiple_equations(raw_mathml):
+
+                    cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
+
+                    result = self._split_equations(cleaned_mathml)
+
+                    for i in range(len(result)):
+
+                        ast_node = libsbml.readMathMLFromString(result[i])
+
+                        if ast_node:
+
+                            string_formula = libsbml.formulaToL3String(ast_node)
+
+                            string_formula = string_formula.replace('==', '=')
+
+                            cellml_eqs.append(string_formula)
+
+                            cellml_ast_nodes.append(ast_node)
+
+                else:
+
+                    cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
+
+                    ast_node = libsbml.readMathMLFromString(cleaned_mathml)
+
+                    if ast_node:
+
+                        string_formula = libsbml.formulaToL3String(ast_node)
+
+                        string_formula = string_formula.replace('==', '=')
+
+                        cellml_eqs.append(string_formula)
+
+                        cellml_ast_nodes.append(ast_node)
+
             else:
-                raise TypeError('The file path should be a string or a Path object.')
 
-        if not os.path.isfile(file_path):
-            raise FileNotFoundError('Model source file `{}` does not exist.'.format(file_path))
-        
-        cellml_model_name = os.path.basename(file_path)
+                continue
 
-        cellml_model = CellmlReader._read_analyse_cellml_model( file_path, cellml_strict_mode )
+        cellml_flattened_eqs = self._flatten_equations(cellml_eqs, cellml_vars_instances)
 
-        cellml_components, cellml_variables = self._cellml_elements_reader(cellml_model, cellml_model_name)
-
-        variable_type_buckets = self._variable_distinguisher(cellml_variables)
-        
-        '''
-        "variables_type_buckets" is a dictionary as shown below. It contains all kinds of variables encoded in the CellML file
-
-        variable_type_buckets = {
-            'va': list of variables
-            'co': list of coefficients
-            'rc': list of rate constants
-            'ra': list of rates
-            'bc': list of boundary conditions
-            'ev': list of equation variables
-            'bv': list of boundary values
-            'en': list of enzymes
+        return {
+            "cellml_eqs": cellml_eqs,
+            "cellml_flattened_eqs": cellml_flattened_eqs,
+            "cellml_species_instances": cellml_species_instances,
+            "cellml_vars_instances": cellml_vars_instances,
+            "cellml_ast_nodes": cellml_ast_nodes
         }
-        '''
 
-        biomodel_species_list = self._species_identifier(variable_type_buckets['va'])
 
-        biomodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomodel_species_list)
 
-        # biomodel_reactions_list, biomodel_species_list = self._boundary_condition_identifier(variable_type_buckets['bc'], biomodel_reactions_list, biomodel_species_list)
-
-        self._kinetic_rate_constant_finder(variable_type_buckets['rc'], biomodel_reactions_list)
-
-        biomodel = Model(cellml_model.id())
-
-        biomodel.species = biomodel_species_list
-
-        biomodel.reactions = biomodel_reactions_list
-
-        return biomodel
 
 
 
@@ -567,116 +608,58 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _extract_cellml_content(self, cellml_model, cellml_model_name):
+    def _find_cellml_mass_actions(self, **cellml_contents):
 
-        cellml_vars_instances = []
+        cellml_vars_instances = cellml_contents["cellml_vars_instances"]
 
-        cellml_species_instances = []
+        cellml_ast_nodes = cellml_contents["cellml_ast_nodes"]
 
-        cellml_eqs = []
+        cellml_flattened_eqs = cellml_contents["cellml_flattened_eqs"]
 
-        cellml_ast_nodes = []
-
-        for i in range(cellml_model.componentCount()):
-
-            component = cellml_model.component(i)
-
-            component_name = component.name()
-
-            component_id = component.id()
-
-            num_vars = component.variableCount()
-
-            for i in range(num_vars):
-
-                variable = component.variable(i)
-
-                variable_id = variable.id()
-
-                cellml_vars_instances.append(variable)
-
-                if variable_id:
-
-                    cellml_species_instances.append(variable)
- 
-
-            raw_mathml = component.math()
-
-            if raw_mathml!= '':
-
-                if self._has_multiple_equations(raw_mathml):
-
-                    cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
-
-                    result = self._split_equations(cleaned_mathml)
-
-                    for i in range(len(result)):
-
-                        ast_node = libsbml.readMathMLFromString(result[i])
-
-                        if ast_node:
-
-                            string_formula = libsbml.formulaToL3String(ast_node)
-
-                            string_formula = string_formula.replace('==', '=')
-
-                            cellml_eqs.append(string_formula)
-
-                            cellml_ast_nodes.append(ast_node)
-
-                else:
-
-                    cleaned_mathml = self._remove_units_from_mathml(raw_mathml)
-
-                    ast_node = libsbml.readMathMLFromString(cleaned_mathml)
-
-                    if ast_node:
-
-                        string_formula = libsbml.formulaToL3String(ast_node)
-
-                        string_formula = string_formula.replace('==', '=')
-
-                        cellml_eqs.append(string_formula)
-
-                        cellml_ast_nodes.append(ast_node)
-
-            else:
-
-                continue
-
-        return {
-            "cellml_eqs": cellml_eqs,
-            "cellml_species_instances": cellml_species_instances,
-            "cellml_vars_instances": cellml_vars_instances,
-            "cellml_ast_nodes": cellml_ast_nodes
-        }
-
-
-
-
-
-    # ********************************
-    # *           Function           *
-    # ********************************
-    def _find_cellml_mass_actions(self, **contents):
-
-        cellml_species_instances = contents["cellml_species_instances"]
-
-        cellml_vars_instances = contents["cellml_vars_instances"]
-
-        cellml_ast_nodes = contents["cellml_ast_nodes"]
-
-        cellml_eqs = contents["cellml_eqs"]
-
-        flattened_eqs = self._flatten_equations(cellml_eqs, cellml_vars_instances)
-
-        species_in_cellml_eq = []
+        species_in_cellml_eqs = self._find_species_in_all_eqs(**cellml_contents)
 
         mass_action = True
 
         cellml_vars = [var_instance.name() for var_instance in cellml_vars_instances]
 
+        for cellml_ast_node in cellml_ast_nodes:
+
+            if cellml_ast_node:
+
+                cellml_eq = libsbml.formulaToL3String(cellml_ast_node)
+
+                if '==' in cellml_eq:
+
+                    cellml_eq_lhs = cellml_eq.split('==')[0].strip()
+
+                if cellml_flattened_eqs.get(cellml_eq_lhs) is not None:
+                    cellml_eq_rhs = str(cellml_flattened_eqs[cellml_eq_lhs])
+
+                    simp_cellml_eq = str(sp.simplify(cellml_flattened_eqs[cellml_eq_lhs]))
+
+                    eq_mass_action = self._check_mass_action( cellml_eq_rhs, simp_cellml_eq, cellml_vars, species_in_cellml_eqs )
+
+                    if not eq_mass_action:
+
+                        mass_action = eq_mass_action
+
+        return mass_action
+
+
+    
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _find_species_in_all_eqs(self, **cellml_contents):
+
+        cellml_ast_nodes = cellml_contents["cellml_ast_nodes"]
+
+        cellml_species_instances = cellml_contents["cellml_species_instances"]
+
         cellml_species = [species_instance.name() for species_instance in cellml_species_instances]
+
+        species_in_cellml_eqs = []
 
         for cellml_ast_node in cellml_ast_nodes:
 
@@ -688,29 +671,13 @@ class CellmlReader:
 
                     if cellml_eq_var in cellml_species:
 
-                        species_in_cellml_eq.append(cellml_eq_var)
+                        species_in_cellml_eqs.append(cellml_eq_var)
 
-                cellml_eq = libsbml.formulaToL3String(cellml_ast_node)
+        species_in_cellml_eqs = list(dict.fromkeys(species_in_cellml_eqs))
 
-                if '==' in cellml_eq:
-
-                    cellml_eq_lhs = cellml_eq.split('==')[0].strip()
-
-                if flattened_eqs.get(cellml_eq_lhs) is not None:
-                    cellml_eq_rhs = str(flattened_eqs[cellml_eq_lhs])
-
-                    simp_cellml_eq = str(sp.simplify(flattened_eqs[cellml_eq_lhs]))
-
-                    eq_mass_action = self._check_mass_action( cellml_eq_rhs, simp_cellml_eq, cellml_vars, species_in_cellml_eq )
-
-                    if not eq_mass_action:
-
-                        mass_action = eq_mass_action
-
-        return mass_action
+        return species_in_cellml_eqs
 
 
-    
 
 
 
@@ -917,6 +884,334 @@ class CellmlReader:
                 flattened_eqs[var] = sp.simplify(flattened_rhs)
 
         return flattened_eqs
+    
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _make_biomodel(self, cellml_model_name, **cellml_contents):
+        '''
+        cellml_contents = {"cellml_eqs": cellml_eqs,
+            "cellml_flattened_eqs": cellml_flattened_eqs,
+            "cellml_species_instances": cellml_species_instances,
+            "cellml_vars_instances": cellml_vars_instances,
+            "cellml_ast_nodes": cellml_ast_nodes}
+        '''
+
+        species_in_cell_equations = self._find_species_in_all_eqs(**cellml_contents)
+
+        cellml_flattened_eqs = cellml_contents["cellml_flattened_eqs"]
+
+        cellml_species_instances = cellml_contents["cellml_species_instances"]
+
+        cellml_vars_instances = cellml_contents["cellml_vars_instances"]
+
+        reversible = True
+
+        biomodel = Model(cellml_model_name)
+
+        biomodel_reactions_list = []
+
+        for reaction_id, sympy_expr_eq in cellml_flattened_eqs.items():
+
+            rates = self._get_forward_reverse_rate_expressions(sympy_expr_eq)
+
+            if len(rates["forward_rate"]) == 0:
+                raise ValueError(f"No forward reaction rate has been found in equation: {str(sympy_expr_eq)}")
+
+            elif len(rates["forward_rate"]) > 1:
+                raise ValueError(f"There are more than one addition terms in the forward reaction rate of the kinetic law equation: {str(sympy_expr_eq)}")
+            
+            else:
+
+                forward_rate_expr = rates["forward_rate"][0]
+
+                forward_rate_contents = self._analyze_sympy_expression(forward_rate_expr, species_in_cell_equations)
+
+            if len(rates["reverse_rate"]) == 0:
+                reversible = False
+
+            elif len(rates["reverse_rate"]) == 1:
+
+                reverse_rate_expr = rates["reverse_rate"][0]
+
+                reverse_rate_contents = self._analyze_sympy_expression(reverse_rate_expr, species_in_cell_equations)
+
+            else:
+
+                raise ValueError(f"There are more than one addition terms in the reverse reaction rate of the kinetic law equation: {str(sympy_expr_eq)}")
+            
+            if not reversible:
+                raise ValueError(f"Reaction {reaction_id} is not reversible and the reaction can not be defined from the reaction rate equation")
+
+
+            biomodel_reaction = Reaction(reaction_id)
+
+            biomodel_reaction.kinetic_law = str(sympy_expr_eq).replace('**', '^')
+
+            biomodel_reaction.kinetic_law_type = 'Mass Action'
+
+            biomodel_species_list = []
+
+            biomodel_reactants_list = []
+
+            biomodel_products_list = []
+
+            local_parameters = []
+
+            forward_rate_constant = str(forward_rate_contents["rate_constant"])
+
+            cellml_forward_rate_instance = self._return_cellml_parameter_instance( forward_rate_constant, cellml_vars_instances )
+
+            if cellml_forward_rate_instance is not None:
+
+                parameter_name = cellml_forward_rate_instance.name()
+
+                parameter_value = float(cellml_forward_rate_instance.initialValue())
+
+                biomodel_reaction.kinetic_forward_rate_constant = forward_rate_constant
+
+                biomodel_reaction.kinetic_forward_rate_constant_value = parameter_value
+
+                biomodel_parameter = Parameter(parameter_name)
+
+                biomodel_parameter.value = parameter_value
+
+                local_parameters.append(biomodel_parameter)
+
+            for species_name, stoichiometry in forward_rate_contents["stoichiometry"].items():
+
+                cellml_species_instance = self._return_cellml_species_instance( str(species_name), cellml_species_instances )
+
+                if cellml_species_instance is not None:
+
+                    biomodel_species = Species(str(species_name))
+
+                    id = cellml_species_instance.id()
+
+                    if id.isdigit():
+                        chebi_code = id
+
+                        biomodel_species.chebi_code = chebi_code
+
+                    biomodel_species_list.append(biomodel_species)
+
+                    biomodel_species_reference = SpeciesReference(biomodel_species)
+
+                    biomodel_species_reference.reaction_id = reaction_id
+
+                    biomodel_species_reference.stoichiometry = stoichiometry
+
+                    biomodel_reactants_list.append(biomodel_species_reference)
+
+            reverse_rate_constant = str(reverse_rate_contents["rate_constant"])
+
+            cellml_reverse_rate_instance = self._return_cellml_parameter_instance(reverse_rate_constant, cellml_vars_instances)
+
+            parameter_id = cellml_reverse_rate_instance.id()
+
+            parameter_value = float(cellml_reverse_rate_instance.initialValue())
+
+            biomodel_reaction.kinetic_reverse_rate_constant = reverse_rate_constant
+
+            biomodel_reaction.kinetic_reverse_rate_constant_value = parameter_value
+
+            biomodel_parameter = Parameter(parameter_id)
+
+            biomodel_parameter.value = parameter_value
+
+            local_parameters.append(biomodel_parameter)
+
+            for species_name, stoichiometry in reverse_rate_contents["stoichiometry"].items():
+
+                cellml_species_instance = self._return_cellml_species_instance( str(species_name), cellml_species_instances )
+
+                if cellml_species_instance is not None:
+
+                    biomodel_species = Species( str(species_name) )
+
+                    id = cellml_species_instance.id()
+
+                    if id.isdigit():
+                        chebi_code = id
+                        biomodel_species.chebi_code = chebi_code
+
+                    biomodel_species_list.append(biomodel_species)
+
+                    biomodel_species_reference = SpeciesReference(biomodel_species)
+
+                    biomodel_species_reference.reaction_id = reaction_id
+
+                    biomodel_species_reference.stoichiometry = stoichiometry
+
+                    biomodel_products_list.append(biomodel_species_reference)
+
+            for species in biomodel_species_list:
+                if species not in biomodel.species:
+                    biomodel.species.append(species)
+
+            biomodel_reaction.reversible = reversible
+
+            biomodel_reaction.local_parameters = local_parameters
+
+            biomodel_reaction.reactants = biomodel_reactants_list
+
+            biomodel_reaction.products = biomodel_products_list
+
+            biomodel_reactions_list.append(biomodel_reaction)
+
+        biomodel.reactions = biomodel_reactions_list
+
+        biomodel.species = biomodel_species_list
+
+        return biomodel
+
+        
+
+
+
+
+    
+
+    def _return_cellml_species_instance(self, species_name, cellml_species_instances):
+
+        matched_instance = None
+
+        for cellml_species_instance in cellml_species_instances:
+
+            if cellml_species_instance.name() == species_name:
+
+                matched_instance = cellml_species_instance
+
+
+        return matched_instance
+    
+
+    def _return_cellml_parameter_instance(self, var_name, cellml_vars_instances):
+
+        matched_instance = None
+
+        for cellml_var_instance in cellml_vars_instances:
+
+            if cellml_var_instance.name() == var_name:
+
+                matched_instance = cellml_var_instance
+
+
+        return matched_instance
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _process_rate_expression(self, rate_expr: str, species: list):
+
+        stoichiometry = {}
+        expr = rate_expr  # Make a copy to modify
+
+        for sp in sorted(species, key=len, reverse=True):
+            # First, handle exponentiated species (e.g., x_NO**2)
+            power_match = re.search(rf"{re.escape(sp)}\s*\*\*\s*(\d+)", expr)
+            if power_match:
+                stoichiometry[sp] = int(power_match.group(1))
+                expr = re.sub(rf"{re.escape(sp)}\s*\*\*\s*\d+", "1", expr)
+            else:
+                # Then handle species without exponent
+                pattern_no_power = rf"(?<![\w]){re.escape(sp)}(?![\w])"
+                match = re.search(pattern_no_power, expr)
+                if match:
+                    stoichiometry[sp] = 1
+                    expr = re.sub(pattern_no_power, "1", expr)
+
+        return {
+            'modified_expression': expr,
+            'stoichiometry': stoichiometry
+        }
+    
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _analyze_sympy_expression(self, rate_expr, species_str_list):
+        # Convert species names (strings) to sympy symbols
+        species_syms = [sp.Symbol(name) for name in species_str_list]
+
+        # Get species and their exponents from the expression
+        if rate_expr.is_Mul:
+            powers = rate_expr.as_powers_dict()
+        else:
+            raise ValueError("Rate expression is not product of terms, so powers of variables cannot be extracted by Sympy!")
+        
+        stoichiometry = {}
+
+        for sp_sym, sp_name in zip(species_syms, species_str_list):
+            power = powers.get(sp_sym)
+            if power is not None:
+                stoichiometry[sp_name] = int(power)
+
+        # Replace species with 1 to isolate the constant part
+        substituted_expr = rate_expr.subs({sym: 1 for sym in species_syms})
+
+        return {
+            'stoichiometry': stoichiometry,
+            'rate_constant': substituted_expr
+        }
+
+
+
+
+
+
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # *      Internal Function       *
+    # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+    def _get_forward_reverse_rate_expressions(self, expression):
+
+        # Separate positive and negative terms manually
+        rates = defaultdict(list)
+
+
+        # Check for invalid or empty expressions
+        if expression is None or expression == 0:
+            return rates  # Nothing to do
+
+        if not isinstance(expression, sp.Expr):
+            raise TypeError("Expected a sympy expression.")
+
+        if expression.is_Mul:
+            flag = True
+            for argument in expression.args:
+                if argument.is_Add:
+                    flag = False
+                    for arg in expression.args:
+                        if "-" in str(argument):
+                            rates["reverse_rate"].append(arg)
+                        else:
+                            rates["forward_rate"].append(arg)
+            if flag:
+                rates["forward_rate"].append(expression)
+
+        elif expression.is_Add:
+            for argument in expression.args:
+                if "-" in str(argument):
+                    rates["reverse_rate"].append(-argument)
+                else:
+                    rates["forward_rate"].append(argument)
+
+        else:
+            rates["forward_rate"].append(expression)
+
+        return rates
+    # --------------------------------------------------
+    # --------------------------------------------------
+
 
 
 

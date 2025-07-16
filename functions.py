@@ -142,3 +142,7 @@ def verify_bunch_SBML_models(folder_path):
     excel_full_path = os.path.join(folder_path, "check_results.xlsx")
         
     check_results.to_excel(excel_full_path, index=False)
+
+    saved_path = "\nThe excel file has been successfully saved to \"" + folder_path + "\""
+
+    utility.message_printer(saved_path, color='green')

@@ -17,7 +17,7 @@ class Species(SpeciesPropertiesMixin):
         self._name = None
         self._initial_concentration = None
         self._compartment = None
-        self._annotations = None
+        self._annotations: list = None
         self._charge = None
         self._thermodynamic_rate_constant = None
         self._compound = None  #This is the scientific name of the species like CO2, H2O, CH4
@@ -48,7 +48,6 @@ class Species(SpeciesPropertiesMixin):
 
         return self._compartment
     
-
-    @staticmethod
-    def reset_counter():
-        Species._counter = 0
+    @classmethod
+    def reset_counter(cls, new_counter_value = 0):
+        cls._counter = new_counter_value  # Reset the class-level counter

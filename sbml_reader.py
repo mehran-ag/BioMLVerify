@@ -245,7 +245,7 @@ class SbmlReader:
 
                 if id == "empty":
 
-                    Reaction.ResetCounter(index)
+                    Reaction.reset_counter(index)
 
                     biomodel_reaction.ResetIndex()
 
@@ -269,7 +269,7 @@ class SbmlReader:
 
                 if id == "empty":
 
-                    Reaction.ResetCounter(index)
+                    Reaction.reset_counter(index)
 
                     biomodel_reaction.ResetIndex()
 

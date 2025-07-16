@@ -39,7 +39,7 @@ class Reaction(ReactionPropertiesMixin):
         return cls._counter
     
     @classmethod
-    def ResetCounter(cls, new_counter_value):
+    def reset_counter(cls, new_counter_value = 0):
         cls._counter = new_counter_value  # Reset the class-level counter
 
 
@@ -87,8 +87,3 @@ class Reaction(ReactionPropertiesMixin):
     def getListOfReactants(self):
 
         return self._reactants
-    
-    @staticmethod
-    def reset_counter():
-
-        Reaction._counter = 0
