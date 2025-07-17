@@ -84,7 +84,7 @@ class BioML(object):
             try:
                 if self._file_format == 'xml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n", color="green")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n", color="cyan")
 
                     self._biomlmodel =  self._sbml_reader.read_file(self._file_path)
 
@@ -92,7 +92,7 @@ class BioML(object):
 
                 elif self._file_format == 'cellml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n", color="green")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n", color="cyan")
 
                     self._biomlmodel = self._cellml_reader.read_file(self._file_path)
 
@@ -139,7 +139,7 @@ class BioML(object):
 
                             utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
 
-                            time.sleep(10)
+                            time.sleep(5)
 
                         return True
 
@@ -149,7 +149,7 @@ class BioML(object):
 
                             utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
-                            time.sleep(10)
+                            time.sleep(5)
 
                         return False
                     
@@ -159,8 +159,6 @@ class BioML(object):
 
                         if printing.lower() == "on":
 
-                            utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
-
                             utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
 
                             time.sleep(5)
@@ -169,13 +167,17 @@ class BioML(object):
 
                     else:
 
-                        utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
+                        if printing.lower() == "on":
 
-                        utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
+                            utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
-                        time.sleep(5)
+                            time.sleep(5)
 
                         return False
+                    
+            else:
+                
+                raise ValueError("No BioMLModel provided")
 
                 
 

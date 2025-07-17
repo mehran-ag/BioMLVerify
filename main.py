@@ -21,19 +21,19 @@ atexit.register(lambda: print("\n" * 2))
 
 
 
-# folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
+folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-# file_name = "BIOMD0000000283.xml"
+file_name = "BIOMD0000000378.xml"
 
 # verify_model(folder_path, file_name)
 
-# verify_bunch_SBML_models(folder_path)
+verify_bunch_SBML_models(folder_path)
 
 
 
 # file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
 
-file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
+# file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml"
 
@@ -45,9 +45,9 @@ file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioM
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-bioml = BioML()
+# bioml = BioML()
 
-bioml.read_file(file_path)
+# bioml.read_file(file_path)
 
 # print("\n")
 

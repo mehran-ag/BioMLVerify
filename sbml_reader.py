@@ -55,14 +55,29 @@ class SbmlReader:
             biomlmodel.reactions = self._sbml_to_biomlmodel_reaction_tranfer(sbmodel, biomlmodel.function_definitions)
             biomlmodel.parameters = self._sbml_to_biomlmodel_parameter_transfer(sbmodel)
             biomlmodel.compartments = self._sbml_to_biomlmodel_compartments_transfer(sbmodel)
-            _model_checker = model_checker.ModelChecker()
-            if (_model_checker.check_mass_action_kinetics(biomlmodel, immediate_return=True)):
-                self._forward_reverse_rate_finder(biomlmodel)
-                return biomlmodel
-            else:
-                utility.message_printer(f"\nModel {self._file_name} has equation(s) not governed by Mass Action Kinetics", color='cyan')
 
-                return None
+            _model_checker = model_checker.ModelChecker()
+
+            if (_model_checker.check_mass_action_kinetics(biomlmodel, immediate_return=True)):
+
+                try:
+
+                    biomlmodel.is_mass_action = True
+
+                    self._forward_reverse_rate_finder(biomlmodel)
+                    
+                    return biomlmodel
+                
+                except Exception:
+
+                    return biomlmodel
+
+            
+            else:
+
+                biomlmodel.is_mass_action = False
+                
+                return biomlmodel
         
 
 
@@ -427,7 +442,7 @@ class SbmlReader:
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        def get_forward_reverse_rate_expressions(expression):
+        def _get_forward_reverse_rate_expressions(expression):
 
             # Separate positive and negative terms manually
             rates = defaultdict(list)
@@ -474,7 +489,7 @@ class SbmlReader:
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        def power_operator_finder(expression, parameters, parameters_values, new_parameters=None, reaction_rate_constant='', reaction_rate_constant_value=None, number_of_recursions = 0):
+        def _power_operator_finder(expression, parameters, parameters_values, new_parameters=None, reaction_rate_constant='', reaction_rate_constant_value=None, number_of_recursions = 0):
 
             # Create a dictionary to map operators to their corresponding operations
             operations = {
@@ -544,7 +559,7 @@ class SbmlReader:
 
                         expression = expression.replace( power_match_str, replacing_power_k )
 
-            return power_operator_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
+            return _power_operator_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
         # --------------------------------------------------
         # --------------------------------------------------
 
@@ -552,7 +567,7 @@ class SbmlReader:
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        def parameters_finder(expression, parameters, parameters_values, new_parameters = None, reaction_rate_constant = "", reaction_rate_constant_value=None, number_of_recursions=0):
+        def _parameters_finder(expression, parameters, parameters_values, new_parameters = None, reaction_rate_constant = "", reaction_rate_constant_value=None, number_of_recursions=0):
 
             # Create a dictionary to map operators to their corresponding operations
             operations = {
@@ -626,7 +641,7 @@ class SbmlReader:
 
                         expression = expression.replace( match_str, replacing_k )
 
-            return parameters_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
+            return _parameters_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
         # --------------------------------------------------
         # --------------------------------------------------
 
@@ -737,7 +752,7 @@ class SbmlReader:
 
             
 
-            forward_reverse_rate_equations = get_forward_reverse_rate_expressions(expanded_formula)
+            forward_reverse_rate_equations = _get_forward_reverse_rate_expressions(expanded_formula)
 
             forward_rate_expressions = forward_reverse_rate_equations.get("forward_rate")
 
@@ -767,9 +782,9 @@ class SbmlReader:
 
                 parameters_list = [str(p) for p in forward_rate_matching_parameters]
 
-                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
+                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = _power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
 
-                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value)
+                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value)
 
                 if len(new_parameters) > 1:
 
@@ -804,9 +819,9 @@ class SbmlReader:
 
                     parameters_list = [str(p) for p in forward_rate_matching_parameters]
 
-                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
+                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = _power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
 
-                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value)
+                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value)
 
                     message = f"\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
 
@@ -859,9 +874,9 @@ class SbmlReader:
 
                         parameters_list = [str(p) for p in reverse_rate_matching_parameters]
 
-                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
+                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = _power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
 
-                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value)
+                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value)
 
                         message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
 
@@ -898,9 +913,9 @@ class SbmlReader:
 
                             parameters_list = [str(p) for p in reverse_rate_matching_parameters]
 
-                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
+                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = _power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
 
-                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = parameters_finder(expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value)
+                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value)
 
                             message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
 

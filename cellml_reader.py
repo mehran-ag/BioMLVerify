@@ -88,6 +88,7 @@ class CellmlReader:
 
         if all(variable_type_buckets.get(k) for k in keys_to_check):
 
+            utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
 
             biomlmodel_species_list = self._species_identifier(variable_type_buckets['va'])
 

@@ -4,7 +4,6 @@ import constants as cn
 from typing import Union
 import sympy as sp
 from sympy import symbols
-import utility
 
 
 
@@ -71,27 +70,33 @@ class ModelChecker(object):
 
         biomlmodel_reactions_list = biomlmodel.get_list_of_reactions()
 
-        for biomlmodel_reaction in biomlmodel_reactions_list:
+        if biomlmodel_reactions_list:
 
-            if biomlmodel_reaction.expanded_kinetic_law:
+            for biomlmodel_reaction in biomlmodel_reactions_list:
 
-                expanded_kinetic_law_string = biomlmodel_reaction.expanded_kinetic_law
+                if biomlmodel_reaction.expanded_kinetic_law:
 
-                variables = ModelChecker._get_variables(expanded_kinetic_law_string)
+                    expanded_kinetic_law_string = biomlmodel_reaction.expanded_kinetic_law
 
-                biomlmodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+                    variables = ModelChecker._get_variables(expanded_kinetic_law_string)
 
-            elif biomlmodel_reaction.kinetic_law:
+                    biomlmodel_reaction.klaw_variables = list(dict.fromkeys(variables))
 
-                kinetic_law_string = biomlmodel_reaction.kinetic_law
+                elif biomlmodel_reaction.kinetic_law:
 
-                variables = ModelChecker._get_variables(kinetic_law_string)
+                    kinetic_law_string = biomlmodel_reaction.kinetic_law
 
-                biomlmodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+                    variables = ModelChecker._get_variables(kinetic_law_string)
 
-            else:
+                    biomlmodel_reaction.klaw_variables = list(dict.fromkeys(variables))
 
-                done = False
+                else:
+
+                    done = False
+
+        else:
+
+            done = False
             
 
         return done
@@ -106,26 +111,30 @@ class ModelChecker(object):
     # ********************************
     def check_mass_action_kinetics(self, biomlmodel, immediate_return = False):
 
-        self._find_variables_in_klaw( biomlmodel )
-
-        biomlmodel_reactions_list = biomlmodel.get_list_of_reactions()
-
         flag = True
 
-        for biomlmodel_reaction in biomlmodel_reactions_list:
+        if self._find_variables_in_klaw( biomlmodel ):
 
-            args = self._make_checking_args( biomlmodel, biomlmodel_reaction )
+            biomlmodel_reactions_list = biomlmodel.get_list_of_reactions()
 
-            status = self._check_kinetic_law(**args)
+            for biomlmodel_reaction in biomlmodel_reactions_list:
 
-            if not status:
+                args = self._make_checking_args( biomlmodel, biomlmodel_reaction )
 
-                flag = status
+                status = self._check_kinetic_law(**args)
 
-                if immediate_return:
-                    return flag
+                if not status:
 
-            biomlmodel_reaction.mass_action = status
+                    flag = status
+
+                    if immediate_return:
+                        return flag
+
+                biomlmodel_reaction.mass_action = status
+
+        else:
+
+            flag = False
 
         return flag
 
@@ -326,6 +335,8 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def _check_kinetic_law(self, **args):
+
+
 
         species_in_kinetic_law = args["species_in_kinetic_law"]
         kinetic_formula = args["kinetic_formula"]
