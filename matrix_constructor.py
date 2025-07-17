@@ -2,8 +2,8 @@ import numpy as np
 import exceptions
 import os
 import sympy as sp
-from classes.cReaction import *
-from classes.cSpecies import *
+from classes.cBioMLReaction import *
+from classes.cBioMLSpecies import *
 import utility
 import random
 import warnings
@@ -23,24 +23,24 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+    def stoichiometric_matrix_constructor(self, biomlmodel) -> np.ndarray:
         """
         Constructs the stoichiometric matrix for the given BioModel.
 
         Parameters:
-            biomodel (an instance of BioModel class): The biological model containing species and reactions.
+            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
 
         Returns:
             np.ndarray: A 2D array representing the stoichiometric matrix, 
                         where rows correspond to species and columns to reactions.
         """
 
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        species_list = biomodel.getListOfSpecies()
-        parameters_list = biomodel.getListOfParameters()
-        reactions_list = biomodel.getListOfReactions()
+        species_list = biomlmodel.get_list_of_species()
+        parameters_list = biomlmodel.get_list_of_parameters()
+        reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
             raise exceptions.EmptyList("There are no species in this model.")
@@ -48,9 +48,9 @@ class MatrixConstructor:
         if len(reactions_list) == 0:
             raise exceptions.EmptyList("There are no reactions in this model.")
 
-        rows = Species.getCurrentIndex()
+        rows = BioMLSpecies.get_current_index()
 
-        columns = Reaction.getCurrentIndex()
+        columns = BioMLReaction.get_current_index()
 
         self.stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
 
@@ -61,23 +61,23 @@ class MatrixConstructor:
             if column == None:
                 continue
 
-            reaction_reactants = individual_reaction.getListOfReactants()
+            reaction_reactants = individual_reaction.get_list_of_reactants()
 
             for individual_reactant in reaction_reactants:
 
                 row = individual_reactant.index
 
-                stoichiometry = individual_reactant.getStoichiometry()
+                stoichiometry = individual_reactant.get_stoichiometry()
 
                 self.stoichiometric_matrix[row, column] = -1 * int(stoichiometry)
 
-            reaction_products = individual_reaction.getListOfProducts()
+            reaction_products = individual_reaction.get_list_of_products()
 
             for individual_product in reaction_products:
 
                 row = individual_product.index
 
-                stoichiometry = individual_product.getStoichiometry()
+                stoichiometry = individual_product.get_stoichiometry()
 
                 self.stoichiometric_matrix[row, column] = int(stoichiometry)
 
@@ -88,24 +88,24 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def forward_stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+    def forward_stoichiometric_matrix_constructor(self, biomlmodel) -> np.ndarray:
         """
         Constructs the forward stoichiometric matrix for the given BioModel.
 
         Parameters:
-            biomodel (an instance of BioModel class): The biological model containing species and reactions.
+            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
 
         Returns:
             np.ndarray: A 2D array representing the stoichiometric matrix, 
                         where rows correspond to species and columns to reactions.
         """
 
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        species_list = biomodel.getListOfSpecies()
-        parameters_list = biomodel.getListOfParameters()
-        reactions_list = biomodel.getListOfReactions()
+        species_list = biomlmodel.get_list_of_species()
+        parameters_list = biomlmodel.get_list_of_parameters()
+        reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
             raise exceptions.EmptyList("There are no species in this model.")
@@ -113,9 +113,9 @@ class MatrixConstructor:
         if len(reactions_list) == 0:
             raise exceptions.EmptyList("There are no reactions in this model.")
 
-        rows = Species.getCurrentIndex()
+        rows = BioMLSpecies.get_current_index()
 
-        columns = Reaction.getCurrentIndex()
+        columns = BioMLReaction.get_current_index()
 
         self.forward_stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
 
@@ -126,13 +126,13 @@ class MatrixConstructor:
             if column == None:
                 continue
 
-            reaction_reactants = individual_reaction.getListOfReactants()
+            reaction_reactants = individual_reaction.get_list_of_reactants()
 
             for individual_reactant in reaction_reactants:
 
                 row = individual_reactant.index
 
-                stoichiometry = individual_reactant.getStoichiometry()
+                stoichiometry = individual_reactant.get_stoichiometry()
 
                 self.forward_stoichiometric_matrix[row, column] = int(stoichiometry)
 
@@ -143,24 +143,24 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def reverse_stoichiometric_matrix_constructor(self, biomodel) -> np.ndarray:
+    def reverse_stoichiometric_matrix_constructor(self, biomlmodel) -> np.ndarray:
         """
         Constructs the reverse stoichiometric matrix for the given BioModel.
 
         Parameters:
-            biomodel (an instance of BioModel class): The biological model containing species and reactions.
+            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
 
         Returns:
             np.ndarray: A 2D array representing the stoichiometric matrix, 
                         where rows correspond to species and columns to reactions.
         """
 
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        species_list = biomodel.getListOfSpecies()
-        parameters_list = biomodel.getListOfParameters()
-        reactions_list = biomodel.getListOfReactions()
+        species_list = biomlmodel.get_list_of_species()
+        parameters_list = biomlmodel.get_list_of_parameters()
+        reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
             raise exceptions.EmptyList("There are no species in this model.")
@@ -168,9 +168,9 @@ class MatrixConstructor:
         if len(reactions_list) == 0:
             raise exceptions.EmptyList("There are no reactions in this model.")
 
-        rows = Species.getCurrentIndex()
+        rows = BioMLSpecies.get_current_index()
 
-        columns = Reaction.getCurrentIndex()
+        columns = BioMLReaction.get_current_index()
 
         self.reverse_stoichiometric_matrix = np.zeros((rows, columns), dtype = int)
 
@@ -181,13 +181,13 @@ class MatrixConstructor:
             if column == None:
                 continue
 
-            reaction_products = individual_reaction.getListOfProducts()
+            reaction_products = individual_reaction.get_list_of_products()
 
             for individual_product in reaction_products:
 
                 row = individual_product.index
 
-                stoichiometry = individual_product.getStoichiometry()
+                stoichiometry = individual_product.get_stoichiometry()
 
                 self.reverse_stoichiometric_matrix[row, column] = int(stoichiometry)
 
@@ -197,12 +197,12 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_column_names(self, biomodel) -> dict:
+    def stoichiometric_matrix_column_names(self, biomlmodel) -> dict:
         
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
         
-        reactions_list = biomodel.getListOfReactions()
+        reactions_list = biomlmodel.get_list_of_reactions()
 
         column_indices_names = {}
 
@@ -218,12 +218,12 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_row_names(self, biomodel) -> dict:
+    def stoichiometric_matrix_row_names(self, biomlmodel) -> dict:
     
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        species_list = biomodel.getListOfSpecies()
+        species_list = biomlmodel.get_list_of_species()
 
         row_indices_names = {}
 
@@ -245,9 +245,9 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_element_information(self, i, j, biomodel, printing="off") -> str:
+    def stoichiometric_matrix_element_information(self, i, j, biomlmodel, printing="off") -> str:
 
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         highest_i = self.stoichiometric_matrix.shape[0]
@@ -262,10 +262,10 @@ class MatrixConstructor:
 
         else:
 
-            row_indices_names = self.stoichiometric_matrix_row_names(biomodel)
+            row_indices_names = self.stoichiometric_matrix_row_names(biomlmodel)
             species = row_indices_names[i]
 
-            column_indices_names = self.stoichiometric_matrix_column_names(biomodel)
+            column_indices_names = self.stoichiometric_matrix_column_names(biomlmodel)
             reaction = column_indices_names[j]
 
             if printing.lower() == "on":
@@ -278,33 +278,36 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_constants_vector_constructor(self, biomodel, printing = "off") -> np.ndarray:
+    def kinetic_constants_vector_constructor(self, biomlmodel, printing = "off") -> np.ndarray:
 
-        if biomodel is None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
         
-        biomodel_reactions = biomodel.getListOfReactions()
+        biomlmodel_reactions = biomlmodel.get_list_of_reactions()
 
-        reactions_number = Reaction.getCurrentIndex()
+        reactions_number = BioMLReaction.get_current_index()
 
         kinetic_vector_length = reactions_number
 
         vector_of_kinetic_constants = np.zeros(kinetic_vector_length)
 
-        for biomodel_reaction in biomodel_reactions:
+        for biomlmodel_reaction in biomlmodel_reactions:
 
-            if biomodel_reaction.index != None:
+            if biomlmodel_reaction.index != None:
 
-                index = biomodel_reaction.index
+                index = biomlmodel_reaction.index
 
-                name = biomodel_reaction.getId()
+                name = biomlmodel_reaction.get_id()
 
-                k_plus_value = biomodel_reaction.kinetic_forward_rate_constant_value if biomodel_reaction.kinetic_forward_rate_constant_value is not None else 0.0
+                k_plus_value = biomlmodel_reaction.kinetic_forward_rate_constant_value if biomlmodel_reaction.kinetic_forward_rate_constant_value is not None else 0.0
 
-                k_minus_value = biomodel_reaction.kinetic_reverse_rate_constant_value if biomodel_reaction.kinetic_reverse_rate_constant_value is not None else 0.0
+                k_minus_value = biomlmodel_reaction.kinetic_reverse_rate_constant_value if biomlmodel_reaction.kinetic_reverse_rate_constant_value is not None else 0.0
 
                 if k_minus_value == 0.:
-                    raise exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no reverse reaction rate constant for reaction {name}")
+                    if biomlmodel_reaction.kinetic_reverse_rate_constant:
+                        raise exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no initial value (or it is zero) for the reverse reaction rate constant for reaction {name}: {biomlmodel_reaction.get_kinetic_law()}")
+                    else:
+                        raise exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no reverse reaction rate constant for reaction {name}: {biomlmodel_reaction.get_kinetic_law()}")
 
                 vector_of_kinetic_constants[index] = k_plus_value / k_minus_value
 
@@ -317,18 +320,18 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_thermo_conversion_matrix_constructor(self, biomodel, printing = "off") -> np.ndarray:
+    def kinetic_thermo_conversion_matrix_constructor(self, biomlmodel, printing = "off") -> np.ndarray:
 
-        if biomodel is None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        reactions_number = Reaction.getCurrentIndex()
+        reactions_number = BioMLReaction.get_current_index()
 
         identity_array = np.eye(reactions_number)
 
-        forward_stoichiometric_matrix = self.forward_stoichiometric_matrix_constructor(biomodel)
+        forward_stoichiometric_matrix = self.forward_stoichiometric_matrix_constructor(biomlmodel)
 
-        reverse_stoichiometric_matrix = self.reverse_stoichiometric_matrix_constructor(biomodel)
+        reverse_stoichiometric_matrix = self.reverse_stoichiometric_matrix_constructor(biomlmodel)
 
         transposed_forward_stoichiometric_matrix = np.transpose(forward_stoichiometric_matrix)
 
@@ -345,13 +348,13 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_rates_thermo_compatibility_check(self, biomodel, printing = "off") -> bool:
+    def kinetic_rates_thermo_compatibility_check(self, biomlmodel, printing = "off") -> bool:
 
-        if biomodel is None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
         
 
-        kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomodel)
+        kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomlmodel)
 
         with warnings.catch_warnings():
 
@@ -361,7 +364,7 @@ class MatrixConstructor:
 
         logn_kinetic_rates_vector = logn_kinetic_rates_vector.reshape(-1,1)
 
-        stoichiometric_matrix = self.stoichiometric_matrix_constructor(biomodel)
+        stoichiometric_matrix = self.stoichiometric_matrix_constructor(biomlmodel)
 
         minus_stoichiometric_matrix = -1 * stoichiometric_matrix
 

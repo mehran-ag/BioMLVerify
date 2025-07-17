@@ -1,6 +1,6 @@
 import numpy as np
 
-class ModelPropertiesMixin:
+class BioMLModelPropertiesMixin:
 
     @property
     def ID(self):

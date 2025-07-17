@@ -1,15 +1,15 @@
-from classes.ReactionPropertiesMixin import *
+from classes.BioMLReactionPropertiesMixin import *
 from typing import Union
 
 
-class Reaction(ReactionPropertiesMixin):
+class BioMLReaction(BioMLReactionPropertiesMixin):
 
     _counter: int = 0 #Class variable to track the index
 
     def __init__(self, ID):
 
-        self._index = Reaction._counter
-        Reaction._counter += 1
+        self._index = BioMLReaction._counter
+        BioMLReaction._counter += 1
         self._ID: str = ID
         self._annotations: list = None
         self._reversible: bool = None
@@ -35,7 +35,7 @@ class Reaction(ReactionPropertiesMixin):
 
 
     @classmethod
-    def getCurrentIndex(cls):
+    def get_current_index(cls):
         return cls._counter
     
     @classmethod
@@ -45,45 +45,45 @@ class Reaction(ReactionPropertiesMixin):
 
 
 
-    def ResetIndex(self):
+    def reset_index(self):
         self._index = None
 
 
-    def AssignIndex(self):
+    def assign_index(self):
         if self._index != None:
             print(f"This reaction has analready has an index: {self._index}")
         else:
-            self._index = Reaction._counter
-            Reaction._counter += 1
+            self._index = BioMLReaction._counter
+            BioMLReaction._counter += 1
             print(f"Index \"{self._index}\" has now been assigned to this reaction")
 
 
 
 
-    def getId(self):
+    def get_id(self):
 
         return self._ID
     
-    def getKineticForwardRateConstantValue(self):
+    def get_kinetic_forward_rate_constant_value(self):
         
         return self._kinetic_forward_rate_constant_value
     
-    def getKineticForwardRateConstant(self):
+    def get_kinetic_forward_rate_constant(self):
         
         return self._kinetic_forward_rate_constant
 
-    def getReversible(self):
+    def get_reversible(self):
 
         return self._reversible
     
-    def getKineticLaw(self):
+    def get_kinetic_law(self):
 
         return self._kinetic_law
     
-    def getListOfProducts(self):
+    def get_list_of_products(self):
 
         return self._products
     
-    def getListOfReactants(self):
+    def get_list_of_reactants(self):
 
         return self._reactants

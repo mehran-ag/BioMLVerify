@@ -1,4 +1,4 @@
-class Parameter:
+class BioMLParameter:
 
     def __init__(self, ID):
 
@@ -36,10 +36,10 @@ class Parameter:
         else:
             raise ValueError("Input for annotations must be a list")
 
-    def getId(self):
+    def get_id(self):
 
         return self._ID
     
-    def getValue(self):
+    def get_value(self):
 
         return self._value

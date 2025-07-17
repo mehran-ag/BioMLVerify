@@ -1,15 +1,15 @@
-from classes.SpeciesPropertiesMixin import *
+from classes.BioMLSpeciesPropertiesMixin import *
 
 
-class Species(SpeciesPropertiesMixin):
+class BioMLSpecies(BioMLSpeciesPropertiesMixin):
 
     _counter: int = 0
 
     def __init__(self, ID):
 
         if ID != "empty":
-            self._index = Species._counter
-            Species._counter += 1
+            self._index = BioMLSpecies._counter
+            BioMLSpecies._counter += 1
         else:
             self._index = None
 
@@ -25,26 +25,26 @@ class Species(SpeciesPropertiesMixin):
         self._chebi_code = None
 
     @classmethod
-    def getCurrentIndex(cls):
+    def get_current_index(cls):
         return cls._counter
 
-    def getId(self):
+    def get_id(self):
 
         return self._ID
     
-    def getName(self):
+    def get_name(self):
 
         return self._ID
     
-    def getInitialConcentration(self):
+    def get_initial_concentration(self):
 
         return self._initial_concentration
     
-    def getCharge(self):
+    def get_charge(self):
 
         return self._charge
     
-    def getCompartment(self):
+    def get_compartment(self):
 
         return self._compartment
     

@@ -5,12 +5,12 @@ from constants import *
 from collections import defaultdict
 import itertools
 import sympy as sp
-from classes.cReaction import *
-from classes.cModel import *
-from classes.cSpecies import *
-from classes.cParameter import *
-from classes.cSpeciesReference import *
-from classes.cFunctionDefinition import *
+from classes.cBioMLReaction import *
+from classes.cBioMLModel import *
+from classes.cBioMLSpecies import *
+from classes.cBioMLParameter import *
+from classes.cBioMLSpeciesReference import *
+from classes.cBioMLFunctionDefinition import *
 
 import os
 import exceptions
@@ -49,16 +49,16 @@ class SbmlReader:
             return None
         else:
             sbmodel = document.getModel()
-            biomodel = Model(sbmodel.getId())
-            biomodel.function_definitions = self._SBML_to_BioModel_function_definition_transfer(sbmodel)
-            biomodel.species = self._SBML_to_BioModel_species_tranfer(sbmodel)
-            biomodel.reactions = self._SBML_to_BioModel_reaction_tranfer(sbmodel, biomodel.function_definitions)
-            biomodel.parameters = self._SBML_to_BioModel_parameter_transfer(sbmodel)
-            biomodel.compartments = self._SBML_to_BioModel_compartments_transfer(sbmodel)
+            biomlmodel = BioMLModel(sbmodel.getId())
+            biomlmodel.function_definitions = self._sbml_to_biomlmodel_function_definition_transfer(sbmodel)
+            biomlmodel.species = self._sbml_to_biomlmodel_species_tranfer(sbmodel)
+            biomlmodel.reactions = self._sbml_to_biomlmodel_reaction_tranfer(sbmodel, biomlmodel.function_definitions)
+            biomlmodel.parameters = self._sbml_to_biomlmodel_parameter_transfer(sbmodel)
+            biomlmodel.compartments = self._sbml_to_biomlmodel_compartments_transfer(sbmodel)
             _model_checker = model_checker.ModelChecker()
-            if (_model_checker.check_mass_action_kinetics(biomodel, immediate_return=True)):
-                self._forward_reverse_rate_finder(biomodel)
-                return biomodel
+            if (_model_checker.check_mass_action_kinetics(biomlmodel, immediate_return=True)):
+                self._forward_reverse_rate_finder(biomlmodel)
+                return biomlmodel
             else:
                 utility.message_printer(f"\nModel {self._file_name} has equation(s) not governed by Mass Action Kinetics", color='cyan')
 
@@ -71,13 +71,13 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _SBML_to_BioModel_species_tranfer(self, libsbml_model):
+    def _sbml_to_biomlmodel_species_tranfer(self, libsbml_model):
         '''
         This function gets a SBML model, reads the required information for the species and creates a Species class for each one
         Then, it returns a list that contains the classes of species for this tool
         '''
 
-        self._biomodel_species_list = []
+        self._biomlmodel_species_list = []
 
         list_of_libsbml_species = libsbml_model.getListOfSpecies()
 
@@ -85,20 +85,20 @@ class SbmlReader:
 
             species_id = libsbml_species_class.getId()
 
-            biomodel_species = Species(species_id)
+            biomlmodel_species = BioMLSpecies(species_id)
 
-            biomodel_species.initial_concentration = libsbml_species_class.getInitialConcentration()
+            biomlmodel_species.initial_concentration = libsbml_species_class.getInitialConcentration()
 
-            biomodel_species.compartment = libsbml_species_class.getCompartment()
+            biomlmodel_species.compartment = libsbml_species_class.getCompartment()
 
-            biomodel_species.charge = libsbml_species_class.getCharge()
+            biomlmodel_species.charge = libsbml_species_class.getCharge()
 
-            self._biomodel_species_list.append(biomodel_species)
+            self._biomlmodel_species_list.append(biomlmodel_species)
 
-        if not self._biomodel_species_list:
+        if not self._biomlmodel_species_list:
             utility.warning_printer("No species imported from SBML model!")
 
-        return self._biomodel_species_list
+        return self._biomlmodel_species_list
     
 
 
@@ -108,9 +108,9 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _SBML_to_BioModel_parameter_transfer(self, libsbml_model):
+    def _sbml_to_biomlmodel_parameter_transfer(self, libsbml_model):
 
-        biomodel_parameters_list = []
+        biomlmodel_parameters_list = []
 
         libsbml_parameters_list = libsbml_model.getListOfParameters()
 
@@ -120,34 +120,34 @@ class SbmlReader:
 
             parameter_value = libsbml_parameter_class.getValue()
 
-            biomodel_parameter = Parameter(parameter_id)
+            biomlmodel_parameter = BioMLParameter(parameter_id)
 
-            biomodel_parameter.value = parameter_value
+            biomlmodel_parameter.value = parameter_value
 
-            biomodel_parameters_list.append(biomodel_parameter)
+            biomlmodel_parameters_list.append(biomlmodel_parameter)
 
         try:
 
-            if not biomodel_parameters_list:
+            if not biomlmodel_parameters_list:
                 utility.warning_printer("No GLOBAL parameters found in the SBML model!")
                 time.sleep(1)
 
-                biomodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
+                biomlmodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
             
         except exceptions.LocalParameterConflict as e:
 
             utility.warning_printer(e)
 
-            return biomodel_parameters_list
+            return biomlmodel_parameters_list
         
         except exceptions.EmptyList as e:
 
             utility.warning_printer(e)
 
-            return biomodel_parameters_list
+            return biomlmodel_parameters_list
 
 
-        return biomodel_parameters_list
+        return biomlmodel_parameters_list
     
 
 
@@ -157,16 +157,16 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _SBML_to_BioModel_reaction_tranfer(self, libsbml_model, function_definitions):
+    def _sbml_to_biomlmodel_reaction_tranfer(self, libsbml_model, function_definitions):
 
-        biomodel_reactions_list = []
+        biomlmodel_reactions_list = []
 
         libsbml_reactions = libsbml_model.getListOfReactions()
 
         for libsbml_reaction_class in libsbml_reactions:
 
-            biomodel_products_list =[]
-            biomodel_reactants_list = []
+            biomlmodel_products_list =[]
+            biomlmodel_reactants_list = []
 
             libsbml_reactants = libsbml_reaction_class.getListOfReactants()
 
@@ -174,11 +174,11 @@ class SbmlReader:
 
             reaction_id = libsbml_reaction_class.getId()
 
-            index = Reaction.getCurrentIndex()
+            index = BioMLReaction.get_current_index()
 
-            biomodel_reaction = Reaction(reaction_id)
+            biomlmodel_reaction = BioMLReaction(reaction_id)
 
-            biomodel_reaction.reversible = libsbml_reaction_class.getReversible()
+            biomlmodel_reaction.reversible = libsbml_reaction_class.getReversible()
 
             libsbml_klaw = libsbml_reaction_class.getKineticLaw()
 
@@ -186,7 +186,7 @@ class SbmlReader:
 
                 try:
 
-                    biomodel_reaction.kinetic_law = libsbml_klaw.getFormula()
+                    biomlmodel_reaction.kinetic_law = libsbml_klaw.getFormula()
 
                 except Exception as e:
                     raise ValueError(f"The formula can't be read from the SBML reaction law. The message from libsbl is: " + str(e))
@@ -195,7 +195,7 @@ class SbmlReader:
 
                 raise ValueError(f"Reaction {reaction_id} does not have a reaction rate formula")
 
-            biomodel_reaction.expanded_kinetic_law , _ = SbmlReader._expandFormula(biomodel_reaction.kinetic_law, function_definitions)
+            biomlmodel_reaction.expanded_kinetic_law , _ = SbmlReader._expand_formula(biomlmodel_reaction.kinetic_law, function_definitions)
 
             sbml_level = libsbml_model.getLevel()
 
@@ -211,13 +211,13 @@ class SbmlReader:
 
                     local_parameter_value = sbml_local_parameter.getValue()
 
-                    biomodel_parameter = Parameter(local_parameter_id)
+                    biomlmodel_parameter = BioMLParameter(local_parameter_id)
 
-                    biomodel_parameter.value = local_parameter_value
+                    biomlmodel_parameter.value = local_parameter_value
 
-                    local_parameters.append(biomodel_parameter)
+                    local_parameters.append(biomlmodel_parameter)
 
-                biomodel_reaction.local_parameters = local_parameters
+                biomlmodel_reaction.local_parameters = local_parameters
 
             elif sbml_level == 1 or sbml_level == 2:
 
@@ -231,13 +231,13 @@ class SbmlReader:
 
                     local_parameter_value = sbml_local_parameter.getValue()
 
-                    biomodel_parameter = Parameter(local_parameter_id)
+                    biomlmodel_parameter = BioMLParameter(local_parameter_id)
 
-                    biomodel_parameter.value = local_parameter_value
+                    biomlmodel_parameter.value = local_parameter_value
 
-                    local_parameters.append(biomodel_parameter)
+                    local_parameters.append(biomlmodel_parameter)
 
-                biomodel_reaction.local_parameters = local_parameters
+                biomlmodel_reaction.local_parameters = local_parameters
 
             for libsbml_reactant_class in libsbml_reactants:
 
@@ -245,23 +245,23 @@ class SbmlReader:
 
                 if id == "empty":
 
-                    Reaction.reset_counter(index)
+                    BioMLReaction.reset_counter(index)
 
-                    biomodel_reaction.ResetIndex()
+                    biomlmodel_reaction.reset_index()
 
-                    biomodel_reaction.boundary_condition = True
+                    biomlmodel_reaction.boundary_condition = True
 
-                for biomodel_species in self._biomodel_species_list:
+                for biomlmodel_species in self._biomlmodel_species_list:
 
-                    if id == biomodel_species.ID:
+                    if id == biomlmodel_species.ID:
 
-                        biomodel_species_reference = SpeciesReference(biomodel_species)
+                        biomlmodel_species_reference = BioMLSpeciesReference(biomlmodel_species)
 
-                        biomodel_species_reference.reaction_id = reaction_id
+                        biomlmodel_species_reference.reaction_id = reaction_id
 
-                        biomodel_species_reference.stoichiometry = libsbml_reactant_class.getStoichiometry()
+                        biomlmodel_species_reference.stoichiometry = libsbml_reactant_class.getStoichiometry()
 
-                        biomodel_reactants_list.append(biomodel_species_reference)
+                        biomlmodel_reactants_list.append(biomlmodel_species_reference)
 
             for libsbml_product_class in libsbml_products:
 
@@ -269,34 +269,34 @@ class SbmlReader:
 
                 if id == "empty":
 
-                    Reaction.reset_counter(index)
+                    BioMLReaction.reset_counter(index)
 
-                    biomodel_reaction.ResetIndex()
+                    biomlmodel_reaction.reset_index()
 
-                    biomodel_reaction.boundary_condition = True
+                    biomlmodel_reaction.boundary_condition = True
 
-                for biomodel_species in self._biomodel_species_list:
+                for biomlmodel_species in self._biomlmodel_species_list:
 
-                    if id == biomodel_species.ID:
+                    if id == biomlmodel_species.ID:
 
-                        biomodel_species_reference = SpeciesReference(biomodel_species)
+                        biomlmodel_species_reference = BioMLSpeciesReference(biomlmodel_species)
 
-                        biomodel_species_reference.reaction_id = reaction_id
+                        biomlmodel_species_reference.reaction_id = reaction_id
 
-                        biomodel_species_reference.stoichiometry = libsbml_product_class.getStoichiometry()
+                        biomlmodel_species_reference.stoichiometry = libsbml_product_class.getStoichiometry()
 
-                        biomodel_products_list.append(biomodel_species_reference)
+                        biomlmodel_products_list.append(biomlmodel_species_reference)
 
-            biomodel_reaction.reactants = biomodel_reactants_list
+            biomlmodel_reaction.reactants = biomlmodel_reactants_list
 
-            biomodel_reaction.products = biomodel_products_list
+            biomlmodel_reaction.products = biomlmodel_products_list
 
-            biomodel_reactions_list.append(biomodel_reaction)
+            biomlmodel_reactions_list.append(biomlmodel_reaction)
 
-        if not biomodel_reactions_list:
+        if not biomlmodel_reactions_list:
            utility.warning_printer("There are no reactions defined in the SBML file!!!")
 
-        return biomodel_reactions_list
+        return biomlmodel_reactions_list
     
 
 
@@ -306,12 +306,12 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _SBML_to_BioModel_function_definition_transfer(self, libsbml_model):
+    def _sbml_to_biomlmodel_function_definition_transfer(self, libsbml_model):
 
         sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
                                     for i in range(libsbml_model.getNumFunctionDefinitions())]
         
-        function_definitions = [FunctionDefinition(sb)
+        function_definitions = [BioMLFunctionDefinition(sb)
                                 for sb in sbml_function_definitons]
         
         return function_definitions
@@ -351,7 +351,7 @@ class SbmlReader:
 
         if conflicting_parameter_IDs is False:
                     
-            local_biomodel_parameters_list = []
+            local_biomlmodel_parameters_list = []
 
             for libsbml_reaction_class in libsbml_reactions_list:
 
@@ -363,19 +363,19 @@ class SbmlReader:
 
                     parameter_value = libsbml_reaction_parameter_class.getValue()
 
-                    biomodel_parameter = Parameter(parameter_id)
+                    biomlmodel_parameter = BioMLParameter(parameter_id)
 
-                    biomodel_parameter.value = parameter_value
+                    biomlmodel_parameter.value = parameter_value
 
-                    local_biomodel_parameters_list.append(biomodel_parameter)
+                    local_biomlmodel_parameters_list.append(biomlmodel_parameter)
 
-            if not local_biomodel_parameters_list:
+            if not local_biomlmodel_parameters_list:
                 raise exceptions.EmptyList("There are no local parameters!")
             else:
                 utility.message_printer("\nLocal parameters are stored as global parameters, too!", color='blue')
                 time.sleep(1)
 
-            return local_biomodel_parameters_list
+            return local_biomlmodel_parameters_list
 
         else:
 
@@ -390,7 +390,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _SBML_to_BioModel_compartments_transfer(self, libsbml_model):
+    def _sbml_to_biomlmodel_compartments_transfer(self, libsbml_model):
 
         compartments = [comp.getId()
                         for comp in libsbml_model.getListOfCompartments()]
@@ -404,9 +404,9 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _forward_reverse_rate_finder(self, biomodel, printing = "off") -> dict:
+    def _forward_reverse_rate_finder(self, biomlmodel, printing = "off") -> dict:
         """
-        Input of this function is a BioModel class instance
+        Input of this function is a biomlmodel class instance
         This function extracts the rate constants for each reaction in the given model, 
         including both forward and reverse directions. Then, "kinetic_forward_rate_constant" and "kinetic_reverse_rate_constant" variables of each reaction is updated
 
@@ -633,15 +633,15 @@ class SbmlReader:
 
         empty_global_parameters = False     # a flag to indicate if there are no global parameters
 
-        if biomodel is None:
-            raise exceptions.NoModel("No BioModel has been read!!!")
+        if biomlmodel is None:
+            raise exceptions.NoModel("No biomlmodel has been read!!!")
 
 
-        species_classes_list = biomodel.getListOfSpecies()
-        parameter_classes_list = biomodel.getListOfParameters()
-        reaction_classes_list = biomodel.getListOfReactions()
-        function_definitions_list = biomodel.getListOfFunctionDefinitions()
-        compartments_list = biomodel.getListOfCompartments()
+        species_classes_list = biomlmodel.get_list_of_species()
+        parameter_classes_list = biomlmodel.get_list_of_parameters()
+        reaction_classes_list = biomlmodel.get_list_of_reactions()
+        function_definitions_list = biomlmodel.get_list_of_function_definitions()
+        compartments_list = biomlmodel.get_list_of_compartments()
 
         empty_species_list = False
 
@@ -661,7 +661,7 @@ class SbmlReader:
                                         # SYMPY VARIABLES BEFOREHAND
 
         for individual_species_class in species_classes_list:
-            species_name = individual_species_class.getId()
+            species_name = individual_species_class.get_id()
             string_to_sympy_symbols[species_name] = sp.symbols(species_name)
 
             string_to_sympy_symbols.update({
@@ -673,8 +673,8 @@ class SbmlReader:
 
         for individual_parameter_class in parameter_classes_list:
 
-            parameter_name = individual_parameter_class.getId()
-            parameter_value = individual_parameter_class.getValue()
+            parameter_name = individual_parameter_class.get_id()
+            parameter_value = individual_parameter_class.get_value()
             string_to_sympy_symbols[parameter_name] = sp.symbols(parameter_name)
             parameters_values[parameter_name] = parameter_value
 
@@ -689,8 +689,8 @@ class SbmlReader:
 
                 for local_parameter_class in local_parameters_list:
 
-                    local_parameter_name = local_parameter_class.getId()
-                    local_parameter_value = local_parameter_class.getValue()
+                    local_parameter_name = local_parameter_class.get_id()
+                    local_parameter_value = local_parameter_class.get_value()
                     string_to_sympy_symbols[local_parameter_name] = sp.symbols(local_parameter_name)
                     local_parameters_values[local_parameter_name] = local_parameter_value
 
@@ -701,17 +701,17 @@ class SbmlReader:
                 if empty_global_parameters == True:
                     raise ValueError(f"There are no global parameters defined for the model, nor are there any local parameters defined for {reaction_name}!")
                 
-            reactant_classes_list = individual_reaction_class.getListOfReactants()
+            reactant_classes_list = individual_reaction_class.get_list_of_reactants()
                 
             for individual_reactant_class in reactant_classes_list:
-                reactant_name = individual_reactant_class.getId()
+                reactant_name = individual_reactant_class.get_id()
                 string_to_sympy_symbols[reactant_name] = sp.symbols(reactant_name)
                 empty_species_list = False
 
-            product_classes_list = individual_reaction_class.getListOfProducts()
+            product_classes_list = individual_reaction_class.get_list_of_products()
                 
             for individual_product_class in product_classes_list:
-                product_name = individual_product_class.getId()
+                product_name = individual_product_class.get_id()
                 string_to_sympy_symbols[product_name] = sp.symbols(product_name)
                 empty_species_list = False
 
@@ -719,10 +719,10 @@ class SbmlReader:
                 raise ValueError(f"There are no species to be checked for reaction {reactant_name}")
 
 
-            reaction_name = individual_reaction_class.getId()
-            reaction_rate_formula = individual_reaction_class.getKineticLaw()
+            reaction_name = individual_reaction_class.get_id()
+            reaction_rate_formula = individual_reaction_class.get_kinetic_law()
 
-            reaction_rate_formula, function_symbols = SbmlReader._expandFormula(reaction_rate_formula, function_definitions_list)
+            reaction_rate_formula, function_symbols = SbmlReader._expand_formula(reaction_rate_formula, function_definitions_list)
 
             string_to_sympy_symbols.update(function_symbols)
 
@@ -758,7 +758,7 @@ class SbmlReader:
                 forward_rate_matching_parameters = list(forward_rate_matching_parameters)
 
             if not forward_rate_matching_parameters:
-                raise ValueError(f"There is not a forward reaction rate constant in reaction {reaction_name}")
+                raise ValueError(f"There is not a forward reaction rate constant in reaction {reaction_name} with expanded kinetic law {str(expanded_formula)}")
 
             forward_rate_constant = forward_rate_matching_parameters[0]
             forward_rate_constant_value = parameters_values[forward_rate_constant]
@@ -795,7 +795,7 @@ class SbmlReader:
                     forward_rate_matching_parameters = list(forward_rate_matching_parameters)
 
                 if not forward_rate_matching_parameters:
-                    raise ValueError(f"There is not a forward reaction rate constant in reaction {reaction_name}")
+                    raise ValueError(f"There is not a forward reaction rate constant in reaction {reaction_name} with expanded kinetic law: {str(expanded_formula)}")
 
                 temp_forward_rate_constant = forward_rate_matching_parameters[0]
                 temp_forward_rate_constant_value = parameters_values[temp_forward_rate_constant]
@@ -994,7 +994,7 @@ class SbmlReader:
 
 
     @staticmethod
-    def _expandFormula(formula, function_definitions,
+    def _expand_formula(formula, function_definitions,
             num_recursions=0):
         """
         Expands the kinetics formula, replacing function definitions
@@ -1038,9 +1038,9 @@ class SbmlReader:
                         input_symbols_dict[arg] = sp.symbols(arg)
                 function_formula = function_definition.formula
                 for formal_arg, call_arg in zip(function_definition.arguments, input_arguments):
-                    function_formula = function_formula.replace(formal_arg, call_arg)
+                    function_formula = re.sub(rf'\b{re.escape(formal_arg)}\b', call_arg, function_formula)
                 formula = formula.replace(function_call, function_formula)
         if not done:
-            return SbmlReader._expandFormula(formula, function_definitions,
+            return SbmlReader._expand_formula(formula, function_definitions,
                         num_recursions=num_recursions+1)
         return formula, input_symbols_dict

@@ -19,24 +19,24 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_model_reversibility(self, biomodel, return_irreversibles = False) -> Union[bool, tuple[bool, list]]:
+    def check_model_reversibility(self, biomlmodel, return_irreversibles = False) -> Union[bool, tuple[bool, list]]:
 
-        if biomodel == None:
+        if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
-        biomodel_reactions = biomodel.getListOfReactions()
+        biomlmodel_reactions = biomlmodel.get_list_of_reactions()
 
         irreversible_reactions = []
 
         reversible = True
 
-        for biomodel_reaction in biomodel_reactions:
+        for biomlmodel_reaction in biomlmodel_reactions:
 
-            if biomodel_reaction.reversible is not None:
+            if biomlmodel_reaction.reversible is not None:
 
-                if not biomodel_reaction.reversible:
+                if not biomlmodel_reaction.reversible:
                     reversible = False
-                    irreversible_reactions.append(biomodel_reaction.ID)
+                    irreversible_reactions.append(biomlmodel_reaction.ID)
 
             else:
 
@@ -65,29 +65,29 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _find_variables_in_klaw( self, biomodel ):
+    def _find_variables_in_klaw( self, biomlmodel ):
 
         done = True
 
-        biomodel_reactions_list = biomodel.getListOfReactions()
+        biomlmodel_reactions_list = biomlmodel.get_list_of_reactions()
 
-        for biomodel_reaction in biomodel_reactions_list:
+        for biomlmodel_reaction in biomlmodel_reactions_list:
 
-            if biomodel_reaction.expanded_kinetic_law:
+            if biomlmodel_reaction.expanded_kinetic_law:
 
-                expanded_kinetic_law_string = biomodel_reaction.expanded_kinetic_law
+                expanded_kinetic_law_string = biomlmodel_reaction.expanded_kinetic_law
 
-                variables = ModelChecker._getVariables(expanded_kinetic_law_string)
+                variables = ModelChecker._get_variables(expanded_kinetic_law_string)
 
-                biomodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+                biomlmodel_reaction.klaw_variables = list(dict.fromkeys(variables))
 
-            elif biomodel_reaction.kinetic_law:
+            elif biomlmodel_reaction.kinetic_law:
 
-                kinetic_law_string = biomodel_reaction.kinetic_law
+                kinetic_law_string = biomlmodel_reaction.kinetic_law
 
-                variables = ModelChecker._getVariables(kinetic_law_string)
+                variables = ModelChecker._get_variables(kinetic_law_string)
 
-                biomodel_reaction.klaw_variables = list(dict.fromkeys(variables))
+                biomlmodel_reaction.klaw_variables = list(dict.fromkeys(variables))
 
             else:
 
@@ -104,17 +104,17 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_mass_action_kinetics(self, biomodel, immediate_return = False):
+    def check_mass_action_kinetics(self, biomlmodel, immediate_return = False):
 
-        self._find_variables_in_klaw( biomodel )
+        self._find_variables_in_klaw( biomlmodel )
 
-        biomodel_reactions_list = biomodel.getListOfReactions()
+        biomlmodel_reactions_list = biomlmodel.get_list_of_reactions()
 
         flag = True
 
-        for biomodel_reaction in biomodel_reactions_list:
+        for biomlmodel_reaction in biomlmodel_reactions_list:
 
-            args = self._make_checking_args( biomodel, biomodel_reaction )
+            args = self._make_checking_args( biomlmodel, biomlmodel_reaction )
 
             status = self._check_kinetic_law(**args)
 
@@ -125,7 +125,7 @@ class ModelChecker(object):
                 if immediate_return:
                     return flag
 
-            biomodel_reaction.mass_action = status
+            biomlmodel_reaction.mass_action = status
 
         return flag
 
@@ -141,7 +141,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _make_checking_args(self, biomodel, bm_reaction):
+    def _make_checking_args(self, biomlmodel, bm_reaction):
 
 
         reactants = []
@@ -154,19 +154,19 @@ class ModelChecker(object):
 
         compartments = []
         
-        for bm_species in biomodel.getListOfSpecies():
+        for bm_species in biomlmodel.get_list_of_species():
 
-            species.append(bm_species.getId())
+            species.append(bm_species.get_id())
 
-        for bm_parameter in biomodel.getListOfParameters():
+        for bm_parameter in biomlmodel.get_list_of_parameters():
 
-            parameters.append(bm_parameter.getId())
+            parameters.append(bm_parameter.get_id())
 
         for lcl_bm_parameter in bm_reaction.local_parameters:
 
-            parameters.append(lcl_bm_parameter.getId())
+            parameters.append(lcl_bm_parameter.get_id())
 
-        for compartment in biomodel.getListOfCompartments():
+        for compartment in biomlmodel.get_list_of_compartments():
 
             compartments.append(compartment)
 
@@ -201,13 +201,13 @@ class ModelChecker(object):
                 others_in_kinetic_law.append(klaw_variable)
 
         
-        for reactant_class in bm_reaction.getListOfReactants():
+        for reactant_class in bm_reaction.get_list_of_reactants():
 
-            reactants.append(reactant_class.getId())
+            reactants.append(reactant_class.get_id())
 
-        for product_class in bm_reaction.getListOfProducts():
+        for product_class in bm_reaction.get_list_of_products():
 
-            products.append(product_class.getId())
+            products.append(product_class.get_id())
 
 
         if bm_reaction.expanded_kinetic_law:
@@ -220,7 +220,7 @@ class ModelChecker(object):
 
         else:
 
-            raise ValueError(f"There is not a kinetic formula for reaction {bm_reaction.getId()}")
+            raise ValueError(f"There is not a kinetic formula for reaction {bm_reaction.get_id()}")
 
         # Prepare a space-separated and comma-separated version
         symbol_dict = {klaw_variable: sp.symbols(klaw_variable) for klaw_variable in klaw_variables}
@@ -376,7 +376,7 @@ class ModelChecker(object):
 
 
     @staticmethod
-    def _variableIdentifier(ast_node, result):
+    def _variable_identifier(ast_node, result):
     
         global cur_depth
         cur_depth += 1
@@ -388,11 +388,11 @@ class ModelChecker(object):
             child_node = ast_node.getChild(idx)
 
             if child_node.getName() is None:
-                additions = ModelChecker._variableIdentifier(child_node, [])
+                additions = ModelChecker._variable_identifier(child_node, [])
                 result.extend(additions)
             else:
                 if child_node.isFunction():
-                    additions = ModelChecker._variableIdentifier(child_node, [])
+                    additions = ModelChecker._variable_identifier(child_node, [])
                     result.extend(additions)
                 else:
                     result.append(child_node.getName())
@@ -401,7 +401,7 @@ class ModelChecker(object):
 
 
     @staticmethod
-    def _getVariables(kinetic_law_string):
+    def _get_variables(kinetic_law_string):
 
 
         global cur_depth
@@ -418,7 +418,7 @@ class ModelChecker(object):
         else:
             variables = [ast_node.getName()]
 
-        result = ModelChecker._variableIdentifier(ast_node, variables)
+        result = ModelChecker._variable_identifier(ast_node, variables)
 
         return result
             

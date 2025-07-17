@@ -11,7 +11,6 @@ from collections import defaultdict
 from lxml import etree
 
 # Importing internal packages
-import sys
 import exceptions
 import os
 import utility
@@ -20,11 +19,11 @@ import constants as cn
 
 from xml.dom.minidom import parseString
 
-from classes.cReaction import *
-from classes.cModel import *
-from classes.cSpecies import *
-from classes.cParameter import *
-from classes.cSpeciesReference import *
+from classes.cBioMLReaction import *
+from classes.cBioMLModel import *
+from classes.cBioMLSpecies import *
+from classes.cBioMLParameter import *
+from classes.cBioMLSpeciesReference import *
 
 
 
@@ -35,7 +34,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def read_file( self, file_path, cellml_strict_mode = False):
+    def read_file( self, file_path: Union[str, Path], cellml_strict_mode: bool = False) -> BioMLModel:
+        '''
+            Reads a CellML file and converts it to a BioML if it is convertible.
+            
+            Args: 
+                file_path (str or Path): The path to the CellML file.
+                cellml_strict_mode (bool, optional): Whether to enforce strict CellML format rules. Defaults to False.
+            
+            Returns:
+                BioMLModel class, which different functions can be applied on it.
+        '''
 
         base_dir = os.path.dirname(file_path)
 
@@ -80,31 +89,31 @@ class CellmlReader:
         if all(variable_type_buckets.get(k) for k in keys_to_check):
 
 
-            biomodel_species_list = self._species_identifier(variable_type_buckets['va'])
+            biomlmodel_species_list = self._species_identifier(variable_type_buckets['va'])
 
-            biomodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomodel_species_list)
+            biomlmodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomlmodel_species_list)
 
-            # biomodel_reactions_list, biomodel_species_list = self._boundary_condition_identifier(variable_type_buckets['bc'], biomodel_reactions_list, biomodel_species_list)
+            # biomlmodel_reactions_list, biomlmodel_species_list = self._boundary_condition_identifier(variable_type_buckets['bc'], biomlmodel_reactions_list, biomlmodel_species_list)
 
-            self._kinetic_rate_constant_finder(variable_type_buckets['rc'], biomodel_reactions_list)
+            self._kinetic_rate_constant_finder(variable_type_buckets['rc'], biomlmodel_reactions_list)
 
-            biomodel = Model(cellml_model.id())
+            biomlmodel = BioMLModel(cellml_model.id())
 
-            biomodel.species = biomodel_species_list
+            biomlmodel.species = biomlmodel_species_list
 
-            biomodel.reactions = biomodel_reactions_list
+            biomlmodel.reactions = biomlmodel_reactions_list
 
             mass_action = self._find_cellml_mass_actions(**cellml_contents)
 
             if mass_action:
             
-                biomodel.is_mass_action = True
+                biomlmodel.is_mass_action = True
 
             else:
 
-                biomodel.is_mass_action = False
+                biomlmodel.is_mass_action = False
 
-            return biomodel
+            return biomlmodel
             
         else:
 
@@ -112,9 +121,9 @@ class CellmlReader:
 
             if mass_action:
 
-                biomodel = self._make_biomodel(cellml_model_name, **cellml_contents)
+                biomlmodel = self._make_biomlmodel(cellml_model_name, **cellml_contents)
 
-                return biomodel
+                return biomlmodel
 
             else:
 
@@ -311,18 +320,18 @@ class CellmlReader:
     # ********************************
     def _species_identifier(self, variables):
 
-        biomodel_species_list = []
+        biomlmodel_species_list = []
 
         for variable in variables:
 
             name = variable.name()
 
-            matched_species = next( ( species_instance for species_instance in biomodel_species_list if species_instance.ID == name ), None )
+            matched_species = next( ( species_instance for species_instance in biomlmodel_species_list if species_instance.ID == name ), None )
 
             if matched_species is not None:
                 continue
 
-            biomodel_species = Species(name)
+            biomlmodel_species = BioMLSpecies(name)
 
             name_code = variable.id().split('_')[1]
 
@@ -330,7 +339,7 @@ class CellmlReader:
 
                 compound, composition = CellmlReader._chebi_comp_parser(name_code)
 
-                biomodel_species.chebi_code = name_code
+                biomlmodel_species.chebi_code = name_code
 
             else:
 
@@ -350,12 +359,12 @@ class CellmlReader:
                         composition[element] = 1    #IT SHOULD BE NOTED THAT CURRENTLY I CAN INCLUDE ONLY ONE INSTANCE OF EACH ELEMENT IN THE COMPOSITION. IT IS THE DEFAULT VALUE SET HERE
                                                     #ATTENTION ATTENTION
 
-            biomodel_species.compound = compound
-            biomodel_species.composition = composition
+            biomlmodel_species.compound = compound
+            biomlmodel_species.composition = composition
 
-            biomodel_species_list.append(biomodel_species)
+            biomlmodel_species_list.append(biomlmodel_species)
 
-        return biomodel_species_list
+        return biomlmodel_species_list
 
 
 
@@ -364,9 +373,9 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _reaction_identifier(self, coefficients, biomodel_species_list ):
+    def _reaction_identifier(self, coefficients, biomlmodel_species_list ):
 
-        biomodel_reactions_list = []
+        biomlmodel_reactions_list = []
 
         for coefficient in coefficients:
             
@@ -380,9 +389,9 @@ class CellmlReader:
 
                 compound = name_code
 
-            matched_biomodel_species =  next( ( species_instance for species_instance in biomodel_species_list if species_instance.compound == compound ), None )
+            matched_biomlmodel_species =  next( ( species_instance for species_instance in biomlmodel_species_list if species_instance.compound == compound ), None )
 
-            if matched_biomodel_species is None:
+            if matched_biomlmodel_species is None:
                 raise ValueError(f"There is no match for species {compound} in the list of species")
             
 
@@ -392,64 +401,64 @@ class CellmlReader:
 
                 reaction_number = reaction_number_part.split('.')[0]
 
-                matched_biomodel_reaction = next( ( reaction_instance for reaction_instance in biomodel_reactions_list if reaction_instance.ID == reaction_number ), None )
+                matched_biomlmodel_reaction = next( ( reaction_instance for reaction_instance in biomlmodel_reactions_list if reaction_instance.ID == reaction_number ), None )
 
-                if matched_biomodel_reaction is None:
+                if matched_biomlmodel_reaction is None:
                     
-                    biomodel_reaction = Reaction(reaction_number)
+                    biomlmodel_reaction = BioMLReaction(reaction_number)
 
-                    biomodel_species_ref = SpeciesReference(matched_biomodel_species)
+                    biomlmodel_species_ref = BioMLSpeciesReference(matched_biomlmodel_species)
 
-                    biomodel_species_ref.reaction_id = reaction_number
+                    biomlmodel_species_ref.reaction_id = reaction_number
 
                     stoichiometry = float(coefficient.initialValue())
 
                     if stoichiometry > 0:
 
-                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+                        biomlmodel_species_ref.stoichiometry = abs(stoichiometry)
 
-                        biomodel_reaction.products.append(biomodel_species_ref)
+                        biomlmodel_reaction.products.append(biomlmodel_species_ref)
 
                     elif stoichiometry < 0:
 
-                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+                        biomlmodel_species_ref.stoichiometry = abs(stoichiometry)
 
-                        biomodel_reaction.reactants.append(biomodel_species_ref)
+                        biomlmodel_reaction.reactants.append(biomlmodel_species_ref)
 
                     else:
 
                         raise ValueError(f"The value of stoichiometric coefficient is not acceptable: {coefficient.initialValue()}")
 
-                    biomodel_reactions_list.append(biomodel_reaction)
+                    biomlmodel_reactions_list.append(biomlmodel_reaction)
 
                 else:
 
                     if i > 0:
                         continue
 
-                    biomodel_species_ref = SpeciesReference(matched_biomodel_species)
+                    biomlmodel_species_ref = BioMLSpeciesReference(matched_biomlmodel_species)
 
-                    biomodel_species_ref.reaction_id = reaction_number
+                    biomlmodel_species_ref.reaction_id = reaction_number
 
                     stoichiometry = float(coefficient.initialValue())
 
                     if stoichiometry > 0:
 
-                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+                        biomlmodel_species_ref.stoichiometry = abs(stoichiometry)
 
-                        matched_biomodel_reaction.products.append(biomodel_species_ref)
+                        matched_biomlmodel_reaction.products.append(biomlmodel_species_ref)
 
                     elif stoichiometry < 0:
 
-                        biomodel_species_ref.stoichiometry = abs(stoichiometry)
+                        biomlmodel_species_ref.stoichiometry = abs(stoichiometry)
 
-                        matched_biomodel_reaction.reactants.append(biomodel_species_ref)
+                        matched_biomlmodel_reaction.reactants.append(biomlmodel_species_ref)
 
                     else:
 
                         raise ValueError(f"The value of stoichiometric coefficient is not acceptable: {coefficient.initialValue()}")
                     
-        return biomodel_reactions_list
+        return biomlmodel_reactions_list
 
 
 
@@ -460,7 +469,7 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _boundary_condition_identifier(self, boundary_conditions, biomodel_reactions_list, biomodel_species_list):
+    def _boundary_condition_identifier(self, boundary_conditions, biomlmodel_reactions_list, biomlmodel_species_list):
 
         if boundary_conditions:
 
@@ -468,11 +477,11 @@ class CellmlReader:
 
                 reaction_number = bc.id()
 
-                if not any(biomodel_reaction.ID == reaction_number for biomodel_reaction in biomodel_reactions_list):
+                if not any(biomlmodel_reaction.ID == reaction_number for biomlmodel_reaction in biomlmodel_reactions_list):
                         
-                    biomodel_reaction = Reaction(reaction_number)
+                    biomlmodel_reaction = BioMLReaction(reaction_number)
 
-                    biomodel_reaction.boundary_condition = True
+                    biomlmodel_reaction.boundary_condition = True
 
                     name_code =  bc.id().split('_')[1].split('.')[0]
 
@@ -493,69 +502,69 @@ class CellmlReader:
                         compound = name_code
 
 
-                    matched_species = next( ( species_instance for species_instance in biomodel_species_list if species_instance.compound == compound ), None )
+                    matched_species = next( ( species_instance for species_instance in biomlmodel_species_list if species_instance.compound == compound ), None )
 
                     if matched_species is None:
                         raise ValueError(f"The Species for the boundary condition {reaction_number} can't be found!")
                     
                     
-                    biomodel_species_ref = SpeciesReference(matched_species)
+                    biomlmodel_species_ref = BioMLSpeciesReference(matched_species)
 
-                    biomodel_species_ref.reaction_id = reaction_number
+                    biomlmodel_species_ref.reaction_id = reaction_number
 
-                    biomodel_species_ref.stoichiometry = 1
+                    biomlmodel_species_ref.stoichiometry = 1
 
                     if flow_direction == 'i':
 
-                        biomodel_reaction.products.append(biomodel_species_ref)
+                        biomlmodel_reaction.products.append(biomlmodel_species_ref)
 
                     elif flow_direction == 'o':
 
-                        biomodel_reaction.reactants.append(biomodel_species_ref)
+                        biomlmodel_reaction.reactants.append(biomlmodel_species_ref)
 
                     else:
 
-                        biomodel_reaction.reactants.append(biomodel_species_ref)
+                        biomlmodel_reaction.reactants.append(biomlmodel_species_ref)
                     
 
                     # Now, we will create the virtual internal and external species for the compound
                     compound_bc = compound + '_e'
 
-                    matched_bc_species =  next( ( species_instance for species_instance in self._biomodel_species_list if species_instance.compound == compound_bc ), None )
+                    matched_bc_species =  next( ( species_instance for species_instance in self._biomlmodel_species_list if species_instance.compound == compound_bc ), None )
 
                     if matched_bc_species is None:
 
-                        biomodel_species = Species(compound_bc)
+                        biomlmodel_species = BioMLSpecies(compound_bc)
 
-                        biomodel_species.compound = compound_bc
+                        biomlmodel_species.compound = compound_bc
 
-                        biomodel_species_list.append(biomodel_species)
+                        biomlmodel_species_list.append(biomlmodel_species)
 
                     else:
 
-                        biomodel_species = matched_bc_species
+                        biomlmodel_species = matched_bc_species
 
-                    biomodel_species_ref = SpeciesReference(biomodel_species)
+                    biomlmodel_species_ref = BioMLSpeciesReference(biomlmodel_species)
 
-                    biomodel_species_ref.reaction_id = reaction_number
+                    biomlmodel_species_ref.reaction_id = reaction_number
 
-                    biomodel_species_ref.stoichiometry = 1
+                    biomlmodel_species_ref.stoichiometry = 1
 
                     if flow_direction == 'i':
 
-                        biomodel_reaction.reactants.append(biomodel_species_ref)
+                        biomlmodel_reaction.reactants.append(biomlmodel_species_ref)
 
                     elif flow_direction == 'o':
 
-                        biomodel_reaction.products.append(biomodel_species_ref)
+                        biomlmodel_reaction.products.append(biomlmodel_species_ref)
 
                     else:
 
-                        biomodel_reaction.products.append(biomodel_species_ref)
+                        biomlmodel_reaction.products.append(biomlmodel_species_ref)
 
-                    biomodel_reactions_list.append(biomodel_reaction)
+                    biomlmodel_reactions_list.append(biomlmodel_reaction)
 
-        return biomodel_reactions_list, biomodel_species_list
+        return biomlmodel_reactions_list, biomlmodel_species_list
 
 
 
@@ -565,7 +574,7 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _kinetic_rate_constant_finder(self, rate_constants, biomodel_reactions_list):
+    def _kinetic_rate_constant_finder(self, rate_constants, biomlmodel_reactions_list):
 
         for rate_constant in rate_constants:
 
@@ -586,7 +595,7 @@ class CellmlReader:
 
                 direction = rc_id.split('_')[1]
 
-                matched_reaction =  next( ( reaction_instance for reaction_instance in biomodel_reactions_list if reaction_instance.ID == reaction_name ), None )
+                matched_reaction =  next( ( reaction_instance for reaction_instance in biomlmodel_reactions_list if reaction_instance.ID == reaction_name ), None )
 
                 if matched_reaction is None:
                     raise ValueError(f"Reaction {reaction_name} cannot be found in the reaction list")
@@ -892,7 +901,7 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _make_biomodel(self, cellml_model_name, **cellml_contents):
+    def _make_biomlmodel(self, cellml_model_name, **cellml_contents):
         '''
         cellml_contents = {"cellml_eqs": cellml_eqs,
             "cellml_flattened_eqs": cellml_flattened_eqs,
@@ -911,9 +920,9 @@ class CellmlReader:
 
         reversible = True
 
-        biomodel = Model(cellml_model_name)
+        biomlmodel = BioMLModel(cellml_model_name)
 
-        biomodel_reactions_list = []
+        biomlmodel_reactions_list = []
 
         for reaction_id, sympy_expr_eq in cellml_flattened_eqs.items():
 
@@ -948,17 +957,17 @@ class CellmlReader:
                 raise ValueError(f"Reaction {reaction_id} is not reversible and the reaction can not be defined from the reaction rate equation")
 
 
-            biomodel_reaction = Reaction(reaction_id)
+            biomlmodel_reaction = BioMLReaction(reaction_id)
 
-            biomodel_reaction.kinetic_law = str(sympy_expr_eq).replace('**', '^')
+            biomlmodel_reaction.kinetic_law = str(sympy_expr_eq).replace('**', '^')
 
-            biomodel_reaction.kinetic_law_type = 'Mass Action'
+            biomlmodel_reaction.kinetic_law_type = 'Mass Action'
 
-            biomodel_species_list = []
+            biomlmodel_species_list = []
 
-            biomodel_reactants_list = []
+            biomlmodel_reactants_list = []
 
-            biomodel_products_list = []
+            biomlmodel_products_list = []
 
             local_parameters = []
 
@@ -972,15 +981,15 @@ class CellmlReader:
 
                 parameter_value = float(cellml_forward_rate_instance.initialValue())
 
-                biomodel_reaction.kinetic_forward_rate_constant = forward_rate_constant
+                biomlmodel_reaction.kinetic_forward_rate_constant = forward_rate_constant
 
-                biomodel_reaction.kinetic_forward_rate_constant_value = parameter_value
+                biomlmodel_reaction.kinetic_forward_rate_constant_value = parameter_value
 
-                biomodel_parameter = Parameter(parameter_name)
+                biomlmodel_parameter = BioMLParameter(parameter_name)
 
-                biomodel_parameter.value = parameter_value
+                biomlmodel_parameter.value = parameter_value
 
-                local_parameters.append(biomodel_parameter)
+                local_parameters.append(biomlmodel_parameter)
 
             for species_name, stoichiometry in forward_rate_contents["stoichiometry"].items():
 
@@ -988,24 +997,24 @@ class CellmlReader:
 
                 if cellml_species_instance is not None:
 
-                    biomodel_species = Species(str(species_name))
+                    biomlmodel_species = BioMLSpecies(str(species_name))
 
                     id = cellml_species_instance.id()
 
                     if id.isdigit():
                         chebi_code = id
 
-                        biomodel_species.chebi_code = chebi_code
+                        biomlmodel_species.chebi_code = chebi_code
 
-                    biomodel_species_list.append(biomodel_species)
+                    biomlmodel_species_list.append(biomlmodel_species)
 
-                    biomodel_species_reference = SpeciesReference(biomodel_species)
+                    biomlmodel_species_reference = BioMLSpeciesReference(biomlmodel_species)
 
-                    biomodel_species_reference.reaction_id = reaction_id
+                    biomlmodel_species_reference.reaction_id = reaction_id
 
-                    biomodel_species_reference.stoichiometry = stoichiometry
+                    biomlmodel_species_reference.stoichiometry = stoichiometry
 
-                    biomodel_reactants_list.append(biomodel_species_reference)
+                    biomlmodel_reactants_list.append(biomlmodel_species_reference)
 
             reverse_rate_constant = str(reverse_rate_contents["rate_constant"])
 
@@ -1015,15 +1024,15 @@ class CellmlReader:
 
             parameter_value = float(cellml_reverse_rate_instance.initialValue())
 
-            biomodel_reaction.kinetic_reverse_rate_constant = reverse_rate_constant
+            biomlmodel_reaction.kinetic_reverse_rate_constant = reverse_rate_constant
 
-            biomodel_reaction.kinetic_reverse_rate_constant_value = parameter_value
+            biomlmodel_reaction.kinetic_reverse_rate_constant_value = parameter_value
 
-            biomodel_parameter = Parameter(parameter_id)
+            biomlmodel_parameter = BioMLParameter(parameter_id)
 
-            biomodel_parameter.value = parameter_value
+            biomlmodel_parameter.value = parameter_value
 
-            local_parameters.append(biomodel_parameter)
+            local_parameters.append(biomlmodel_parameter)
 
             for species_name, stoichiometry in reverse_rate_contents["stoichiometry"].items():
 
@@ -1031,43 +1040,43 @@ class CellmlReader:
 
                 if cellml_species_instance is not None:
 
-                    biomodel_species = Species( str(species_name) )
+                    biomlmodel_species = BioMLSpecies( str(species_name) )
 
                     id = cellml_species_instance.id()
 
                     if id.isdigit():
                         chebi_code = id
-                        biomodel_species.chebi_code = chebi_code
+                        biomlmodel_species.chebi_code = chebi_code
 
-                    biomodel_species_list.append(biomodel_species)
+                    biomlmodel_species_list.append(biomlmodel_species)
 
-                    biomodel_species_reference = SpeciesReference(biomodel_species)
+                    biomlmodel_species_reference = BioMLSpeciesReference(biomlmodel_species)
 
-                    biomodel_species_reference.reaction_id = reaction_id
+                    biomlmodel_species_reference.reaction_id = reaction_id
 
-                    biomodel_species_reference.stoichiometry = stoichiometry
+                    biomlmodel_species_reference.stoichiometry = stoichiometry
 
-                    biomodel_products_list.append(biomodel_species_reference)
+                    biomlmodel_products_list.append(biomlmodel_species_reference)
 
-            for species in biomodel_species_list:
-                if species not in biomodel.species:
-                    biomodel.species.append(species)
+            for species in biomlmodel_species_list:
+                if species not in biomlmodel.species:
+                    biomlmodel.species.append(species)
 
-            biomodel_reaction.reversible = reversible
+            biomlmodel_reaction.reversible = reversible
 
-            biomodel_reaction.local_parameters = local_parameters
+            biomlmodel_reaction.local_parameters = local_parameters
 
-            biomodel_reaction.reactants = biomodel_reactants_list
+            biomlmodel_reaction.reactants = biomlmodel_reactants_list
 
-            biomodel_reaction.products = biomodel_products_list
+            biomlmodel_reaction.products = biomlmodel_products_list
 
-            biomodel_reactions_list.append(biomodel_reaction)
+            biomlmodel_reactions_list.append(biomlmodel_reaction)
 
-        biomodel.reactions = biomodel_reactions_list
+        biomlmodel.reactions = biomlmodel_reactions_list
 
-        biomodel.species = biomodel_species_list
+        biomlmodel.species = biomlmodel_species_list
 
-        return biomodel
+        return biomlmodel
 
         
 

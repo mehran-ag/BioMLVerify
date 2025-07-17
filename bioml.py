@@ -10,15 +10,15 @@ import exceptions
 import utility
 
 
-from classes.cReaction import *
-from classes.cModel import *
-from classes.cSpecies import *
-from classes.cParameter import *
-from classes.cSpeciesReference import *
-from classes.cFunctionDefinition import *
+from classes.cBioMLReaction import *
+from classes.cBioMLModel import *
+from classes.cBioMLSpecies import *
+from classes.cBioMLParameter import *
+from classes.cBioMLSpeciesReference import *
+from classes.cBioMLFunctionDefinition import *
 
 
-class BioModel(object):
+class BioML(object):
     '''
     This class creates a model, either CellML or SBML, that will be processed by other classes
     '''
@@ -27,12 +27,12 @@ class BioModel(object):
         '''
         Initializes the ModelReader by reading path for a file
         '''
-        Species.reset_counter()
-        Reaction.reset_counter()
+        BioMLSpecies.reset_counter()
+        BioMLReaction.reset_counter()
         self._file_path = None
         self._file_name= None
         self._file_format = None
-        self._biomodel = None
+        self._biomlmodel = None
         self._matrix_constructor = matrix_constructor.MatrixConstructor()
         self._model_checker = model_checker.ModelChecker()
         self._sbml_reader = sbml_reader.SbmlReader()
@@ -53,7 +53,16 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def read_file(self, file_path):
+    def read_file(self, file_path: str) -> None:
+        '''
+        Reads the file path and calls smblreader or cellmlreader to convert the input model into a biomlmodel
+
+        Args:
+            file_path: A string that defines the path to the file
+
+        Returns:
+            None, converts the input model into a BioMLModel, the main internal class, and saves it in an internal variable: self._biomlmodel
+        '''
 
         try:
             if not isinstance(file_path, str):
@@ -77,7 +86,7 @@ class BioModel(object):
 
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n", color="green")
 
-                    self._biomodel =  self._sbml_reader.read_file(self._file_path)
+                    self._biomlmodel =  self._sbml_reader.read_file(self._file_path)
 
                     file_type = 'SBML'
 
@@ -85,7 +94,7 @@ class BioModel(object):
 
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n", color="green")
 
-                    self._biomodel = self._cellml_reader.read_file(self._file_path)
+                    self._biomlmodel = self._cellml_reader.read_file(self._file_path)
 
                     file_type = 'CellML'
 
@@ -96,7 +105,7 @@ class BioModel(object):
             
             else:
 
-                if self._biomodel is not None:
+                if self._biomlmodel is not None:
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel \u27A4\u27A4\u27A4\n", color="green")
                 else:
                     utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel \u27A4\u27A4\u27A4\n", color="red", style="bold")
@@ -111,17 +120,17 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def checkMassActionKinetics(self, printing = "off"):
+    def check_mass_action_kinetics(self, printing = "off"):
 
         try:
 
-            if self._biomodel:
+            if self._biomlmodel:
 
-                if self._biomodel.is_mass_action is None:
+                if self._biomlmodel.is_mass_action is None:
 
                     is_mass_action = False
 
-                    is_mass_action = self._model_checker.check_mass_action_kinetics(self._biomodel)
+                    is_mass_action = self._model_checker.check_mass_action_kinetics(self._biomlmodel)
 
 
                     if is_mass_action:
@@ -146,7 +155,7 @@ class BioModel(object):
                     
                 else:
 
-                    if self._biomodel.is_mass_action:
+                    if self._biomlmodel.is_mass_action:
 
                         if printing.lower() == "on":
 
@@ -172,7 +181,7 @@ class BioModel(object):
 
             
         except Exception as e:
-            utility.error_handler(e, "checkMassActionKinetics")
+            utility.error_handler(e, "check_mass_action_kinetics")
             return
 
 
@@ -186,13 +195,13 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def checkModelReversibility(self, return_irreversibles = False, printing = "off"):
+    def check_model_reversibility(self, return_irreversibles = False, printing = "off"):
 
         try:
 
             if return_irreversibles:
 
-                reversibility, irreversibles = self._model_checker.check_model_reversibility(self._biomodel, return_irreversibles = return_irreversibles)
+                reversibility, irreversibles = self._model_checker.check_model_reversibility(self._biomlmodel, return_irreversibles = return_irreversibles)
 
                 if printing.lower() == "on":
 
@@ -211,7 +220,7 @@ class BioModel(object):
             
             else:
 
-                reversibility = self._model_checker.check_model_reversibility(self._biomodel)
+                reversibility = self._model_checker.check_model_reversibility(self._biomlmodel)
 
                 if reversibility is not None:
 
@@ -228,7 +237,7 @@ class BioModel(object):
                 return reversibility
 
         except Exception as e:
-            utility.error_handler(e, "checkModelReversibility")
+            utility.error_handler(e, "check_model_reversibility")
             return
 
 
@@ -239,9 +248,9 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getListOfReactions(self):
+    def get_list_of_reactions(self):
 
-        return self._biomodel._reactions
+        return self._biomlmodel._reactions
     
 
 
@@ -252,9 +261,9 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getListOfSpecies(self):
+    def get_list_of_species(self):
 
-        return self._biomodel._species
+        return self._biomlmodel._species
 
     
 
@@ -264,10 +273,10 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getStoichiometricMatrix(self, printing = "off"):
+    def get_stoichiometric_matrix(self, printing = "off"):
 
         try:
-            stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._biomodel)
+            stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._biomlmodel)
             
 
             if printing.lower() == "on":
@@ -276,7 +285,7 @@ class BioModel(object):
             return stoichiometric_matrix
 
         except Exception as e:
-            utility.error_handler(e, "getStoichiometricMatrix")
+            utility.error_handler(e, "get_stoichiometric_matrix")
             return
 
 
@@ -287,10 +296,10 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************    
-    def getForwardStoichiometricMatrix(self, printing = "off"):
+    def get_forward_stoichiometric_matrix(self, printing = "off"):
 
         try:
-            forward_stoichiometric_matrix = self._matrix_constructor.forward_stoichiometric_matrix_constructor(self._biomodel)
+            forward_stoichiometric_matrix = self._matrix_constructor.forward_stoichiometric_matrix_constructor(self._biomlmodel)
 
             if printing.lower() == "on":
                 utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
@@ -298,7 +307,7 @@ class BioModel(object):
             return forward_stoichiometric_matrix
 
         except Exception as e:
-            utility.error_handler(e, "getForwardStoichiometricMatrix")
+            utility.error_handler(e, "get_forward_stoichiometric_matrix")
             return
         
 
@@ -309,10 +318,10 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getReverseStoichiometricMatrix(self, printing = "off"):
+    def get_reverse_stoichiometric_matrix(self, printing = "off"):
 
         try:
-            reverse_stoichiometric_matrix = self._matrix_constructor.reverse_stoichiometric_matrix_constructor(self._biomodel)
+            reverse_stoichiometric_matrix = self._matrix_constructor.reverse_stoichiometric_matrix_constructor(self._biomlmodel)
 
             if printing.lower() == "on":
                 utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
@@ -320,7 +329,7 @@ class BioModel(object):
             return reverse_stoichiometric_matrix
 
         except Exception as e:
-            utility.error_handler(e, "getReverseStoichiometricMatrix")
+            utility.error_handler(e, "get_reverse_stoichiometric_matrix")
             return
         
     
@@ -331,9 +340,9 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getStoichiometricColumnNamesIndices(self, printing="off"):
+    def get_stoichiometric_column_names_indices(self, printing="off"):
 
-        columns = self._matrix_constructor.stoichiometric_matrix_column_names(self._biomodel)
+        columns = self._matrix_constructor.stoichiometric_matrix_column_names(self._biomlmodel)
 
         if printing.lower() == "on":
 
@@ -350,9 +359,9 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getStoichiometricRowNamesIndices(self, printing="off"):
+    def get_stoichiometric_row_names_indices(self, printing="off"):
 
-        rows = self._matrix_constructor.stoichiometric_matrix_row_names(self._biomodel)
+        rows = self._matrix_constructor.stoichiometric_matrix_row_names(self._biomlmodel)
 
         if printing.lower() == "on":
 
@@ -369,17 +378,17 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getElementInformationInStoichiometricMatrix(self, i, j, printing = "off"):
+    def get_element_information_in_stoichiometric_matrix(self, i, j, printing = "off"):
 
         try:
 
-            if self._biomodel is None:
+            if self._biomlmodel is None:
                 raise exceptions.NoModel("No BioModel has been read!!!")
 
-            return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomodel, printing = printing)
+            return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomlmodel, printing = printing)
         
         except Exception as e:
-            utility.error_handler(e, "getElementInformationInStoichiometricMatrix")
+            utility.error_handler(e, "get_element_information_in_stoichiometric_matrix")
             return
         
 
@@ -390,15 +399,15 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getThermoConversionMatrix(self, printing = "off"):
+    def get_thermo_conversion_matrix(self, printing = "off"):
 
         try:
-            conversion_matrix = self._matrix_constructor.kinetic_thermo_conversion_matrix_constructor(self._biomodel, printing = printing)
+            conversion_matrix = self._matrix_constructor.kinetic_thermo_conversion_matrix_constructor(self._biomlmodel, printing = printing)
 
             return conversion_matrix
             
         except Exception as e:
-            utility.error_handler(e, "getThermoConversionMatrix")
+            utility.error_handler(e, "get_thermo_conversion_matrix")
             return
 
     
@@ -409,15 +418,15 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def getKineticRateConstantsVector(self, printing = "off"):
+    def get_kinetic_rate_constants_vector(self, printing = "off"):
 
         try:
-            kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._biomodel, printing)
+            kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._biomlmodel, printing)
 
             return kinetic_constants_vector
         
         except Exception as e:
-            utility.error_handler(e, "getKineticRateConstantsVector")
+            utility.error_handler(e, "get_kinetic_rate_constants_vector")
             return
 
     
@@ -427,16 +436,16 @@ class BioModel(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def KineticConstantsThermoCompatibility(self, printing = "off"):
+    def check_kinetic_constants_thermo_compatibility(self, printing = "off"):
 
         try:
-            compatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomodel, printing)
+            compatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomlmodel, printing)
 
             utility.display_warnings()
 
             return compatibility
         
         except Exception as e:
-            utility.error_handler(e, "KineticConstantsThermoCompatibility")
+            utility.error_handler(e, "check_kinetic_constants_thermo_compatibility")
             utility.printer("\nCompatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
             return

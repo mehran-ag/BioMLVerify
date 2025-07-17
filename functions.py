@@ -1,4 +1,4 @@
-from biomodel import *
+from bioml import *
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,13 +20,13 @@ def read_files_in_folder(path):
 
         fullname = os.path.join(path, filename)
 
-        biomodel = BioModel()
+        biomlmodel = BioMLModel()
 
-        biomodel.read_file(fullname)
+        biomlmodel.read_file(fullname)
 
-        if biomodel.checkModelReversibility():
-            print(f"\nModel {biomodel.file_name} is ALL REVERSIBLE")
-            reversibles.append(biomodel.file_name)
+        if biomlmodel.check_model_reversibility():
+            print(f"\nModel {biomlmodel.file_name} is ALL REVERSIBLE")
+            reversibles.append(biomlmodel.file_name)
 
     print(len(reversibles))
 
@@ -55,24 +55,23 @@ def verify_model(file_path, file_name):
     if not os.path.isfile(full_path):
         raise FileNotFoundError(f'Model source file `{full_path}` does not exist.')
     
-    biomodel = BioModel()
+    bioml = BioML()
 
-    biomodel.read_file(full_path)
+    bioml.read_file(full_path)
 
-    if not biomodel.checkMassActionKinetics():
+    if not bioml.check_mass_action_kinetics():
 
         utility.message_printer(f"\nModel {file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\nis NOT eligible for verification check\n", color='red', style='bold')
 
         return
     
-    if not biomodel.checkModelReversibility():
+    if not bioml.check_model_reversibility():
 
         utility.message_printer(f"\nModel {file_name} has (a) irrversible reaction(s) and\nis not eligible for verification check\n", color='red', style='bold')
 
         return
     
-    biomodel.KineticConstantsThermoCompatibility("on")
-    del biomodel
+    bioml.check_kinetic_constants_thermo_compatibility("on")
 
 
 
@@ -94,9 +93,9 @@ def verify_bunch_SBML_models(folder_path):
             raise FileNotFoundError(f'Model source file `{full_path}` does not exist.')
         
         
-        biomodel = BioModel()
+        bioml = BioML()
 
-        biomodel.read_file(full_path)
+        bioml.read_file(full_path)
 
         mass_action: bool = None
 
@@ -109,15 +108,15 @@ def verify_bunch_SBML_models(folder_path):
         try:
 
 
-            if biomodel.checkMassActionKinetics():
+            if bioml.check_mass_action_kinetics():
 
                 mass_action = True
 
-                if biomodel.checkModelReversibility():
+                if bioml.check_model_reversibility():
 
                     reversible = True
 
-                    if biomodel.KineticConstantsThermoCompatibility():
+                    if bioml.check_kinetic_constants_thermo_compatibility():
 
                         plausible = True
 

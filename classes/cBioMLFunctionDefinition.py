@@ -1,7 +1,7 @@
 import libsbml
 
 
-class FunctionDefinition():
+class BioMLFunctionDefinition():
 
     def __init__(self, sbml_function_definition):
 

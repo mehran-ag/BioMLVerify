@@ -1,4 +1,4 @@
-from biomodel import *
+from bioml import *
 import os
 import atexit
 
@@ -23,7 +23,7 @@ atexit.register(lambda: print("\n" * 2))
 
 # folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-# file_name = "BIOMD0000000607.xml"
+# file_name = "BIOMD0000000283.xml"
 
 # verify_model(folder_path, file_name)
 
@@ -45,35 +45,35 @@ file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioM
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-biomodel = BioModel()
+bioml = BioML()
 
-biomodel.read_file(file_path)
+bioml.read_file(file_path)
 
 # print("\n")
 
-# biomodel.checkMassActionKinetics("on")
+# bioml.check_mass_action_kinetics("on")
 
-# biomodel.getStoichiometricMatrix("on")
+# bioml.get_stoichiometric_matrix("on")
 
-# biomodel.getStoichiometricColumnNamesIndices("on")
+# bioml.get_stoichiometric_column_names_indices("on")
 
-# biomodel.getStoichiometricRowNamesIndices("on")
+# bioml.get_stoichiometric_row_names_indices("on")
 
-# biomodel.getForwardStoichiometricMatrix("on")
+# bioml.get_forward_stoichiometric_matrix("on")
 
-# biomodel.getReverseStoichiometricMatrix("on")
+# biomlm.get_reverse_stoichiometric_matrix("on")
 
-# large_array = biomodel.getThermoConversionMatrix("on")
+# large_array = biomlmodel.get_thermo_conversion_matrix("on")
 
 # df = pd.DataFrame(large_array)
 
 # print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
 
-# biomodel.checkModelReversibility(printing="on")
+# biomlm.check_model_reversibility(printing="on")
 
-# biomodel.getKineticRateConstantsVector("on")
+# bioml.get_kinetic_rate_constants_vector("on")
 
-# biomodel.KineticConstantsThermoCompatibility("on")
+# bioml.check_kinetic_constants_thermo_compatibility("on")
 
 elapsed = t() - t0
 
@@ -82,4 +82,4 @@ elapsed_str = (
     f"{int(elapsed % 60)} second{'s' if int(elapsed % 60) != 1 else ''}"
 ) if elapsed >= 60 else f"{int(elapsed)} second{'s' if int(elapsed) != 1 else ''}"
 
-printer("\n\nElapsed: ", elapsed_str, text_color='light_yellow', text_style='dim')
+printer("\n\nElapsed time: ", elapsed_str, text_color='light_yellow', text_style='dim')

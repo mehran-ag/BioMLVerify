@@ -1,6 +1,6 @@
 from sympy import Basic
 
-class ReactionPropertiesMixin:
+class BioMLReactionPropertiesMixin:
 
 
 

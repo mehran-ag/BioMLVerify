@@ -1,7 +1,7 @@
-from classes.cSpecies import *
+from classes.cBioMLSpecies import *
 
 
-class SpeciesReference(Species):
+class BioMLSpeciesReference(BioMLSpecies):
 
     def __init__(self, species_instance):
         # Copy all attributes from parent dynamically
@@ -31,10 +31,10 @@ class SpeciesReference(Species):
         else:
             raise ValueError("Input must be a string!")
 
-    def getStoichiometry(self):
+    def get_stoichiometry(self):
 
         return self._stoichiometry
     
-    def getSpecies(self):
+    def get_species(self):
 
         return self._ID

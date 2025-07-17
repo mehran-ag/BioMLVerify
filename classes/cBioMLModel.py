@@ -1,6 +1,6 @@
-from classes.ModelPropertiesMixin import *
+from classes.BioMLModelPropertiesMixin import *
 
-class Model(ModelPropertiesMixin):
+class BioMLModel(BioMLModelPropertiesMixin):
 
     def __init__(self, ID):
 
@@ -15,29 +15,29 @@ class Model(ModelPropertiesMixin):
         self._species_indices: dict = None
         self._is_mass_action: bool = None
 
-    def getId(self):
+    def get_id(self):
 
         return self._ID
     
-    def getListOfCompartments(self):
+    def get_list_of_compartments(self):
 
         return self._compartments
 
-    def getListOfSpecies(self):
+    def get_list_of_species(self):
 
         return self._species
     
-    def getListOfReactions(self):
+    def get_list_of_reactions(self):
 
         return self._reactions
     
-    def getListOfParameters(self):
+    def get_list_of_parameters(self):
 
         return self._parameters
     
-    def getListOfFunctionDefinitions(self):
+    def get_list_of_function_definitions(self):
 
         return self._function_definitions
     
-    def setID(self, new_ID):
+    def set_id(self, new_ID):
         self._ID = str(new_ID)

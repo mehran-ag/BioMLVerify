@@ -1,4 +1,4 @@
-class SpeciesPropertiesMixin:
+class BioMLSpeciesPropertiesMixin:
 
     @property
     def ID(self):
