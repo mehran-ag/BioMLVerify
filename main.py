@@ -21,13 +21,13 @@ atexit.register(lambda: print("\n" * 2))
 
 
 
-folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
+# folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-file_name = "BIOMD0000000378.xml"
+# file_name = "BIOMD0000000378.xml"
 
 # verify_model(folder_path, file_name)
 
-verify_bunch_SBML_models(folder_path)
+# verify_bunch_SBML_models(folder_path)
 
 
 
@@ -37,7 +37,7 @@ verify_bunch_SBML_models(folder_path)
 
 # file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml"
 
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
+file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
 
@@ -45,35 +45,21 @@ verify_bunch_SBML_models(folder_path)
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-# bioml = BioML()
+# file_path = "/Users/makb047/UoA/Codes/SBML_Models/BIOMD0000000770.xml"
 
-# bioml.read_file(file_path)
 
-# print("\n")
 
-# bioml.check_mass_action_kinetics("on")
 
-# bioml.get_stoichiometric_matrix("on")
 
-# bioml.get_stoichiometric_column_names_indices("on")
+bioml = BioML()
 
-# bioml.get_stoichiometric_row_names_indices("on")
+bioml.read_file(file_path)
 
-# bioml.get_forward_stoichiometric_matrix("on")
+bioml.verify_model(mass_balance=True, printing=True)
 
-# biomlm.get_reverse_stoichiometric_matrix("on")
 
-# large_array = biomlmodel.get_thermo_conversion_matrix("on")
 
-# df = pd.DataFrame(large_array)
 
-# print("\nThe Kinetic to Thermodynamic Conversion Matrix is:\n",df)
-
-# biomlm.check_model_reversibility(printing="on")
-
-# bioml.get_kinetic_rate_constants_vector("on")
-
-# bioml.check_kinetic_constants_thermo_compatibility("on")
 
 elapsed = t() - t0
 

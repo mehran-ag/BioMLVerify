@@ -22,7 +22,7 @@ class BioMLSpecies(BioMLSpeciesPropertiesMixin):
         self._thermodynamic_rate_constant = None
         self._compound = None  #This is the scientific name of the species like CO2, H2O, CH4
         self._composition = None
-        self._chebi_code = None
+        self._chebi_code: str = None
 
     @classmethod
     def get_current_index(cls):

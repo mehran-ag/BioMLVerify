@@ -15,6 +15,8 @@ class BioMLModel(BioMLModelPropertiesMixin):
         self._species_indices: dict = None
         self._is_mass_action: bool = None
 
+        self._element_indices_dict = {}
+
     def get_id(self):
 
         return self._ID
@@ -41,3 +43,48 @@ class BioMLModel(BioMLModelPropertiesMixin):
     
     def set_id(self, new_ID):
         self._ID = str(new_ID)
+
+    
+    def get_element_indices_dict(self):
+
+        if self._element_indices_dict():
+
+            return self._element_indices_dict()
+        
+        else:
+
+            try:
+
+                self.mk_element_indices_dict()
+
+                return self._element_indices_dict
+
+            except Exception:
+                
+                return {}
+        
+
+
+    def mk_element_indices_dict(self):
+
+        counter = 0
+
+        for single_species in self._species:
+
+            if single_species.composition is None:
+                raise ValueError(f"Chemical composition is not known for {single_species.name if single_species.name is not None else single_species.ID}\n       Elemental matrix cannot be costructed!")
+
+            for compound in single_species.composition.keys():
+
+                if compound not in self._element_indices_dict:
+
+                    self._element_indices_dict[compound] = counter
+
+                    counter += 1
+
+        return self._element_indices_dict
+
+
+        
+
+

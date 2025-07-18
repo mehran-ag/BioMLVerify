@@ -1,4 +1,3 @@
-import sys
 import os
 import time
 
@@ -8,6 +7,8 @@ import matrix_constructor
 import model_checker
 import exceptions
 import utility
+
+import numpy as np
 
 
 from classes.cBioMLReaction import *
@@ -438,7 +439,7 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_kinetic_constants_thermo_compatibility(self, printing = "off"):
+    def check_kinetic_constants_thermo_compatibility(self, printing = False):
 
         try:
             compatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomlmodel, printing)
@@ -449,5 +450,148 @@ class BioML(object):
         
         except Exception as e:
             utility.error_handler(e, "check_kinetic_constants_thermo_compatibility")
-            utility.printer("\nCompatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
+            utility.printer("\nThermodynamic Compatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
+            return
+        
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def get_elemental_matrix(self, printing="off"):
+
+        try:
+            elemental_matrix = self._matrix_constructor.elemental_matrix_constructor(self._biomlmodel)
+            
+
+            if printing.lower() == "on":
+                utility.printer("\nThe Stoichiometric Matrix is:\n", elemental_matrix)
+
+            return elemental_matrix
+
+        except Exception as e:
+            utility.error_handler(e, "get_elemental_matrix")
+            return
+        
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def check_mass_balance(self, printing=False):
+
+        try:
+
+            elemental_array = self.get_elemental_matrix()
+
+            if elemental_array is None:
+                raise ValueError(f"Elemental matrix is not provided!")
+
+            stoichiometric_array = self.get_stoichiometric_matrix()
+
+            if stoichiometric_array is None:
+                raise ValueError(f"Stoichiometric matrix is not provided!")
+
+            if elemental_array.shape[1] == stoichiometric_array.shape[0]:
+                conservation_array = elemental_array @ stoichiometric_array
+            
+            else:
+
+                raise ValueError(f"Matrices cannot be multiplied as the number of columns of the elemental matrix, {elemental_array.shape[1]}, is not equal to the number of rows of the stoichiometric matrix, {stoichiometric_array.shape[0]}!")
+            
+            if np.all( ( conservation_array == 0 ) ):
+
+                if printing:
+                    utility.message_printer("\nMass is conserved in the reactions\n", color='green')
+
+                return True
+        
+            else:
+                if printing:
+                    utility.message_printer("\nConservation of Mass is violated", color='red')
+                
+                    length = conservation_array.shape[1]
+                    for i in  range(0,length):
+                        if np.all(conservation_array[:, i] == 0):
+                            pass
+                        else:
+                            for biomlreaction in self._biomlmodel.reactions:
+                                if biomlreaction.index == i:
+                                    utility.message_printer(f"\nMass is not conserved in reaction {biomlreaction.ID}", color='magenta')
+
+                return False
+
+
+        
+        except Exception as e:
+            utility.error_handler(e, "check_mass_balance")
+            return
+        
+
+
+
+    def verify_model(self, mass_balance = False, printing=False):
+
+        passed = False
+
+        try:
+
+            is_mass_balanced = None
+
+            if mass_balance:
+
+                is_mass_balanced = self.check_mass_balance(printing)
+
+                if is_mass_balanced is None:
+                    raise ValueError(f"Mass balance cannot be checked!")
+
+                if is_mass_balanced:
+
+                    passed = True
+
+                    if printing:
+
+                        utility.printer("\nMass Conservation Check: ",f"Mass is conserved in the reactions\n", text_color="green", text_style="bold")
+
+                else:
+                        
+                    if printing:
+
+                        utility.printer("\nMass Conservation Check: ",f"Mass is NOT conserved in the reactions", text_color="red", text_style="bold")
+
+        except Exception as e:
+            utility.error_handler(e, "verify_model")
+
+
+        try:
+
+            if passed:
+
+                if not self.check_mass_action_kinetics():
+
+                    passed = False
+
+                    if printing:
+
+                        utility.printer("\nThermodynamic Compatibility Check: ",f"nModel {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+
+                    return passed
+                
+                if not self.check_model_reversibility():
+
+                    passed = False
+
+                    if printing:
+
+                        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+
+                    return passed
+                
+                if self.check_kinetic_constants_thermo_compatibility(printing):
+                    passed = True
+
+                    return passed
+
+        except Exception as e:
+            utility.error_handler(e, "verify_model")
             return

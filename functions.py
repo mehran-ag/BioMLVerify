@@ -61,13 +61,13 @@ def verify_model(file_path, file_name):
 
     if not bioml.check_mass_action_kinetics():
 
-        utility.message_printer(f"\nModel {file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\nis NOT eligible for verification check\n", color='red', style='bold')
+        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n" + 36 * " " + "it is NOT eligible for verification check\n", text_color="red")
 
         return
     
     if not bioml.check_model_reversibility():
 
-        utility.message_printer(f"\nModel {file_name} has (a) irrversible reaction(s) and\nis not eligible for verification check\n", color='red', style='bold')
+        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {file_name} has (an) irrversible reaction(s) and\n" + 36 * " " + "it is NOT eligible for verification check\n", text_color="red")
 
         return
     
@@ -142,6 +142,6 @@ def verify_bunch_SBML_models(folder_path):
         
     check_results.to_excel(excel_full_path, index=False)
 
-    saved_path = "\nThe excel file has been successfully saved to \"" + folder_path + "\""
+    save_message = f"\n{'*' * 30} The Excel file \"check_results.xlsx\" has been successfully saved to \"{folder_path}\" {'*' * 30}"
 
-    utility.message_printer(saved_path, color='green')
+    utility.message_printer(save_message)

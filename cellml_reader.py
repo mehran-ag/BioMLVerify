@@ -88,8 +88,6 @@ class CellmlReader:
 
         if all(variable_type_buckets.get(k) for k in keys_to_check):
 
-            utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
-
             biomlmodel_species_list = self._species_identifier(variable_type_buckets['va'])
 
             biomlmodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomlmodel_species_list)
@@ -103,6 +101,8 @@ class CellmlReader:
             biomlmodel.species = biomlmodel_species_list
 
             biomlmodel.reactions = biomlmodel_reactions_list
+
+            utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
 
             mass_action = self._find_cellml_mass_actions(**cellml_contents)
 
@@ -122,13 +122,13 @@ class CellmlReader:
 
             if mass_action:
 
-                biomlmodel = self._make_biomlmodel(cellml_model_name, **cellml_contents)
+                biomlmodel = self._make_biomlmodel(cellml_model, **cellml_contents)
 
                 return biomlmodel
 
             else:
 
-                print(f"\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\n")
+                print(f"\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\nAnd cannot be converted to a BioML Model")
 
                 return
 
@@ -332,36 +332,38 @@ class CellmlReader:
             if matched_species is not None:
                 continue
 
-            biomlmodel_species = BioMLSpecies(name)
+            cellml_id = variable.id()
 
-            name_code = variable.id().split('_')[1]
+            biomlmodel_species = BioMLSpecies(cellml_id)
 
-            if all( char.isdigit() for char in name_code ):
+            biomlmodel_species.name = name
 
-                compound, composition = CellmlReader._chebi_comp_parser(name_code)
+            if cellml_id.split('_')[1].isdigit():
 
-                biomlmodel_species.chebi_code = name_code
+                chebi_code = cellml_id.split('_')[1]
+
+                biomlmodel_species.chebi_code = chebi_code
+
+                biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._chebi_comp_parser(chebi_code)
 
             else:
 
-                # If there is no chebi code for the variable, then we have to split the code more
-                # A '-' after the name of the compound shows its composition, and each species is separated by a '.'
-                if ( len(name_code.split('-')) == 1 ):
-                    compound = name_code
-                    composition={ name_code: 1 }
-                
+                cellml_species_compound = cellml_id.split('_')[1].split('-')[0]
+
+                if len( cellml_id.split('_')[1].split('-') ) > 1:
+
+                    cellml_species_comp_code = cellml_id.split('_')[1].split('-')[1]
+
+                    cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
+
                 else:
 
-                    compound = name_code.split('-')[0]
-                    formula = name_code.split('-')[1].split('.')
+                    cellml_species_composition = {cellml_species_compound: 1}
 
-                    composition={}
-                    for element in formula:
-                        composition[element] = 1    #IT SHOULD BE NOTED THAT CURRENTLY I CAN INCLUDE ONLY ONE INSTANCE OF EACH ELEMENT IN THE COMPOSITION. IT IS THE DEFAULT VALUE SET HERE
-                                                    #ATTENTION ATTENTION
+                biomlmodel_species.compound = cellml_species_compound
 
-            biomlmodel_species.compound = compound
-            biomlmodel_species.composition = composition
+                biomlmodel_species.composition = cellml_species_composition
+
 
             biomlmodel_species_list.append(biomlmodel_species)
 
@@ -902,7 +904,7 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _make_biomlmodel(self, cellml_model_name, **cellml_contents):
+    def _make_biomlmodel(self, cellml_model, **cellml_contents):
         '''
         cellml_contents = {"cellml_eqs": cellml_eqs,
             "cellml_flattened_eqs": cellml_flattened_eqs,
@@ -921,7 +923,19 @@ class CellmlReader:
 
         reversible = True
 
-        biomlmodel = BioMLModel(cellml_model_name)
+        if cellml_model.id() != '':
+
+            biomlmodel_name = cellml_model.id()
+
+        elif cellml_model.name() != '':
+
+            biomlmodel_name = cellml_model.name()
+
+        else:
+
+            biomlmodel_name = 'Not assigned'
+
+        biomlmodel = BioMLModel(biomlmodel_name)
 
         biomlmodel_reactions_list = []
 
@@ -998,14 +1012,39 @@ class CellmlReader:
 
                 if cellml_species_instance is not None:
 
-                    biomlmodel_species = BioMLSpecies(str(species_name))
+                    cellml_id = cellml_species_instance.id()
 
-                    id = cellml_species_instance.id()
+                    biomlmodel_species = BioMLSpecies(cellml_id)
 
-                    if id.isdigit():
-                        chebi_code = id
+                    biomlmodel_species.name = str(species_name)
+
+                    if cellml_id.split('_')[1].isdigit():
+
+                        chebi_code = cellml_id.split('_')[1]
 
                         biomlmodel_species.chebi_code = chebi_code
+
+                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._chebi_comp_parser(chebi_code)
+
+                    else:
+
+                        cellml_species_compound = cellml_id.split('_')[1].split('-')[0]
+
+                        if len( cellml_id.split('_')[1].split('-') ) > 1:
+
+                            cellml_species_comp_code = cellml_id.split('_')[1].split('-')[1]
+
+                            cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
+
+                        else:
+
+                            cellml_species_composition = {cellml_species_compound: 1}
+                            
+
+                        biomlmodel_species.compound = cellml_species_compound
+
+                        biomlmodel_species.composition = cellml_species_composition
+
 
                     biomlmodel_species_list.append(biomlmodel_species)
 
@@ -1041,13 +1080,31 @@ class CellmlReader:
 
                 if cellml_species_instance is not None:
 
-                    biomlmodel_species = BioMLSpecies( str(species_name) )
+                    cellml_id = cellml_species_instance.id()
 
-                    id = cellml_species_instance.id()
+                    biomlmodel_species = BioMLSpecies(cellml_id)
 
-                    if id.isdigit():
-                        chebi_code = id
+                    biomlmodel_species.name = str(species_name)
+
+                    if cellml_id.split('_')[1].isdigit():
+
+                        chebi_code = cellml_id.split('_')[1]
+
                         biomlmodel_species.chebi_code = chebi_code
+
+                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._chebi_comp_parser(chebi_code)
+
+                    else:
+
+                        cellml_species_name = cellml_id.split('_')[1].split('-')[0]
+
+                        cellml_species_comp_code = cellml_id.split('_')[1].split('-')[1]
+
+                        cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
+
+                        biomlmodel_species.compound = cellml_species_name
+
+                        biomlmodel_species.composition = cellml_species_composition
 
                     biomlmodel_species_list.append(biomlmodel_species)
 
@@ -1082,6 +1139,25 @@ class CellmlReader:
         
 
 
+
+    def _parse_molecule_units(self, cellml_comp_code):
+        """
+        Parses a string like '2CH4.P4' into a dictionary of molecule counts:
+        e.g., {'CH4': 2, 'P4': 1}
+        """
+        result = defaultdict(int)
+        units = cellml_comp_code.split('.')
+
+        for unit in units:
+            match = re.match(r'^(\d*)([a-zA-Z][a-zA-Z0-9]*)$', unit.strip())
+            if not match:
+                raise ValueError(f"Invalid format in unit: '{unit}'")
+            
+            qty_str, formula = match.groups()
+            qty = int(qty_str) if qty_str else 1
+            result[formula] += qty
+
+        return dict(result)
 
 
     

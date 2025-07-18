@@ -1,16 +1,10 @@
 import numpy as np
 import exceptions
-import os
-import sympy as sp
 from classes.cBioMLReaction import *
 from classes.cBioMLSpecies import *
 import utility
-import random
 import warnings
-import re
-import inspect
 from constants import *
-from collections import defaultdict
 
 from scipy.linalg import null_space
     
@@ -39,7 +33,6 @@ class MatrixConstructor:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
-        parameters_list = biomlmodel.get_list_of_parameters()
         reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
@@ -348,7 +341,7 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_rates_thermo_compatibility_check(self, biomlmodel, printing = "off") -> bool:
+    def kinetic_rates_thermo_compatibility_check(self, biomlmodel, printing = False) -> bool:
 
         if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -376,14 +369,66 @@ class MatrixConstructor:
 
         if np.all(np.abs(result) <= 1e-2):
 
-            if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints\n", text_color="green", text_style="bold")
+            if printing:
+                utility.printer("\nThermodynamic Compatibility Check: ","The kinetic reaction rate constants are compatible with thermodynamic constraints\n", text_color="green", text_style="bold")
 
             return True
         
         else:
 
-            if printing.lower() == "on":
-                utility.printer("\nCompatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
+            if printing:
+                utility.printer("\nThermodynamic Compatibility Check: ","The kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
             
             return False
+        
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def elemental_matrix_constructor(self, biomlmodel) -> np.ndarray:
+        """
+        Constructs the elemental matrix for the given BioModel.
+
+        Parameters:
+            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
+
+        Returns:
+            np.ndarray: A 2D array representing the elemental matrix, 
+                        where rows correspond to elements and columns to species.
+        """
+        if biomlmodel == None:
+            raise exceptions.NoModel("No BioModel has been read!!!")
+
+        biomlspecies_list = biomlmodel.get_list_of_species()
+
+        if len(biomlspecies_list) == 0:
+            raise exceptions.EmptyList("There are no species in this model.")
+        
+
+        columns = BioMLSpecies.get_current_index()
+
+        element_indices_dict = biomlmodel.mk_element_indices_dict()
+
+        rows = len( element_indices_dict )
+
+        self.elemental_matrix = np.zeros((rows, columns), dtype = int)
+
+        for individual_biomlspecies in biomlspecies_list:
+
+            column = individual_biomlspecies.index
+
+            for compound, number in individual_biomlspecies.composition.items():
+
+                row = element_indices_dict.get(compound)
+
+                if row is None:
+                    raise ValueError(f"There is not an index for {compound} in species {individual_biomlspecies.name if individual_biomlspecies.name is not None else individual_biomlspecies.ID}")
+                
+                self.elemental_matrix[row, column] = number
+                
+
+        return self.elemental_matrix
+
+
