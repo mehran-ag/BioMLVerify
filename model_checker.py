@@ -10,16 +10,30 @@ from classes.cBioMLModel import BioMLModel
 
 
 class ModelChecker(object):
-    '''
-    This class checks the model to see if has the requirements to be eligible for verification checks
-    One of the requirements for models is having Mass Action Kinetics
-    '''
+    """
+        This class checks the model to see if has the requirements to be eligible for verification checks
+        One of the requirements for models is having Mass Action Kinetics
+    """
 
 
     # ********************************
     # *           Function           *
     # ********************************
-    def check_model_reversibility(self, biomlmodel: BioMLModel, return_irreversibles: bool = False) -> Union[bool, tuple[bool, list]]:
+    def check_model_reversibility(self, biomlmodel: BioMLModel, return_irreversibles: bool = False) -> Union[bool, tuple[bool, list[str]]]:
+        """
+            Checks whether all reactions in the input model are reversible.
+
+            If any irreversible reaction is found in the model, the function returns False.
+            Optionally, a list of irreversible reactions can also be returned.
+
+            Args:
+                biomlmodel (BioMLModel): A model of the BioML class containing species and reactions.
+                return_irreversibles (bool): If True, also returns a list of irreversible reactions.
+
+            Returns:
+                bool: True if all reactions in the model are reversible, False otherwise.
+                list (optional): A list of the IDs of irreversible reactions (returned only if return_irreversibles is True).
+        """
 
         if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -66,6 +80,15 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def _find_variables_in_klaw( self, biomlmodel: BioMLModel ) -> bool:
+        """
+            Searches for all CellML variables used in all equations in the input BioMLModel and updates the BioMLModel
+
+            Args:
+                biomlmodel (BioMLModel): A model of the BioML class containing species and reactions.
+
+            Returns:
+                None
+        """
 
         done = True
 
@@ -111,6 +134,19 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def check_mass_action_kinetics(self, biomlmodel: BioMLModel, immediate_return: bool = False) -> bool:
+        """
+            Checks whether all reactions in the model follow Mass Action Kinetics.
+
+            Each reaction's rate equation is analyzed for conformity with the Mass Action Kinetics pattern.
+            Returns True only if all reactions meet this criterion.
+
+            Args:
+                biomlmodel (BioMLModel): A model of the BioML class containing species and reactions.
+                immediate_return (bool): If True, returns False immediately upon encountering a non-Mass Action reaction.
+
+            Returns:
+                bool: True if all reactions follow Mass Action Kinetics, False otherwise.
+        """
 
         flag = True
 
@@ -151,7 +187,30 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _make_checking_args(self, biomlmodel: BioMLModel, bm_reaction: object) -> dict:
+    def _make_checking_args(self, biomlmodel: BioMLModel, bioml_reaction: object) -> dict:
+        """
+            Makes the lists required for checking the Mass Action Kinetics in a reaction.
+
+            Finds all variables used in the kinetic law and stores all ina list.
+            Classifies variables used in the kinetic law of the reaction as species, parameters, and compartments.
+            Simplifies the kinetic law using Sympy's Simplify function
+
+            Args:
+                biomlmodel (BioMLModel): A model of the BioML class containing species and reactions.
+                bioml_reaction (BioMLReaction): A reaction intance of BioMLReaction class.
+
+            Returns:
+                dict: A dictionary containing:
+                    - "species_in_kinetic_law": list of species used in the kinetic law,
+                    - "parameters_in_kinetic_law": list of parameters used in the kinetic law,
+                    - "compartments_in_kinetic_law": list of compartments used in the kinetic law,
+                    - "others_in_kinetic_law": list of other variables not classified as species, parameters, or compartments,
+                    - "reactants": list of reactant species,
+                    - "products": list of product species,
+                    - "kinetic_formula": the original kinetic law expression,
+                    - "simp_kinetic_formula": the simplified kinetic law expression,
+                    - "klaw_variables": all variables used in the kinetic law.
+        """
 
 
         reactants = []
@@ -172,7 +231,7 @@ class ModelChecker(object):
 
             parameters.append(bm_parameter.get_id())
 
-        for lcl_bm_parameter in bm_reaction.local_parameters:
+        for lcl_bm_parameter in bioml_reaction.local_parameters:
 
             parameters.append(lcl_bm_parameter.get_id())
 
@@ -182,7 +241,7 @@ class ModelChecker(object):
 
         parameters = list(dict.fromkeys(parameters))
 
-        klaw_variables = bm_reaction.klaw_variables
+        klaw_variables = bioml_reaction.klaw_variables
 
         species_in_kinetic_law = []
 
@@ -211,26 +270,26 @@ class ModelChecker(object):
                 others_in_kinetic_law.append(klaw_variable)
 
         
-        for reactant_class in bm_reaction.get_list_of_reactants():
+        for reactant_class in bioml_reaction.get_list_of_reactants():
 
             reactants.append(reactant_class.get_id())
 
-        for product_class in bm_reaction.get_list_of_products():
+        for product_class in bioml_reaction.get_list_of_products():
 
             products.append(product_class.get_id())
 
 
-        if bm_reaction.expanded_kinetic_law:
+        if bioml_reaction.expanded_kinetic_law:
 
-            kinetic_formula = bm_reaction.expanded_kinetic_law
+            kinetic_formula = bioml_reaction.expanded_kinetic_law
 
-        elif bm_reaction.kinetic_law:
+        elif bioml_reaction.kinetic_law:
 
-            kinetic_formula = bm_reaction.kinetic_law
+            kinetic_formula = bioml_reaction.kinetic_law
 
         else:
 
-            raise ValueError(f"There is not a kinetic formula for reaction {bm_reaction.get_id()}")
+            raise ValueError(f"There is not a kinetic formula for reaction {bioml_reaction.get_id()}")
 
         # Prepare a space-separated and comma-separated version
         symbol_dict = {klaw_variable: sp.symbols(klaw_variable) for klaw_variable in klaw_variables}
@@ -254,7 +313,7 @@ class ModelChecker(object):
             "products": products,
             "kinetic_formula": kinetic_formula,
             "simp_kinetic_formula": simp_kinetic_formula,
-            "klaw_variables": bm_reaction.klaw_variables
+            "klaw_variables": bioml_reaction.klaw_variables
         }
 
 
@@ -266,6 +325,15 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def _num_klaw_species(self, species_in_kinetic_law: list) -> int:
+        """
+            Returns the number of species in the kinetic law
+
+            Args:
+                species_in_kinetic_law (list): list containing all species of the kinetic law
+
+            Returns:
+                int: the number of species in the kinetic law
+        """
 
         return len(species_in_kinetic_law)
 
@@ -276,6 +344,16 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def _single_product(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
+        """
+            Checks the input kinetic law to see if it is a single product of terms
+            
+            Keyword Args:
+                kinetic_law (str): kinetic law of a reaction
+                simple_kinetic_law (str): a simplified (using sympy simplification command) kinetic law of a reaction
+            
+            Returns:
+               bool: True if is single product of terms, False otherwise.
+        """
 
         flag = True
 
@@ -297,6 +375,16 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def _diff_of_products(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
+        """
+            Checks the input kinetic law to see if it is difference of product of two terms
+            
+            Keyword Args:
+                kinetic_law (str): kinetic law of a reaction
+                simple_kinetic_law (str): a simplified (using sympy simplification command) kinetic law of a reaction
+            
+            Returns:
+               bool: True if is difference of product of two terms, False otherwise.
+        """
 
         flag = False
 
@@ -314,6 +402,18 @@ class ModelChecker(object):
     # *           Function           *
     # ********************************
     def _find_frac_parts( self, simp_kinetic_formula: str, klaw_variables: list[str] ) -> dict:
+        """
+            Finds the numerator and denominator of a fraction in a kinetic law string.
+
+            Keyword Args:
+                simp_cellml_eq (str): Simplified CellMl equation using Sympy simplification method
+                cellml_vars (list[str]): A list containing CellML variables as strings
+
+            Returns:
+                dict: A dictionary with the following keys:
+                    - "numerator": A string containing the numerator of the fraction.
+                    - "denominator": A string containing the denominator of the fraction.
+        """
 
         fracs = {"numerator": '', "denominator": ''}
 
@@ -335,16 +435,30 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _check_kinetic_law(self, **args) -> bool:
+    def _check_kinetic_law(self, **kwargs) -> bool:
+        """
+            Checks whether the provided kinetic formula follows Mass Action Kinetics.
+
+            Args:
+                kwargs (dict): a dictionary containing the following arguments:
+                    - "kinetic_formula": A string representing the equation for the kinetic law
+                    - "simp_kinetic_formula": A string of the simplified equation of the kinetic law
+                    - "species_in_kinetic_law": A list containing the species in the kinetic law
+                    - "klaw_variables": A list containing all variables in the kinetic law
+                    - "reactants": A list containig all the reactant names of the reaction
+                    - "products": A list containig all the product names of the reaction
+
+            Returns:
+                bool: True if the equation provided follows the rules of Mass Action equations, False otherwise.
+        """
 
 
-
-        species_in_kinetic_law = args["species_in_kinetic_law"]
-        kinetic_formula = args["kinetic_formula"]
-        simp_kinetic_formula = args["simp_kinetic_formula"]
-        klaw_variables = args["klaw_variables"]
-        reactants = args["reactants"]
-        products = args["products"]
+        kinetic_formula = kwargs["kinetic_formula"]
+        simp_kinetic_formula = kwargs["simp_kinetic_formula"]
+        species_in_kinetic_law = kwargs["species_in_kinetic_law"]
+        klaw_variables = kwargs["klaw_variables"]
+        reactants = kwargs["reactants"]
+        products = kwargs["products"]
 
         species_in_kinetic_law = species_in_kinetic_law + reactants + products
 
@@ -389,6 +503,29 @@ class ModelChecker(object):
 
     @staticmethod
     def _identify_variables(ast_node: libsbml.ASTNode, result: list[str]) -> list[str]:
+        """
+            Recursively traverses an SBML AST (Abstract Syntax Tree) to identify and collect variable names.
+
+            This method inspects the children of a given `ASTNode` and recursively extracts variable names,
+            skipping function nodes and continuing traversal for unnamed nodes or functions. It accumulates
+            results into the provided `result` list and returns it.
+
+            Parameters:
+                ast_node (libsbml.ASTNode): The current AST node to process.
+                result (list): A list to accumulate identified variable names during recursion.
+
+            Returns:
+                list: A list of variable names (strings) extracted from the AST.
+
+            Raises:
+                ValueError: If the recursion depth exceeds `cn.MAX_DEPTH` to prevent infinite recursion.
+
+            Notes:
+                - The function relies on a global variable `cur_depth` to track recursion depth.
+                - The function uses `getName()` to determine whether a node represents a named variable.
+                - Function nodes are further traversed rather than included directly.
+                - If `child_node.getName()` returns `None`, it is treated as a non-terminal and is traversed.
+        """
     
         global cur_depth
         cur_depth += 1
@@ -414,6 +551,24 @@ class ModelChecker(object):
 
     @staticmethod
     def _get_variables(kinetic_law_string: str) -> list[str]:
+        """
+            Extracts all variable names from an SBML ASTNode expression.
+
+            This function initializes recursion depth and invokes a helper method to
+            recursively traverse the AST and collect all variable names present in the expression.
+
+            Parameters:
+                ast_node (libsbml.ASTNode): The root node of the SBML Abstract Syntax Tree (AST)
+                                            representing a mathematical expression.
+
+            Returns:
+                list: A list of variable names (strings) extracted from the AST.
+
+            Notes:
+                - Uses a global `cur_depth` variable to track recursion depth during traversal.
+                - Delegates the recursive extraction to `_identify_variables`.
+                - If the root node has a name, it is included in the results.
+        """
 
 
         global cur_depth

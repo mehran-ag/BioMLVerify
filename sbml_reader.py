@@ -33,9 +33,13 @@ class SbmlReader:
     def read_file(self, file_path: str) -> BioMLModel:
 
         """
-        Reads an SBML file using libSBML.
+            Reads an SBML file using libSBML.
 
-        :return: SBML model if successful, None otherwise.
+            Args:
+                file_path (str): the full path to the file including file name
+
+            Returns:
+                BioMLModel: An instance of BioML Model where all contents of SBML file have been converted to BioML specific counterparts
         """
 
         self._file_name = os.path.basename(file_path)
@@ -63,7 +67,7 @@ class SbmlReader:
 
                     biomlmodel.is_mass_action = True
 
-                    self._find_forward_reverse_rates(biomlmodel)
+                    self._find_forward_reverse_rate_constants(biomlmodel)
                     
                     return biomlmodel
                 
@@ -86,10 +90,19 @@ class SbmlReader:
     # *           Function           *
     # ********************************
     def _transfer_sbml_species_to_biomlmodel(self, libsbml_model: libsbml.Model) -> list[BioMLSpecies]:
-        '''
-        This function gets a SBML model, reads the required information for the species and creates a Species class for each one
-        Then, it returns a list that contains the classes of species for this tool
-        '''
+        """
+            Converts species from an SBML model into BioMLSpecies instances.
+
+            Parses the input `libsbml` model to extract species information and creates a `BioMLSpecies` instance for each species.
+            Returns a list of all such instances for use in this tool.
+
+            Args:
+                libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
+
+            Returns:
+                list: A list of BioMLSpecies instances created from the SBML species.
+        """
+
 
         self._biomlmodel_species_list = []
 
@@ -123,6 +136,18 @@ class SbmlReader:
     # *           Function           *
     # ********************************
     def _transfer_sbml_parameters_to_biomlmodel(self, libsbml_model: libsbml.Model) -> list[BioMLParameter]:
+        """
+            Converts parameters from an SBML model into BioMLParameter instances.
+
+            Parses the input `libsbml` model to extract parameter information and creates a `BioMLParameter` instance for each parameter.
+            Returns a list of all such instances for use in this tool.
+
+            Args:
+                libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
+
+            Returns:
+                list: A list of BioMLParameter instances created from the SBML parameters.
+        """
 
         biomlmodel_parameters_list = []
 
@@ -172,6 +197,18 @@ class SbmlReader:
     # *           Function           *
     # ********************************
     def _transfer_sbml_reactions_to_biomlmodel(self, libsbml_model: libsbml.Model, bioml_function_definitions: list[BioMLFunctionDefinition]) -> list[BioMLReaction]:
+        """
+            Converts reactions from an SBML model into BioMLReaction instances.
+
+            Parses the input `libsbml` model to extract reaction information and creates a `BioMLReaction` instance for each reaction.
+            Returns a list of all such instances for use in this tool.
+
+            Args:
+                libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
+
+            Returns:
+                list: A list of BioMLReaction instances created from the SBML reactions.
+        """
 
         biomlmodel_reactions_list = []
 
@@ -321,6 +358,18 @@ class SbmlReader:
     # *           Function           *
     # ********************************
     def _transfer_sbml_function_definitions_to_biomlmodel(self, libsbml_model: libsbml.Model) -> list[BioMLFunctionDefinition]:
+        """
+            Converts function definitions from an SBML model into BioMLFunctionDefinition instances.
+
+            Parses the input `libsbml` model to extract function definition information and creates a `BioMLFunctionDefinition` instance for each function definition.
+            Returns a list of all such instances for use in this tool.
+
+            Args:
+                libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
+
+            Returns:
+                list: A list of BioMLFunctionDefinition instances created from the SBML function definitions.
+        """
 
         sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
                                     for i in range(libsbml_model.getNumFunctionDefinitions())]
@@ -340,6 +389,18 @@ class SbmlReader:
     # *           Function           *
     # ********************************
     def _find_sbml_local_parameters(self, libsbml_model: libsbml.Model) -> list[BioMLParameter]:
+        """
+            Converts local parameters from an SBML model into BioMLParameter instances.
+
+            Parses the input `libsbml` model to extract parameter information and creates a `BioMLParameter` instance for each local parameter.
+            Returns a list of all such instances for use in this tool.
+
+            Args:
+                libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
+
+            Returns:
+                list: A list of BioMLParameter instances created from the SBML local parameters.
+        """
 
         local_parameters_strings = []
 
@@ -418,20 +479,27 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _find_forward_reverse_rates(self, biomlmodel: BioMLModel, printing: bool= False) -> dict:
+    def _find_forward_reverse_rate_constants(self, biomlmodel: BioMLModel, printing: bool = False) -> dict:
         """
-        Input of this function is a biomlmodel class instance
-        This function extracts the rate constants for each reaction in the given model, 
-        including both forward and reverse directions. Then, "kinetic_forward_rate_constant" and "kinetic_reverse_rate_constant" variables of each reaction is updated
+            Extracts the rate constants for each reaction in the given model, 
+            including both forward and reverse directions.
+            Then, "kinetic_forward_rate_constant" and "kinetic_reverse_rate_constant" variables of each reaction and their values are updated.
 
-        Each reaction's rate constants are stored in a dictionary with 'forward' and 'reverse' 
-        as keys and their corresponding values as floats.
+            Each reaction's rate constants are stored in a dictionary with 'forward' and 'reverse' 
+            as keys and their corresponding values as floats.
 
-        These per-reaction dictionaries are then stored in a master dictionary, 
-        `reaction_to_rate_constants`, where the keys are reaction names and the values 
-        are the corresponding rate constant dictionaries.
+            These per-reaction dictionaries are then stored in a master dictionary, 
+            `reaction_to_rate_constants`, where the keys are reaction names and the values 
+            are the corresponding rate constant dictionaries.
 
-        The final dictionary is returned.
+            The final dictionary is returned.
+
+            Args:
+                biomlmodel (BioMLModel): A model of the BioML class containing species and reactions.
+                printing (bool): If True, displays the reaction rate constants for each reaction as they are found
+
+            Returns:
+                dict: A dictionary containing reaction names as keys and another dictionary containing forard and reverse reaction rate names mapped to their values as the dictionary's value
         """
 
         reaction_to_rate_constants = {} # This dictionary maps reaction names (IDs) to a dictionary of forward and reverse rate constants and their values
@@ -442,6 +510,34 @@ class SbmlReader:
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
         def _get_forward_reverse_rate_expressions(expression):
+            """
+                Classifies terms in a SymPy expression into forward and reverse reaction rates.
+
+                This function takes a symbolic expression typically representing a rate law
+                or net reaction rate and separates its terms into forward and reverse contributions.
+                Positive terms are interpreted as forward rates, while negative terms are
+                considered reverse rates.
+
+                Parameters:
+                    expression (sp.Expr): A SymPy expression representing a rate or combination
+                                        of rates. Can include addition and multiplication of terms.
+
+                Returns:
+                    dict: A dictionary with two keys:
+                        - 'forward_rate': a list of SymPy expressions contributing positively.
+                        - 'reverse_rate': a list of SymPy expressions contributing negatively.
+
+                Notes:
+                    - If the expression is zero or None, an empty dictionary is returned.
+                    - If the expression is a multiplication of terms and one or more of them
+                    is an addition (e.g., (A + B)*C), each additive term is classified individually.
+                    - The check for negativity is performed by searching for a "-" in the string
+                    representation of the term, which may not be robust for all SymPy expressions.
+                    Consider improving this with SymPy's `.is_negative` if needed.
+                
+                Raises:
+                    TypeError: If the input is not a SymPy expression.
+            """
 
             # Separate positive and negative terms manually
             rates = defaultdict(list)
@@ -485,10 +581,32 @@ class SbmlReader:
         # --------------------------------------------------
         # --------------------------------------------------
 
+
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
         def _find_power_operator(expression: str, parameters: list[str], parameters_values: dict, new_parameters: list[str] = None, reaction_rate_constant: str = '', reaction_rate_constant_value: float = None, number_of_recursions: int = 0):
+            """
+                Finds a parameters powered to a variable or constant and repalces it with a new paramater recursively until all parameters powered are found.
+
+                Args:
+                    expression (str): The equation to be looked up
+                    parameters list[str]: a list of parameters in the reactions
+                    parameters_values (dict): a dictionary mapping parameter names to their values
+                    new_parameters (list[str]): the new parameters created to replace the powered parameter
+                    reaction_rate_constant (str): this string stores the powered parameter and adds new ones to keep them as the paramater for the reation rate expression
+                    reaction_rate_constant_value (float): the value of the created new parameter
+                    number_of_recursions (int): this number is checked in every recursion to avoid infinite recursions
+
+                Returns:
+                    expression (str): The equation to be looked up
+                    parameters list[str]: a list of parameters in the reactions
+                    parameters_values (dict): a dictionary mapping parameter names to their values
+                    new_parameters (list[str]): the new parameters created to replace the powered parameter
+                    reaction_rate_constant (str): this string stores the powered parameter and adds new ones to keep them as the paramater for the reation rate expression
+                    reaction_rate_constant_value (float): the value of the created new parameter
+                    number_of_recursions (int): this number is checked in every recursion to avoid infinite recursions
+            """
 
             # Create a dictionary to map operators to their corresponding operations
             operations = {
@@ -567,6 +685,27 @@ class SbmlReader:
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
         def _find_parameters(expression: str, parameters: list[str], parameters_values: dict, new_parameters: list = None, reaction_rate_constant: str = "", reaction_rate_constant_value: float = None, number_of_recursions: int = 0):
+            """
+                Finds two parameters added, multiplied, subtracted or divided and repalces them with a new paramater recursively until all parameters powered are found.
+
+                Args:
+                    expression (str): The equation to be looked up
+                    parameters list[str]: a list of parameters in the reactions
+                    parameters_values (dict): a dictionary mapping parameter names to their values
+                    new_parameters (list[str]): the new parameters created to replace the powered parameter
+                    reaction_rate_constant (str): this string stores the powered parameter and adds new ones to keep them as the paramater for the reation rate expression
+                    reaction_rate_constant_value (float): the value of the created new parameter
+                    number_of_recursions (int): this number is checked in every recursion to avoid infinite recursions
+
+                Returns:
+                    expression (str): The equation to be looked up
+                    parameters list[str]: a list of parameters in the reactions
+                    parameters_values (dict): a dictionary mapping parameter names to their values
+                    new_parameters (list[str]): the new parameters created to replace the powered parameter
+                    reaction_rate_constant (str): this string stores the powered parameter and adds new ones to keep them as the paramater for the reation rate expression
+                    reaction_rate_constant_value (float): the value of the created new parameter
+                    number_of_recursions (int): this number is checked in every recursion to avoid infinite recursions
+            """
 
             # Create a dictionary to map operators to their corresponding operations
             operations = {
@@ -1008,22 +1147,20 @@ class SbmlReader:
 
 
     @staticmethod
-    def _expand_formula(formula: str, function_definitions: BioMLFunctionDefinition,
+    def _expand_formula(formula: str, function_definitions: list[BioMLFunctionDefinition],
             num_recursions: int = 0) -> tuple[str, dict]:
         """
-            Expands the kinetics formula, replacing function definitions
-            with their body.
+            Expands the kinetics formula, replacing a variable which is defiend by a function with their function definitions
 
-            Parameters
-            ----------
-            expansion: str
-                expansion of the kinetic law
-            function_definitions: list-FunctionDefinition
-            num_recursion: int
+            Args:
+                formula (str): expansion of the kinetic law
+                
+                function_definitions (list[BioMLFunctionDefinition]): list of BioMLFunctionDefinition instances
+                num_recursion (int): an integer counter to prevent infinite recursions
             
-            Returns
-            -------
-            str
+            Returns:
+                str: the updated formula
+                dict: a dictionary mapping the variables of the new functions to their Sympy Symbols
         """
 
 

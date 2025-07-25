@@ -838,7 +838,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _single_product(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
-        '''
+        """
             checks the input kinetic law to see if it is a single product of terms
             
             Keyword Args:
@@ -847,7 +847,7 @@ class CellmlReader:
             
             Returns:
                bool: True if is single product of terms, False otherwise.
-        '''
+        """
 
         flag = True
 
@@ -867,7 +867,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _diff_of_products(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
-        '''
+        """
             checks the input kinetic law to see if it is difference of product of two terms
             
             Keyword Args:
@@ -876,7 +876,7 @@ class CellmlReader:
             
             Returns:
                bool: True if is difference of product of two terms, False otherwise.
-        '''
+        """
 
         flag = False
 
