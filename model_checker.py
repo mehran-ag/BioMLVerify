@@ -4,6 +4,7 @@ import constants as cn
 from typing import Union
 import sympy as sp
 from sympy import symbols
+from classes.cBioMLModel import BioMLModel
 
 
 
@@ -18,7 +19,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_model_reversibility(self, biomlmodel, return_irreversibles = False) -> Union[bool, tuple[bool, list]]:
+    def check_model_reversibility(self, biomlmodel: BioMLModel, return_irreversibles: bool = False) -> Union[bool, tuple[bool, list]]:
 
         if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -64,7 +65,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _find_variables_in_klaw( self, biomlmodel ):
+    def _find_variables_in_klaw( self, biomlmodel: BioMLModel ) -> bool:
 
         done = True
 
@@ -109,7 +110,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_mass_action_kinetics(self, biomlmodel, immediate_return = False):
+    def check_mass_action_kinetics(self, biomlmodel: BioMLModel, immediate_return: bool = False) -> bool:
 
         flag = True
 
@@ -150,7 +151,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _make_checking_args(self, biomlmodel, bm_reaction):
+    def _make_checking_args(self, biomlmodel: BioMLModel, bm_reaction: object) -> dict:
 
 
         reactants = []
@@ -264,7 +265,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _num_klaw_species(self, species_in_kinetic_law):
+    def _num_klaw_species(self, species_in_kinetic_law: list) -> int:
 
         return len(species_in_kinetic_law)
 
@@ -274,7 +275,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _single_product(self, kinetic_law, simple_kinetic_law):
+    def _single_product(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
 
         flag = True
 
@@ -295,7 +296,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _diff_of_products(self, kinetic_law, simple_kinetic_law):
+    def _diff_of_products(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
 
         flag = False
 
@@ -312,7 +313,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _frac_parts( self, simp_kinetic_formula, klaw_variables ):
+    def _find_frac_parts( self, simp_kinetic_formula: str, klaw_variables: list[str] ) -> dict:
 
         fracs = {"numerator": '', "denominator": ''}
 
@@ -334,7 +335,7 @@ class ModelChecker(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def _check_kinetic_law(self, **args):
+    def _check_kinetic_law(self, **args) -> bool:
 
 
 
@@ -366,7 +367,7 @@ class ModelChecker(object):
                             flag = False
         
         try:
-            fracs = self._frac_parts(simp_kinetic_formula, klaw_variables)
+            fracs = self._find_frac_parts(simp_kinetic_formula, klaw_variables)
             if len(species_in_kinetic_law) > 0:
                 for i in range(len(species_in_kinetic_law)):
                     if species_in_kinetic_law[i] in fracs["denominator"]:
@@ -387,7 +388,7 @@ class ModelChecker(object):
 
 
     @staticmethod
-    def _variable_identifier(ast_node, result):
+    def _identify_variables(ast_node: libsbml.ASTNode, result: list[str]) -> list[str]:
     
         global cur_depth
         cur_depth += 1
@@ -399,11 +400,11 @@ class ModelChecker(object):
             child_node = ast_node.getChild(idx)
 
             if child_node.getName() is None:
-                additions = ModelChecker._variable_identifier(child_node, [])
+                additions = ModelChecker._identify_variables(child_node, [])
                 result.extend(additions)
             else:
                 if child_node.isFunction():
-                    additions = ModelChecker._variable_identifier(child_node, [])
+                    additions = ModelChecker._identify_variables(child_node, [])
                     result.extend(additions)
                 else:
                     result.append(child_node.getName())
@@ -412,7 +413,7 @@ class ModelChecker(object):
 
 
     @staticmethod
-    def _get_variables(kinetic_law_string):
+    def _get_variables(kinetic_law_string: str) -> list[str]:
 
 
         global cur_depth
@@ -429,7 +430,7 @@ class ModelChecker(object):
         else:
             variables = [ast_node.getName()]
 
-        result = ModelChecker._variable_identifier(ast_node, variables)
+        result = ModelChecker._identify_variables(ast_node, variables)
 
         return result
             

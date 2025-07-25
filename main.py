@@ -33,11 +33,11 @@ atexit.register(lambda: print("\n" * 2))
 
 # file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
 
-# file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
+file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
 
-# file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000192.xml"
+# file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000038.xml"
 
-file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
+# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
 
@@ -68,4 +68,4 @@ elapsed_str = (
     f"{int(elapsed % 60)} second{'s' if int(elapsed % 60) != 1 else ''}"
 ) if elapsed >= 60 else f"{int(elapsed)} second{'s' if int(elapsed) != 1 else ''}"
 
-printer("\n\nElapsed time: ", elapsed_str, text_color='light_yellow', text_style='dim')
+printer("\n\nExecution time: ", elapsed_str, text_color='light_yellow', text_style='dim')

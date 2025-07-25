@@ -15,7 +15,6 @@ from classes.cBioMLFunctionDefinition import *
 import os
 import exceptions
 import time
-import warnings
 
 import model_checker
 
@@ -31,7 +30,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def read_file(self, file_path):
+    def read_file(self, file_path: str) -> BioMLModel:
 
         """
         Reads an SBML file using libSBML.
@@ -50,11 +49,11 @@ class SbmlReader:
         else:
             sbmodel = document.getModel()
             biomlmodel = BioMLModel(sbmodel.getId())
-            biomlmodel.function_definitions = self._sbml_to_biomlmodel_function_definition_transfer(sbmodel)
-            biomlmodel.species = self._sbml_to_biomlmodel_species_tranfer(sbmodel)
-            biomlmodel.reactions = self._sbml_to_biomlmodel_reaction_tranfer(sbmodel, biomlmodel.function_definitions)
-            biomlmodel.parameters = self._sbml_to_biomlmodel_parameter_transfer(sbmodel)
-            biomlmodel.compartments = self._sbml_to_biomlmodel_compartments_transfer(sbmodel)
+            biomlmodel.function_definitions = self._transfer_sbml_function_definitions_to_biomlmodel(sbmodel)
+            biomlmodel.species = self._transfer_sbml_species_to_biomlmodel(sbmodel)
+            biomlmodel.reactions = self._transfer_sbml_reactions_to_biomlmodel(sbmodel, biomlmodel.function_definitions)
+            biomlmodel.parameters = self._transfer_sbml_parameters_to_biomlmodel(sbmodel)
+            biomlmodel.compartments = self._get_list_of_sbml_compartments(sbmodel)
 
             _model_checker = model_checker.ModelChecker()
 
@@ -64,7 +63,7 @@ class SbmlReader:
 
                     biomlmodel.is_mass_action = True
 
-                    self._forward_reverse_rate_finder(biomlmodel)
+                    self._find_forward_reverse_rates(biomlmodel)
                     
                     return biomlmodel
                 
@@ -86,7 +85,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _sbml_to_biomlmodel_species_tranfer(self, libsbml_model):
+    def _transfer_sbml_species_to_biomlmodel(self, libsbml_model: libsbml.Model) -> list[BioMLSpecies]:
         '''
         This function gets a SBML model, reads the required information for the species and creates a Species class for each one
         Then, it returns a list that contains the classes of species for this tool
@@ -123,7 +122,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _sbml_to_biomlmodel_parameter_transfer(self, libsbml_model):
+    def _transfer_sbml_parameters_to_biomlmodel(self, libsbml_model: libsbml.Model) -> list[BioMLParameter]:
 
         biomlmodel_parameters_list = []
 
@@ -147,7 +146,7 @@ class SbmlReader:
                 utility.warning_printer("No GLOBAL parameters found in the SBML model!")
                 time.sleep(1)
 
-                biomlmodel_parameters_list = self._sbml_local_parameter_finder(libsbml_model)  
+                biomlmodel_parameters_list = self._find_sbml_local_parameters(libsbml_model)  
             
         except exceptions.LocalParameterConflict as e:
 
@@ -172,7 +171,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _sbml_to_biomlmodel_reaction_tranfer(self, libsbml_model, function_definitions):
+    def _transfer_sbml_reactions_to_biomlmodel(self, libsbml_model: libsbml.Model, bioml_function_definitions: list[BioMLFunctionDefinition]) -> list[BioMLReaction]:
 
         biomlmodel_reactions_list = []
 
@@ -210,7 +209,7 @@ class SbmlReader:
 
                 raise ValueError(f"Reaction {reaction_id} does not have a reaction rate formula")
 
-            biomlmodel_reaction.expanded_kinetic_law , _ = SbmlReader._expand_formula(biomlmodel_reaction.kinetic_law, function_definitions)
+            biomlmodel_reaction.expanded_kinetic_law , _ = SbmlReader._expand_formula(biomlmodel_reaction.kinetic_law, bioml_function_definitions)
 
             sbml_level = libsbml_model.getLevel()
 
@@ -321,15 +320,15 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _sbml_to_biomlmodel_function_definition_transfer(self, libsbml_model):
+    def _transfer_sbml_function_definitions_to_biomlmodel(self, libsbml_model: libsbml.Model) -> list[BioMLFunctionDefinition]:
 
         sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
                                     for i in range(libsbml_model.getNumFunctionDefinitions())]
         
-        function_definitions = [BioMLFunctionDefinition(sb)
+        bioml_function_definitions = [BioMLFunctionDefinition(sb)
                                 for sb in sbml_function_definitons]
         
-        return function_definitions
+        return bioml_function_definitions
     
 
 
@@ -340,7 +339,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _sbml_local_parameter_finder(self, libsbml_model):
+    def _find_sbml_local_parameters(self, libsbml_model: libsbml.Model) -> list[BioMLParameter]:
 
         local_parameters_strings = []
 
@@ -405,7 +404,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _sbml_to_biomlmodel_compartments_transfer(self, libsbml_model):
+    def _get_list_of_sbml_compartments(self, libsbml_model: libsbml.Model) -> list[str]:
 
         compartments = [comp.getId()
                         for comp in libsbml_model.getListOfCompartments()]
@@ -419,7 +418,7 @@ class SbmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _forward_reverse_rate_finder(self, biomlmodel, printing = "off") -> dict:
+    def _find_forward_reverse_rates(self, biomlmodel: BioMLModel, printing: bool= False) -> dict:
         """
         Input of this function is a biomlmodel class instance
         This function extracts the rate constants for each reaction in the given model, 
@@ -489,7 +488,7 @@ class SbmlReader:
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        def _power_operator_finder(expression, parameters, parameters_values, new_parameters=None, reaction_rate_constant='', reaction_rate_constant_value=None, number_of_recursions = 0):
+        def _find_power_operator(expression: str, parameters: list[str], parameters_values: dict, new_parameters: list[str] = None, reaction_rate_constant: str = '', reaction_rate_constant_value: float = None, number_of_recursions: int = 0):
 
             # Create a dictionary to map operators to their corresponding operations
             operations = {
@@ -559,7 +558,7 @@ class SbmlReader:
 
                         expression = expression.replace( power_match_str, replacing_power_k )
 
-            return _power_operator_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
+            return _find_power_operator(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
         # --------------------------------------------------
         # --------------------------------------------------
 
@@ -567,7 +566,7 @@ class SbmlReader:
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         # *      Internal Function       *
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        def _parameters_finder(expression, parameters, parameters_values, new_parameters = None, reaction_rate_constant = "", reaction_rate_constant_value=None, number_of_recursions=0):
+        def _find_parameters(expression: str, parameters: list[str], parameters_values: dict, new_parameters: list = None, reaction_rate_constant: str = "", reaction_rate_constant_value: float = None, number_of_recursions: int = 0):
 
             # Create a dictionary to map operators to their corresponding operations
             operations = {
@@ -641,7 +640,7 @@ class SbmlReader:
 
                         expression = expression.replace( match_str, replacing_k )
 
-            return _parameters_finder(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
+            return _find_parameters(expression, parameters, parameters_values, new_parameters, reaction_rate_constant, reaction_rate_constant_value, number_of_recursions+1)
         # --------------------------------------------------
         # --------------------------------------------------
 
@@ -747,7 +746,7 @@ class SbmlReader:
 
             expanded_formula = sp.expand(simplified_formula)
 
-            if printing.lower() == 'on':
+            if printing:
                 utility.printer(f"\nThe simplified reaction rate expression for reaction {reaction_name} is:\n", simplified_formula)
 
             
@@ -782,9 +781,9 @@ class SbmlReader:
 
                 parameters_list = [str(p) for p in forward_rate_matching_parameters]
 
-                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = _power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
+                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = _find_power_operator(str(forward_rate_expression), parameters_list, parameters_values)
 
-                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value)
+                expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value = _find_parameters(expression, parameters, parameters_values, new_parameters, forward_rate_constant, forward_rate_constant_value)
 
                 if len(new_parameters) > 1:
 
@@ -819,9 +818,9 @@ class SbmlReader:
 
                     parameters_list = [str(p) for p in forward_rate_matching_parameters]
 
-                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = _power_operator_finder(str(forward_rate_expression), parameters_list, parameters_values)
+                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = _find_power_operator(str(forward_rate_expression), parameters_list, parameters_values)
 
-                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value)
+                    expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value = _find_parameters(expression, parameters, parameters_values, new_parameters, temp_forward_rate_constant, temp_forward_rate_constant_value)
 
                     message = f"\nThe forward kinetic rate constant for reaction {reaction_name} has more than one variable: {forward_rate_constant}"
 
@@ -874,9 +873,9 @@ class SbmlReader:
 
                         parameters_list = [str(p) for p in reverse_rate_matching_parameters]
 
-                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = _power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
+                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = _find_power_operator(str(reverse_rate_expression), parameters_list, parameters_values)
 
-                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value)
+                        expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value = _find_parameters(expression, parameters, parameters_values, new_parameters, reverse_rate_constant, reverse_rate_constant_value)
 
                         message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
 
@@ -913,9 +912,9 @@ class SbmlReader:
 
                             parameters_list = [str(p) for p in reverse_rate_matching_parameters]
 
-                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = _power_operator_finder(str(reverse_rate_expression), parameters_list, parameters_values)
+                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = _find_power_operator(str(reverse_rate_expression), parameters_list, parameters_values)
 
-                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = _parameters_finder(expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value)
+                            expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value = _find_parameters(expression, parameters, parameters_values, new_parameters, temp_reverse_rate_constant, temp_reverse_rate_constant_value)
 
                             message = f"\nThe reverse kinetic rate constant for reaction {reaction_name} has more than one variable: {reverse_rate_constant}"
 
@@ -942,7 +941,7 @@ class SbmlReader:
 
                     if reverse_rate_constant is None:
 
-                        if printing.lower() == "on":
+                        if printing:
 
                             utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
 
@@ -950,7 +949,7 @@ class SbmlReader:
 
                     else:
 
-                        if printing.lower() == "on":
+                        if printing:
 
                             utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
                             utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
@@ -981,7 +980,7 @@ class SbmlReader:
 
                         if reverse_rate_constant is None:
 
-                            if printing.lower() == "on":
+                            if printing:
 
                                 utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
 
@@ -989,7 +988,7 @@ class SbmlReader:
 
                         else:
 
-                            if printing.lower() == "on":
+                            if printing:
 
                                 utility.printer("\nForward rate constant is:", forward_rate_constant, text_style="bold")
                                 utility.printer("Reverse rate constant is:", reverse_rate_constant, text_style="bold")
@@ -1009,22 +1008,22 @@ class SbmlReader:
 
 
     @staticmethod
-    def _expand_formula(formula, function_definitions,
-            num_recursions=0):
+    def _expand_formula(formula: str, function_definitions: BioMLFunctionDefinition,
+            num_recursions: int = 0) -> tuple[str, dict]:
         """
-        Expands the kinetics formula, replacing function definitions
-        with their body.
+            Expands the kinetics formula, replacing function definitions
+            with their body.
 
-        Parameters
-        ----------
-        expansion: str
-            expansion of the kinetic law
-        function_definitions: list-FunctionDefinition
-        num_recursion: int
-        
-        Returns
-        -------
-        str
+            Parameters
+            ----------
+            expansion: str
+                expansion of the kinetic law
+            function_definitions: list-FunctionDefinition
+            num_recursion: int
+            
+            Returns
+            -------
+            str
         """
 
 

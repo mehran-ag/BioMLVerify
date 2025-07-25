@@ -56,13 +56,13 @@ class BioML(object):
     # ********************************
     def read_file(self, file_path: str) -> None:
         '''
-        Reads the file path and calls smblreader or cellmlreader to convert the input model into a biomlmodel
+            Reads the file path and calls smblreader or cellmlreader to convert the input model into a biomlmodel
 
-        Args:
-            file_path: A string that defines the path to the file
+            Args:
+                file_path (str): A string that defines the path to the file
 
-        Returns:
-            None, converts the input model into a BioMLModel, the main internal class, and saves it in an internal variable: self._biomlmodel
+            Returns:
+                None, converts the input model into a BioMLModel, the main internal class, and saves it in an internal variable: self._biomlmodel
         '''
 
         try:
@@ -121,7 +121,17 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_mass_action_kinetics(self, printing = "off"):
+    def check_mass_action_kinetics(self, printing: bool = False) -> bool:
+        '''
+            Checks the equations of the imported model to confirm if all equations in the model are governed by Mass Action Kinetics
+
+            Args:
+                None
+
+            Returns:
+                bool: Boolean value showing if all reactions are governed by Mass Action Kinetics or not
+                None: If an exception is raised during the check.
+        '''
 
         try:
 
@@ -136,7 +146,7 @@ class BioML(object):
 
                     if is_mass_action:
 
-                        if printing.lower() == "on":
+                        if printing:
 
                             utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
 
@@ -146,7 +156,7 @@ class BioML(object):
 
                     else:
 
-                        if printing.lower() == "on":
+                        if printing:
 
                             utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
@@ -158,7 +168,7 @@ class BioML(object):
 
                     if self._biomlmodel.is_mass_action:
 
-                        if printing.lower() == "on":
+                        if printing:
 
                             utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
 
@@ -168,7 +178,7 @@ class BioML(object):
 
                     else:
 
-                        if printing.lower() == "on":
+                        if printing:
 
                             utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
@@ -185,7 +195,7 @@ class BioML(object):
             
         except Exception as e:
             utility.error_handler(e, "check_mass_action_kinetics")
-            return
+            return None
 
 
 
@@ -198,7 +208,18 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_model_reversibility(self, return_irreversibles = False, printing = "off"):
+    def check_model_reversibility(self, return_irreversibles: bool = False, printing: bool = False) -> bool:
+        '''
+            Checks all reactions of the imported model to confirm if the reactions are Reversibe
+
+            Args:
+                return_irreversibles (bool): if this value is True, a list containing the irreversible reactions will be returned
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                bool: Boolean value showing if all reactions are reversible or not
+                None: If an exception is raised during the check.
+        '''
 
         try:
 
@@ -206,7 +227,7 @@ class BioML(object):
 
                 reversibility, irreversibles = self._model_checker.check_model_reversibility(self._biomlmodel, return_irreversibles = return_irreversibles)
 
-                if printing.lower() == "on":
+                if printing:
 
                     if reversibility is not None:
 
@@ -227,7 +248,7 @@ class BioML(object):
 
                 if reversibility is not None:
 
-                    if printing.lower() == "on":
+                    if printing:
                         if reversibility:
                             utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
                         else:
@@ -241,7 +262,7 @@ class BioML(object):
 
         except Exception as e:
             utility.error_handler(e, "check_model_reversibility")
-            return
+            return None
 
 
 
@@ -251,7 +272,16 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_list_of_reactions(self):
+    def get_list_of_reactions(self) -> list[object]:
+        '''
+            Returns the list of BioML Reactions (BioML reaction instances) in the model
+
+            Args:
+                None
+
+            Returns:
+                list: A list containing the BioML reaction instances
+        '''
 
         return self._biomlmodel._reactions
     
@@ -264,7 +294,16 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_list_of_species(self):
+    def get_list_of_species(self) -> list[object]:
+        '''
+            Returns the list of BioMLSpecies (BioML species instances) in the model
+
+            Args:
+                None
+
+            Returns:
+            list: A list containing the BioML species instances
+        '''
 
         return self._biomlmodel._species
 
@@ -276,20 +315,30 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_stoichiometric_matrix(self, printing = "off"):
+    def get_stoichiometric_matrix(self, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 2D numpy array representing the stoichiometric matrix of the reactions for the imported model: This matrix represents the stoichiometric coefficients of species in reactions having species as rows and reactions as columns
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A numpy array
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            stoichiometric_matrix = self._matrix_constructor.stoichiometric_matrix_constructor(self._biomlmodel)
+            stoichiometric_matrix = self._matrix_constructor.construct_stoichiometric_matrix(self._biomlmodel)
             
 
-            if printing.lower() == "on":
+            if printing:
                 utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
 
             return stoichiometric_matrix
 
         except Exception as e:
             utility.error_handler(e, "get_stoichiometric_matrix")
-            return
+            return None
 
 
 
@@ -299,19 +348,29 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************    
-    def get_forward_stoichiometric_matrix(self, printing = "off"):
+    def get_forward_stoichiometric_matrix(self, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 2D numpy array representing the forward stoichiometric matrix of the reactions for the imported model: This array shows stoichiometric coefficients of reactants only (all values are positive in this array)
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 2D numpy array
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            forward_stoichiometric_matrix = self._matrix_constructor.forward_stoichiometric_matrix_constructor(self._biomlmodel)
+            forward_stoichiometric_matrix = self._matrix_constructor.construct_forward_stoichiometric_matrix(self._biomlmodel)
 
-            if printing.lower() == "on":
+            if printing:
                 utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
 
             return forward_stoichiometric_matrix
 
         except Exception as e:
             utility.error_handler(e, "get_forward_stoichiometric_matrix")
-            return
+            return None
         
 
 
@@ -321,19 +380,29 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_reverse_stoichiometric_matrix(self, printing = "off"):
+    def get_reverse_stoichiometric_matrix(self, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 2D numpy array representing the reverse stoichiometric matrix of the reactions for the imported model: This array shows stoichiometric coefficients of products only (all values are positive in this array)
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 2D numpy array
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            reverse_stoichiometric_matrix = self._matrix_constructor.reverse_stoichiometric_matrix_constructor(self._biomlmodel)
+            reverse_stoichiometric_matrix = self._matrix_constructor.construct_reverse_stoichiometric_matrix(self._biomlmodel)
 
-            if printing.lower() == "on":
+            if printing:
                 utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
 
             return reverse_stoichiometric_matrix
 
         except Exception as e:
             utility.error_handler(e, "get_reverse_stoichiometric_matrix")
-            return
+            return None
         
     
 
@@ -343,11 +412,20 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_stoichiometric_column_names_indices(self, printing="off"):
+    def get_stoichiometric_column_names_indices(self, printing: bool = False) -> dict:
+        '''
+            Returns a dictionary containing the names of columns with their corresponding indices in the stoichiometric matrix
 
-        columns = self._matrix_constructor.stoichiometric_matrix_column_names(self._biomlmodel)
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
 
-        if printing.lower() == "on":
+            Returns:
+                dict: A dictionary mapping column index to column name
+        '''
+
+        columns = self._matrix_constructor.get_stoichiometric_matrix_column_names(self._biomlmodel)
+
+        if printing:
 
             utility.printer("\nThe Columns are:", columns )
 
@@ -362,11 +440,20 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_stoichiometric_row_names_indices(self, printing="off"):
+    def get_stoichiometric_row_names_indices(self, printing: bool = False) -> dict:
+        '''
+            Returns a dictionary containing the names of rows with their corresponding indices in the stoichiometric matrix
 
-        rows = self._matrix_constructor.stoichiometric_matrix_row_names(self._biomlmodel)
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
 
-        if printing.lower() == "on":
+            Returns:
+                dict: A dictionary mapping row index to row name
+        '''
+
+        rows = self._matrix_constructor.get_stoichiometric_matrix_row_names(self._biomlmodel)
+
+        if printing:
 
             utility.printer("\nThe Rows are:", rows )
 
@@ -381,18 +468,30 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_element_information_in_stoichiometric_matrix(self, i, j, printing = "off"):
+    def get_element_information_in_stoichiometric_matrix(self, i: int, j: int, printing: bool = False) -> str:
+        '''
+            Returns the element in the stoichiometric matrix
+
+            Args:
+                i (int): the row index
+                j (int): the column index 
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                str: A value (string)
+                None: If an exception is raised during the execution.
+        '''
 
         try:
 
             if self._biomlmodel is None:
                 raise exceptions.NoModel("No BioModel has been read!!!")
 
-            return self._matrix_constructor.stoichiometric_matrix_element_information(i, j, self._biomlmodel, printing = printing)
+            return self._matrix_constructor.get_stoichiometric_matrix_element_information(i, j, self._biomlmodel, printing = printing)
         
         except Exception as e:
             utility.error_handler(e, "get_element_information_in_stoichiometric_matrix")
-            return
+            return None
         
 
 
@@ -402,16 +501,27 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_thermo_conversion_matrix(self, printing = "off"):
+    def get_thermo_conversion_matrix(self, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 2D numpy array that converts kinetic reaction rate constants to corresponding thermodynamic reaction rate constants
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 2D numpy array
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            conversion_matrix = self._matrix_constructor.kinetic_thermo_conversion_matrix_constructor(self._biomlmodel, printing = printing)
+            conversion_matrix = self._matrix_constructor.construct_kinetic_thermo_conversion_matrix(self._biomlmodel, printing = printing)
 
             return conversion_matrix
             
         except Exception as e:
             utility.error_handler(e, "get_thermo_conversion_matrix")
-            return
+
+            return None
 
     
 
@@ -421,16 +531,27 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def get_kinetic_rate_constants_vector(self, printing = "off"):
+    def get_kinetic_rate_constants_vector(self, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 1D numpy array that contains the ratio of forward to reverse reaction rate constants
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 1D numpy array
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            kinetic_constants_vector = self._matrix_constructor.kinetic_constants_vector_constructor(self._biomlmodel, printing)
+            kinetic_constants_vector = self._matrix_constructor.construct_kinetic_constants_vector(self._biomlmodel, printing)
 
             return kinetic_constants_vector
         
         except Exception as e:
             utility.error_handler(e, "get_kinetic_rate_constants_vector")
-            return
+
+            return None
 
     
 
@@ -439,10 +560,21 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_kinetic_constants_thermo_compatibility(self, printing = False):
+    def check_kinetic_constants_thermo_compatibility(self, printing: bool = False) -> bool:
+        '''
+            Checks the validity of Kinetic reaction rate constants in thermodynamic framework.
+            The function uses Wegscheider conditions to check thermodynamic compatibility of constants
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                bool: True if the reaction rate constants are compatible and meaningful, False otherwise
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            compatibility = self._matrix_constructor.kinetic_rates_thermo_compatibility_check(self._biomlmodel, printing)
+            compatibility = self._matrix_constructor.check_kinetic_rates_thermo_compatibility(self._biomlmodel, printing)
 
             utility.display_warnings()
 
@@ -451,34 +583,55 @@ class BioML(object):
         except Exception as e:
             utility.error_handler(e, "check_kinetic_constants_thermo_compatibility")
             utility.printer("\nThermodynamic Compatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
-            return
+            return None
         
 
 
     # ********************************
     # *           Function           *
     # ********************************
-    def get_elemental_matrix(self, printing="off"):
+    def get_elemental_matrix(self, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 2D numpy array that represents the composition of each compound in an array: rows as chemical elements and columns as chemical compounds
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 2D numpy array
+                None: If an exception is raised during the execution.
+        '''
 
         try:
-            elemental_matrix = self._matrix_constructor.elemental_matrix_constructor(self._biomlmodel)
+            elemental_matrix = self._matrix_constructor.construct_elemental_matrix(self._biomlmodel)
             
 
-            if printing.lower() == "on":
+            if printing:
                 utility.printer("\nThe Stoichiometric Matrix is:\n", elemental_matrix)
 
             return elemental_matrix
 
         except Exception as e:
             utility.error_handler(e, "get_elemental_matrix")
-            return
+            return None
         
 
 
     # ********************************
     # *           Function           *
     # ********************************
-    def check_mass_balance(self, printing=False):
+    def check_mass_balance(self, printing: bool = False) -> bool:
+        '''
+            Returns True if mass is conserved in all reactions of the model and False if not conserved. If printing is on, it can display the reaction violating mass conservation if mass balance fails
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                bool: True if mass is conserved, False otherwise
+                None: If an exception is raised during the check.
+        '''
+
 
         try:
 
@@ -525,14 +678,25 @@ class BioML(object):
         
         except Exception as e:
             utility.error_handler(e, "check_mass_balance")
-            return
+            return None
         
 
 
 
-    def verify_model(self, mass_balance = False, printing=False):
+    def verify_model(self, mass_balance: bool = False, printing: bool = False):
+        '''
+        Returns True if model complies with thermodynamic principles and False if not.
 
-        passed = False
+        Args:
+            mass_balance (bool): if this value is True, mass conservation in reactions can also be checked
+            printing: if this value is True, a message will be displayed to show the result
+
+        Returns:
+           bool: True if model is consistent with thermodynamic rules, False otherwise
+           None: If an exception is raised during the check.
+        '''
+
+        passed = True
 
         try:
 
@@ -547,13 +711,13 @@ class BioML(object):
 
                 if is_mass_balanced:
 
-                    passed = True
-
                     if printing:
 
                         utility.printer("\nMass Conservation Check: ",f"Mass is conserved in the reactions\n", text_color="green", text_style="bold")
 
                 else:
+
+                    passed = False
                         
                     if printing:
 
@@ -573,7 +737,7 @@ class BioML(object):
 
                     if printing:
 
-                        utility.printer("\nThermodynamic Compatibility Check: ",f"nModel {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                     return passed
                 
@@ -594,4 +758,4 @@ class BioML(object):
 
         except Exception as e:
             utility.error_handler(e, "verify_model")
-            return
+            return None

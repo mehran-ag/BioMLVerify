@@ -33,26 +33,26 @@ style_map = {
 warnings = []
 
 
-def printer(descrip, text_to_print, descript_color = "white", text_color = "blue", text_style = "normal", u_end="\n"):
+def printer(descrip: str, text_to_print: str, descript_color: str = "white", text_color: str = "blue", text_style: str = "normal", u_end: str = "\n") -> None:
 
     description = f"{color_map.get(descript_color.lower(), Fore.WHITE)}{descrip}"
     text = f"{style_map.get(text_style.lower(), Style.NORMAL)}{color_map.get(text_color.lower(), Fore.BLUE)}{text_to_print}"
 
     print(f"{description} {text}", end=u_end)
 
-def error_printer(message, error = f"\nERROR: ", error_color = "magenta", error_style="normal", u_end="\n"):
+def error_printer(message: str, error: str = f"\nERROR: ", error_color: str = "magenta", error_style: str = "normal", u_end: str = "\n") -> None:
 
     message = f"{style_map.get(error_style.lower(), Style.NORMAL)}{color_map.get(error_color.lower(), Fore.BLUE)}{message}"
 
     print(f"{error}{message}", end=u_end)
 
-def message_printer(message, color="white", style = "normal"):
+def message_printer(message: str, color: str = "white", style: str = "normal"):
 
     message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
 
     print(f"{message}")
 
-def warning_printer(message, warning = f"\nWARNING: ", color="yellow", style = "normal"):
+def warning_printer(message: str, warning: str = f"\nWARNING: ", color="yellow", style = "normal") -> None:
 
     message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
 
@@ -62,15 +62,13 @@ def warning_printer(message, warning = f"\nWARNING: ", color="yellow", style = "
 
 
 
-def add_warning(message):
+def add_warning(message: str) -> None:
 
     warnings.append(message)
 
-def display_warnings():
+def display_warnings() -> None:
 
-    if len(warnings) == 0:
-        return
-    else:
+    if len(warnings) != 0:
 
         print("\n" + "!"*60 + "\n")
         print( "There is/are warning(s) for your compatibility check that need(s) to be investigated for accurate results. The warning(s) is/are listed below:")
@@ -83,7 +81,7 @@ def display_warnings():
 
 
 
-def error_handler(e, function=None, print_trace=True):
+def error_handler(e: Exception, function: str = None, print_trace: bool = True) -> None:
     
     if function:
         printer("\nAn error has been raised in function: ", function, text_color='magenta', u_end="")

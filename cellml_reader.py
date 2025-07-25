@@ -1,5 +1,5 @@
 # Importing external packages
-from libcellml import  Parser, Validator, Analyser, AnalyserExternalVariable, Importer, cellmlElementTypeAsString, AnalyserModel
+from libcellml import Parser, Validator, Analyser, AnalyserExternalVariable, Importer, cellmlElementTypeAsString, Model as CellMLModel
 import numpy as np
 import chemparse as chp
 import libchebipy as chb
@@ -11,7 +11,6 @@ from collections import defaultdict
 from lxml import etree
 
 # Importing internal packages
-import exceptions
 import os
 import utility
 from pathlib import Path, PurePath
@@ -43,7 +42,7 @@ class CellmlReader:
                 cellml_strict_mode (bool, optional): Whether to enforce strict CellML format rules. Defaults to False.
             
             Returns:
-                BioMLModel class, which different functions can be applied on it.
+                BioMLModel class, to which different functions can be applied.
         '''
 
         base_dir = os.path.dirname(file_path)
@@ -57,7 +56,7 @@ class CellmlReader:
                 raise TypeError('The file path should be a string or a Path object.')
 
         if not os.path.isfile(file_path):
-            raise FileNotFoundError('Model source file `{}` does not exist.'.format(file_path))
+            raise FileNotFoundError(f"Model source file '{file_path}' does not exist.")
         
         cellml_model_name = os.path.basename(file_path)
 
@@ -67,7 +66,7 @@ class CellmlReader:
 
         cellml_vars_instances = cellml_contents["cellml_vars_instances"]
 
-        variable_type_buckets = self._variable_distinguisher(cellml_vars_instances)
+        variable_type_buckets = self._classify_variables(cellml_vars_instances)
         
         '''
         "variables_type_buckets" is a dictionary as shown below. It contains all kinds of variables encoded in the CellML file
@@ -88,13 +87,13 @@ class CellmlReader:
 
         if all(variable_type_buckets.get(k) for k in keys_to_check):
 
-            biomlmodel_species_list = self._species_identifier(variable_type_buckets['va'])
+            biomlmodel_species_list = self._identify_species(variable_type_buckets['va'])
 
-            biomlmodel_reactions_list = self._reaction_identifier(variable_type_buckets['co'], biomlmodel_species_list)
+            biomlmodel_reactions_list = self._identify_reactions(variable_type_buckets['co'], biomlmodel_species_list)
 
-            # biomlmodel_reactions_list, biomlmodel_species_list = self._boundary_condition_identifier(variable_type_buckets['bc'], biomlmodel_reactions_list, biomlmodel_species_list)
+            # biomlmodel_reactions_list, biomlmodel_species_list = self._identify_boundary_conditions(variable_type_buckets['bc'], biomlmodel_reactions_list, biomlmodel_species_list)
 
-            self._kinetic_rate_constant_finder(variable_type_buckets['rc'], biomlmodel_reactions_list)
+            self._find_kinetic_rate_constants(variable_type_buckets['rc'], biomlmodel_reactions_list)
 
             biomlmodel = BioMLModel(cellml_model.id())
 
@@ -130,7 +129,7 @@ class CellmlReader:
 
                 print(f"\nCellML model \"{Path(cellml_model_name).stem.upper()}\" has (an) equation(s) not governed by Mass Action Kinetics\nAnd cannot be converted to a BioML Model")
 
-                return
+                return None
 
 
 
@@ -140,7 +139,16 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _extract_cellml_content(self, cellml_model):
+    def _extract_cellml_content(self, cellml_model: CellMLModel) -> dict:
+        '''
+            Reads a CellML file and extracts all its contents, e.g. equations and all variables.
+            
+            Args: 
+                cellml_model: a Cellml Model which has already been read by read_file function
+            
+            Returns:
+                dict: A dictionary containing CellML equations, variables, species, and AST nodes.
+        '''
 
         cellml_vars_instances = []
 
@@ -153,10 +161,6 @@ class CellmlReader:
         for i in range(cellml_model.componentCount()):
 
             component = cellml_model.component(i)
-
-            component_name = component.name()
-
-            component_id = component.id()
 
             num_vars = component.variableCount()
 
@@ -236,9 +240,18 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _cellml_elements_reader(self, cellml_model, cellml_model_name):
+    def _read_cellml_elements(self, cellml_model: CellMLModel, cellml_model_name: str) -> tuple[list[object], list[object]]:
         '''
-        
+            Reads a CellML file and extracts all its contents, e.g. equations and all variables.
+            
+            Args: 
+                cellml_model: a Cellml Model which has already been read by read_file function
+                cellml_model_name: this is the file name (not Cellml Model's name)
+            
+            Returns:
+                two lists:
+                    list: containing CellML components (instances of cellml component class)
+                    list: containing CellML variables (instances of cellml variable class)
         '''
 
         cellml_variables = []
@@ -274,7 +287,25 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _variable_distinguisher(self, cellml_variables):
+    def _classify_variables(self, cellml_variables: list[object]) -> dict:
+        '''
+            Classifies the variables in a CellML Model based on their annotations:
+                'va': variables
+                'co': coefficients
+                'rc': rate constants
+                'ra': rates
+                'bc': boundary conditions
+                'ev': equation variables
+                'bv': boundary values
+                'en': enzymes
+            
+            Args: 
+                cellml_variables: alist containing all CellML variables (instances of CellML variable class)
+            
+            Returns:
+                dict: A dictionary containing CellML variables, coefficients, rate constants, rates, boundary conditions, equation variables, boundary values,and enzymes
+        '''
+
 
         variable_type_buckets = {
             'va': [],  # variables
@@ -319,7 +350,16 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _species_identifier(self, variables):
+    def _identify_species(self, variables: list[object]) -> list[object]:
+        '''
+            finds all species in the model and converts them into BioML species
+            
+            Args: 
+                cellml_variables: a list containing all CellML variables (instances of CellML variable class)
+            
+            Returns:
+                list: a list containing all BioML species (instances of BioML species class)
+        '''
 
         biomlmodel_species_list = []
 
@@ -344,7 +384,7 @@ class CellmlReader:
 
                 biomlmodel_species.chebi_code = chebi_code
 
-                biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._chebi_comp_parser(chebi_code)
+                biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._parse_using_chebi(chebi_code)
 
             else:
 
@@ -376,7 +416,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _reaction_identifier(self, coefficients, biomlmodel_species_list ):
+    def _identify_reactions(self, coefficients: list[object], biomlmodel_species_list: list[object] ) -> list[object]:
+        '''
+            finds all reactions in the model and converts them into BioML reactions
+            
+            Args:
+                coefficients: a list containing all coefficients (instances, which are classified as coefficients, of CellML variable class)
+                biomlmodel_species_list: a list containing BioML species (intances of BioMl species class)
+            
+            Returns:
+                list: a list containing all BioML reactions (instances of BioML reaction class)
+        '''
 
         biomlmodel_reactions_list = []
 
@@ -386,7 +436,7 @@ class CellmlReader:
 
             if all( char.isdigit() for char in name_code ):
 
-                compound, _ = CellmlReader._chebi_comp_parser(name_code)
+                compound, _ = CellmlReader._parse_using_chebi(name_code)
 
             else:
 
@@ -472,7 +522,20 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _boundary_condition_identifier(self, boundary_conditions, biomlmodel_reactions_list, biomlmodel_species_list):
+    def _identify_boundary_conditions(self, boundary_conditions: list[object], biomlmodel_reactions_list: list[object], biomlmodel_species_list: list[object]) -> tuple[list[object], list[object]]:
+        '''
+            gets boundary conditions in the model and converts them into equivalent BioML reactions
+            
+            Args:
+                boundary_conditions: a list containing all variables annotated as boundary conditions
+                biomlmodel_reactions_list: a list containing BioML reactions (intances of BioMl reaction class)
+                biomlmodel_species_list: a list containing BioML species (intances of BioMl species class)
+            
+            Returns:
+                two lists:
+                    list: containing BioML reactions (instances of BioML reaction class)
+                    list: containing BioML species (instances of BioML species class)
+        '''
 
         if boundary_conditions:
 
@@ -498,7 +561,7 @@ class CellmlReader:
 
                     if all( char.isdigit() for char in name_code ):
 
-                        compound, _ = CellmlReader._chebi_comp_parser(name_code)
+                        compound, _ = CellmlReader._parse_using_chebi(name_code)
 
                     else:
 
@@ -577,7 +640,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _kinetic_rate_constant_finder(self, rate_constants, biomlmodel_reactions_list):
+    def _find_kinetic_rate_constants(self, rate_constants: list[object], biomlmodel_reactions_list: list[object]) -> None:
+        '''
+            reads equations stored for a reaction and indetifies reaction rate constants for the reaction and updates the BioML reaction instance
+            
+            Args:
+                rate_constants: a list containing all variables annotated as reaction rate constants
+                biomlmodel_reactions_list: a list containing BioML reactions (intances of BioMl reaction class)
+            
+            Returns:
+               None
+        '''
 
         for rate_constant in rate_constants:
 
@@ -620,7 +693,19 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _find_cellml_mass_actions(self, **cellml_contents):
+    def _find_cellml_mass_actions(self, **cellml_contents) -> bool:
+        '''
+            checks the equations for the patterns similar to Mass Action formulations and marks the equation as Mass Action if pattern is found in the reaction
+            
+            Keyword Args:
+                cellml_vars_instances: a list containing CellML variables (instances of variable class)
+                cellml_ast_nodes: a list containing Abstract Syntax Trees (AST), a definition of libsbml specific class
+                cellml_flattened_eqs : a list containing all flattened equations in the CellML model (All variables are replaced by equations if they are representative of any equation in Flattened equations)
+                species_in_cellml_eqs: a list containing all CellML variables annotated as species used in CellML equations
+            
+            Returns:
+               bool: True if any mass action pattern is found, False otherwise.
+        '''
 
         cellml_vars_instances = cellml_contents["cellml_vars_instances"]
 
@@ -663,7 +748,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _find_species_in_all_eqs(self, **cellml_contents):
+    def _find_species_in_all_eqs(self, **cellml_contents) -> list[str]:
+        '''
+            checks the equations for the existence of species and stores the species in a list
+            
+            Keyword Args:
+                cellml_species_instances: a list containing CellML variables annotated as species (instances of variable class)
+                cellml_ast_nodes: a list containing Abstract Syntax Trees (AST), a definition of libsbml specific class
+            
+            Returns:
+               list: containing CellMl variables used as species in all equations of the CellML model
+        '''
 
         cellml_ast_nodes = cellml_contents["cellml_ast_nodes"]
 
@@ -696,7 +791,19 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _check_mass_action(self, cellml_eq, simp_cellml_eq, cellml_vars, species_in_cellml_eq):
+    def _check_mass_action(self, cellml_eq: str, simp_cellml_eq: str, cellml_vars: list[str], species_in_cellml_eq: list[str]) -> bool:
+        '''
+            checks a single equation for the patterns found in Mass Action Kinetics equations
+            
+            Keyword Args:
+                cellml_eq (str): a CellML equations as a string
+                simp_cellml_eq (str): a simplified (using sympy simplification command) CellML equation as a string
+                cellml_vars (list): a list containing all CellML variables
+                species_in_cellml_eq (list): a list containing the species used in this specific equation
+            
+            Returns:
+               bool: True if any mass action pattern is found, False otherwise.
+        '''
 
         flag = False
 
@@ -713,7 +820,7 @@ class CellmlReader:
                             flag = False
         
         try:
-            fracs = self._frac_parts(simp_cellml_eq, cellml_vars)
+            fracs = self._find_frac_parts(simp_cellml_eq, cellml_vars)
             if len(species_in_cellml_eq) > 0:
                 for i in range(len(species_in_cellml_eq)):
                     if species_in_cellml_eq[i] in fracs["denominator"]:
@@ -730,7 +837,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _single_product(self, kinetic_law, simple_kinetic_law):
+    def _single_product(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
+        '''
+            checks the input kinetic law to see if it is a single product of terms
+            
+            Keyword Args:
+                kinetic_law (str): kinetic law of a reaction
+                simple_kinetic_law (str): a simplified (using sympy simplification command) kinetic law of a reaction
+            
+            Returns:
+               bool: True if is single product of terms, False otherwise.
+        '''
 
         flag = True
 
@@ -749,7 +866,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _diff_of_products(self, kinetic_law, simple_kinetic_law):
+    def _diff_of_products(self, kinetic_law: str, simple_kinetic_law: str) -> bool:
+        '''
+            checks the input kinetic law to see if it is difference of product of two terms
+            
+            Keyword Args:
+                kinetic_law (str): kinetic law of a reaction
+                simple_kinetic_law (str): a simplified (using sympy simplification command) kinetic law of a reaction
+            
+            Returns:
+               bool: True if is difference of product of two terms, False otherwise.
+        '''
 
         flag = False
 
@@ -764,7 +891,19 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _frac_parts( self, simp_cellml_eq, cellml_vars ):
+    def _find_frac_parts( self, simp_cellml_eq: str, cellml_vars: list[str] ) -> dict:
+        """
+            Finds the numerator and denominator of a fraction in a kinetic law string.
+
+            Keyword Args:
+                simp_cellml_eq (str): Simplified CellMl equation using Sympy simplification method
+                cellml_vars (list[str]): A list containing CellML variables as strings
+
+            Returns:
+                dict: A dictionary with the following keys:
+                    - "numerator": A string containing the numerator of the fraction.
+                    - "denominator": A string containing the denominator of the fraction.
+        """
 
         fracs = {"numerator": '', "denominator": ''}
 
@@ -787,13 +926,24 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _has_multiple_equations(self, mathml_str):
+    def _has_multiple_equations(self, mathml_str: str) -> int:
         """
-        Checks whether there are more than one <apply><eq/>...</apply> elements in the MathML.
+            Checks whether there are more than one <apply><eq/>...</apply> elements in the MathML.
+            Each <apply><eq/>...</apply> means an equation in MathML, so this function finds the number of equations stored in a mathml script.
+
+            Args:
+                mathml_str (str): a string of a mathml script
+
+            Returns:
+                int: the number of equations in the mathml script
         """
+
         root = etree.fromstring(mathml_str.encode())
+
         NSMAP = {'m': 'http://www.w3.org/1998/Math/MathML'}
+
         eq_applies = root.xpath(".//m:apply[m:eq]", namespaces=NSMAP)
+
         return len(eq_applies) > 1
     
 
@@ -804,10 +954,15 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _split_equations(self, mathml_str):
+    def _split_equations(self, mathml_str: str) -> list:
         """
-        Splits a MathML script containing multiple equations into individual <math> blocks.
-        Returns a list of MathML strings.
+            Splits a MathML script containing multiple equations into individual <math> blocks.
+
+            Args:
+                mathml_str (str): a string of mathml script
+
+            Returns:
+                list: a list of MathML strings representing an equation
         """
         root = etree.fromstring(mathml_str.encode())
         NSMAP = {'m': 'http://www.w3.org/1998/Math/MathML'}
@@ -833,7 +988,17 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _remove_units_from_mathml(self, mathml_str):
+    def _remove_units_from_mathml(self, mathml_str: str) -> str:
+        """
+            Finds attributes for a number element in mathml script and removes it.
+            The existence of the unit confuses libsbml function converting mathml script into a string
+
+            Args:
+                mathml_str (str): a string of mathml script
+
+            Returns:
+                str: a string of mathml script having its units removed
+        """
 
         root = etree.fromstring(mathml_str.encode())
 
@@ -853,9 +1018,16 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _flatten_equations(self, cellml_eqs, cellml_vars_instances):
+    def _flatten_equations(self, cellml_eqs: list[str], cellml_vars_instances: list[object]) -> list:
         '''
-        Returns a dictionary mapping variables (as strings) to flattened equations (sympy expressions) where all variables defined by equations have been substituted by their defnitions
+            Returns a dictionary mapping variables (as strings) to flattened equations (sympy expressions) where all variables defined by equations have been substituted by their defnitions.
+
+            Args:
+                cellml_eqs (list): containing all equations as they are imported from CellML
+                cellml_vars_instances (list): containing all variables in a CellML model
+
+            Returns:
+                list: containing the flattened equations
         '''
 
         # Step 1: Create symbol dictionary
@@ -904,14 +1076,23 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _make_biomlmodel(self, cellml_model, **cellml_contents):
+    def _make_biomlmodel(self, cellml_model: CellMLModel, **cellml_contents) -> BioMLModel:
+
         '''
-        cellml_contents = {"cellml_eqs": cellml_eqs,
-            "cellml_flattened_eqs": cellml_flattened_eqs,
-            "cellml_species_instances": cellml_species_instances,
-            "cellml_vars_instances": cellml_vars_instances,
-            "cellml_ast_nodes": cellml_ast_nodes}
+            Returns a dictionary mapping variables (as strings) to flattened equations (sympy expressions) where all variables defined by equations have been substituted by their defnitions.
+
+            Args:
+                cellml_model (CellMLModel): CellML model
+                cellml_contents( dict): a dictionary containing {"cellml_eqs": cellml_eqs,
+                    "cellml_flattened_eqs": cellml_flattened_eqs,
+                    "cellml_species_instances": cellml_species_instances,
+                    "cellml_vars_instances": cellml_vars_instances,
+                    "cellml_ast_nodes": cellml_ast_nodes}
+
+            Returns:
+               BioMLModel
         '''
+
 
         species_in_cell_equations = self._find_species_in_all_eqs(**cellml_contents)
 
@@ -1024,7 +1205,7 @@ class CellmlReader:
 
                         biomlmodel_species.chebi_code = chebi_code
 
-                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._chebi_comp_parser(chebi_code)
+                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._parse_using_chebi(chebi_code)
 
                     else:
 
@@ -1092,7 +1273,7 @@ class CellmlReader:
 
                         biomlmodel_species.chebi_code = chebi_code
 
-                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._chebi_comp_parser(chebi_code)
+                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._parse_using_chebi(chebi_code)
 
                     else:
 
@@ -1140,11 +1321,19 @@ class CellmlReader:
 
 
 
-    def _parse_molecule_units(self, cellml_comp_code):
+    def _parse_molecule_units(self, cellml_comp_code: str) -> dict:
         """
-        Parses a string like '2CH4.P4' into a dictionary of molecule counts:
-        e.g., {'CH4': 2, 'P4': 1}
+            Parses a string like '2CH4.P4' into a dictionary of molecule counts.
+            For example, '2CH4.P4' becomes {'CH4': 2, 'P4': 1}.
+
+            Args:
+                cellml_comp_code (str): A string representing the encoded composition of a compound, 
+                    where molecules are separated by dots ('.') and may be prefixed by a coefficient.
+
+            Returns:
+                dict: A dictionary mapping molecule names (str) to their integer counts (int).
         """
+
         result = defaultdict(int)
         units = cellml_comp_code.split('.')
 
@@ -1162,7 +1351,17 @@ class CellmlReader:
 
     
 
-    def _return_cellml_species_instance(self, species_name, cellml_species_instances):
+    def _return_cellml_species_instance(self, species_name: str, cellml_species_instances: list) -> object:
+        """
+            Returns the CellML variable instance whose name matches the given species_name.
+
+            Args:
+                species_name (str): The species name as a string.
+                cellml_species_instances (list): A list of CellML species instances (instances of the CellML variable class).
+
+            Returns:
+                object: The matching CellML variable instance.
+        """
 
         matched_instance = None
 
@@ -1176,7 +1375,17 @@ class CellmlReader:
         return matched_instance
     
 
-    def _return_cellml_parameter_instance(self, var_name, cellml_vars_instances):
+    def _return_cellml_parameter_instance(self, var_name: str, cellml_vars_instances: list) -> object:
+        """
+            Returns the CellML variable instance whose name matches the given var_name.
+
+            Args:
+                var_name (str): The parameter name as a string.
+                cellml_vars_instances (list): A list of CellML variable instances (instances of the CellML variable class).
+
+            Returns:
+                object: The matching CellML variable instance.
+        """
 
         matched_instance = None
 
@@ -1194,7 +1403,20 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _process_rate_expression(self, rate_expr: str, species: list):
+    def _process_rate_expression(self, rate_expr: str, species: list) -> dict:
+        """
+            Parses a rate expression to identify species with their stoichiometric powers,
+            and modifies the expression by replacing species terms with '1'.
+
+            Args:
+                rate_expr (str): The original rate expression as a string.
+                species (list): A list of species names (strings) to look for in the expression.
+
+            Returns:
+                dict: A dictionary containing:
+                    - 'modified_expression' (str): The rate expression after replacing species terms with '1'.
+                    - 'stoichiometry' (dict): A mapping from species names to their stoichiometric powers (integers).
+        """
 
         stoichiometry = {}
         expr = rate_expr  # Make a copy to modify
@@ -1225,7 +1447,24 @@ class CellmlReader:
     # ********************************
     # *           Function           *
     # ********************************
-    def _analyze_sympy_expression(self, rate_expr, species_str_list):
+    def _analyze_sympy_expression(self, rate_expr: sp.Expr, species_str_list: list[str]) -> dict:
+        """
+            Analyzes a SymPy rate expression to extract stoichiometric powers of species
+            and isolate the constant rate component.
+
+            Args:
+                rate_expr (sympy.Basic): A SymPy expression representing the rate law.
+                species_str_list (list): A list of species names (as strings) present in the expression.
+
+            Returns:
+                dict: A dictionary containing:
+                    - 'stoichiometry' (dict): A mapping of species names to their integer exponents.
+                    - 'rate_constant' (sympy.Basic): The remaining expression after substituting species with 1.
+
+            Raises:
+                ValueError: If the expression is not a product of terms (i.e., not a `Mul` expression).
+        """
+        
         # Convert species names (strings) to sympy symbols
         species_syms = [sp.Symbol(name) for name in species_str_list]
 
@@ -1258,7 +1497,35 @@ class CellmlReader:
     # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # *      Internal Function       *
     # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    def _get_forward_reverse_rate_expressions(self, expression):
+    def _get_forward_reverse_rate_expressions(self, expression: sp.Expr) -> dict:
+        """
+            Classifies terms in a SymPy expression into forward and reverse reaction rates.
+
+            This function takes a symbolic expression typically representing a rate law
+            or net reaction rate and separates its terms into forward and reverse contributions.
+            Positive terms are interpreted as forward rates, while negative terms are
+            considered reverse rates.
+
+            Parameters:
+                expression (sp.Expr): A SymPy expression representing a rate or combination
+                                    of rates. Can include addition and multiplication of terms.
+
+            Returns:
+                dict: A dictionary with two keys:
+                    - 'forward_rate': a list of SymPy expressions contributing positively.
+                    - 'reverse_rate': a list of SymPy expressions contributing negatively.
+
+            Notes:
+                - If the expression is zero or None, an empty dictionary is returned.
+                - If the expression is a multiplication of terms and one or more of them
+                is an addition (e.g., (A + B)*C), each additive term is classified individually.
+                - The check for negativity is performed by searching for a "-" in the string
+                representation of the term, which may not be robust for all SymPy expressions.
+                Consider improving this with SymPy's `.is_negative` if needed.
+            
+            Raises:
+                TypeError: If the input is not a SymPy expression.
+        """
 
         # Separate positive and negative terms manually
         rates = defaultdict(list)
@@ -1307,12 +1574,19 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def _chebi_comp_parser( chebi_code ):
+    def _parse_using_chebi( chebi_code: str ) -> tuple[str, dict]:
 
         """
-        This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compounds chemical composition and fetches it
-        Then using the chemparse package decomposes the chemical formula to its elements and returns it as a dictionary
-        It should be mentioned that some ChEBI compounds don't have chemical formula registered for them and some have two different chemical compositions assigned to them
+            This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compounds chemical composition and fetches it
+            Then using the chemparse package decomposes the chemical formula to its elements and returns it as a dictionary
+            It should be mentioned that some ChEBI compounds don't have chemical formula registered for them and some have two different chemical compositions assigned to them
+
+            Args:
+                chebi_code (str): a 5 digit code as a string
+
+            Returns:
+                str: a string represnting the compound's chemical formula (like CH4)
+                dict: A dictionary mapping molecule names (str) to their integer counts (int).
         """
 
         chebi_entity = chb.ChebiEntity(chebi_code)
@@ -1349,11 +1623,17 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def _chebi_formula ( chebi_code ):
+    def _get_formula_using_chebi ( chebi_code: str ) -> str:
     
         """
-        This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compound's chemical composition and fetches it
-        It should be mentioned that some ChEBI compounds don't have chemical formula registered for them and some have two different chemical compositions assigned to them
+            This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compound's chemical composition and fetches it
+            It should be mentioned that some ChEBI compounds don't have chemical formula registered for them and some have two different chemical compositions assigned to them
+
+            Args:
+                chebi_code (str): a 5 digit code as a string
+
+            Returns:
+                str: a string represnting the compound's chemical formula (like CH4)
         """
 
         chebi_entity = chb.ChebiEntity(chebi_code)
@@ -1384,7 +1664,42 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def _read_analyse_cellml_model( file_path, cellml_strict_mode ):
+    def _read_analyse_cellml_model( file_path: str, cellml_strict_mode: bool ) -> CellMLModel:
+        """
+            Reads, validates, resolves, and analyses a CellML model from a given file.
+
+            This function performs the following steps on a CellML model file:
+            1. Parses the model using the libCellML parser.
+            2. Validates the model structure and syntax.
+            3. Resolves imports and flattens the model into a single, self-contained structure.
+            4. Adds external variables and their dependencies.
+            5. Analyses the model for any semantic or structural issues.
+
+            If any critical issues are found during parsing, validation, import resolution,
+            or flattening, an appropriate `ValueError` is raised. Non-critical warnings
+            are printed.
+
+            Parameters:
+                file_path (str): The full path to the CellML file to be read and analysed.
+                cellml_strict_mode (bool): Whether to parse and import the model using strict mode.
+                                        When True, the parser enforces stricter compliance rules.
+
+            Returns:
+                CellMLModel: The successfully parsed, validated, and analysed CellML model.
+
+            Raises:
+                TypeError: If the file cannot be parsed properly due to syntax issues.
+                ValueError: If the model fails validation, import resolution, or flattening,
+                            or if external variables cannot be added.
+
+            Notes:
+                - All warnings during parsing, validation, and import resolution are printed
+                to the console using a `utility.message_printer`.
+                - The function uses the libCellML `Parser`, `Validator`, `Importer`, and `Analyser`
+                interfaces to process the model.
+                - External variables and their dependencies are managed via an analyser
+                before the model is analysed.
+        """
 
         model_name = os.path.basename(file_path)
             
@@ -1458,8 +1773,6 @@ class CellmlReader:
 
             for i in range(no_analyser_warnings):
                 utility.message_printer("\n" + analyser.issue(i).description(), color="yellow")
-
-            #raise ValueError(f"Model {model_name} has analyse issues and cannot be imported!")
         
 
         return cellml_model
@@ -1475,31 +1788,28 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def _ext_var_dic(flatModel,external_variables_info={}):
+    def _ext_var_dic(flatModel: CellMLModel, external_variables_info: dict = None):
         """
-        Create a dictionary of external variables in the flattened model.
-        
-        Parameters
-        ----------
-        flatModel: Model
-            The flattened CellML model.
-        external_variables_info: dict
-            The external variables to be specified, in the format of {id:{'component': , 'name': }}
+            Create a dictionary of external variables in the flattened model.
+            
+            Args
+                flatModel: Model
+                    The flattened CellML model.
+                external_variables_info: dict
+                    The external variables to be specified, in the format of {id:{'component': , 'name': }}
+            
+            Returns:
+                dict: The dictionary of external variables in the flattened model, in the format of {external_variable:[]}
 
-        Raises
-        ------
-        ValueError
-            If an external variable is not found in the flattened model.
-
-        Returns
-        -------
-        dict
-            The dictionary of external variables in the flattened model, in the format of {external_variable:[]}
-        
-        Notes
-        -----
-            No dependency is specified for the external variables.
+            Raises:
+                ValueError: If an external variable is not found in the flattened model.
+            
+            Notes:
+                No dependency is specified for the external variables.
         """
+
+        if external_variables_info is None:
+            external_variables_info = {}
 
         external_variables_dic={}
         for _, ext_var_info in external_variables_info.items():
@@ -1515,7 +1825,30 @@ class CellmlReader:
 
 
     @staticmethod
-    def _variable_identifier(ast_node, result):
+    def _identify_variables(ast_node: libsbml.ASTNode, result: list[str]) -> list[str]:
+        """
+            Recursively traverses an SBML AST (Abstract Syntax Tree) to identify and collect variable names.
+
+            This method inspects the children of a given `ASTNode` and recursively extracts variable names,
+            skipping function nodes and continuing traversal for unnamed nodes or functions. It accumulates
+            results into the provided `result` list and returns it.
+
+            Parameters:
+                ast_node (libsbml.ASTNode): The current AST node to process.
+                result (list): A list to accumulate identified variable names during recursion.
+
+            Returns:
+                list: A list of variable names (strings) extracted from the AST.
+
+            Raises:
+                ValueError: If the recursion depth exceeds `cn.MAX_DEPTH` to prevent infinite recursion.
+
+            Notes:
+                - The function relies on a global variable `cur_depth` to track recursion depth.
+                - The function uses `getName()` to determine whether a node represents a named variable.
+                - Function nodes are further traversed rather than included directly.
+                - If `child_node.getName()` returns `None`, it is treated as a non-terminal and is traversed.
+        """
     
         global cur_depth
         cur_depth += 1
@@ -1527,11 +1860,11 @@ class CellmlReader:
             child_node = ast_node.getChild(idx)
 
             if child_node.getName() is None:
-                additions = CellmlReader._variable_identifier(child_node, [])
+                additions = CellmlReader._identify_variables(child_node, [])
                 result.extend(additions)
             else:
                 if child_node.isFunction():
-                    additions = CellmlReader._variable_identifier(child_node, [])
+                    additions = CellmlReader._identify_variables(child_node, [])
                     result.extend(additions)
                 else:
                     result.append(child_node.getName())
@@ -1540,8 +1873,25 @@ class CellmlReader:
 
 
     @staticmethod
-    def _get_variables(ast_node):
+    def _get_variables(ast_node: libsbml.ASTNode) -> list[str]:
+        """
+            Extracts all variable names from an SBML ASTNode expression.
 
+            This function initializes recursion depth and invokes a helper method to
+            recursively traverse the AST and collect all variable names present in the expression.
+
+            Parameters:
+                ast_node (libsbml.ASTNode): The root node of the SBML Abstract Syntax Tree (AST)
+                                            representing a mathematical expression.
+
+            Returns:
+                list: A list of variable names (strings) extracted from the AST.
+
+            Notes:
+                - Uses a global `cur_depth` variable to track recursion depth during traversal.
+                - Delegates the recursive extraction to `_identify_variables`.
+                - If the root node has a name, it is included in the results.
+        """
 
         global cur_depth
         
@@ -1552,6 +1902,6 @@ class CellmlReader:
         else:
             variables = [ast_node.getName()]
 
-        result = CellmlReader._variable_identifier(ast_node, variables)
+        result = CellmlReader._identify_variables(ast_node, variables)
 
         return result

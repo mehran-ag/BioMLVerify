@@ -1,5 +1,6 @@
 import numpy as np
 import exceptions
+from classes.cBioMLModel import BioMLModel
 from classes.cBioMLReaction import *
 from classes.cBioMLSpecies import *
 import utility
@@ -17,16 +18,16 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_constructor(self, biomlmodel) -> np.ndarray:
+    def construct_stoichiometric_matrix(self, biomlmodel: BioMLModel) -> np.ndarray:
         """
-        Constructs the stoichiometric matrix for the given BioModel.
+            Constructs the stoichiometric matrix for the given BioModel.
 
-        Parameters:
-            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
+            Parameters:
+                biomlmodel (BioMLModel): A model of BioML class containing species and reactions.
 
-        Returns:
-            np.ndarray: A 2D array representing the stoichiometric matrix, 
-                        where rows correspond to species and columns to reactions.
+            Returns:
+                np.ndarray: A 2D array representing the stoichiometric matrix, 
+                            where rows correspond to species and columns to reactions.
         """
 
         if biomlmodel == None:
@@ -81,16 +82,16 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def forward_stoichiometric_matrix_constructor(self, biomlmodel) -> np.ndarray:
+    def construct_forward_stoichiometric_matrix(self, biomlmodel: BioMLModel) -> np.ndarray:
         """
-        Constructs the forward stoichiometric matrix for the given BioModel.
+            Constructs the forward stoichiometric matrix for the given BioModel.
 
-        Parameters:
-            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
+            Parameters:
+                biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
 
-        Returns:
-            np.ndarray: A 2D array representing the stoichiometric matrix, 
-                        where rows correspond to species and columns to reactions.
+            Returns:
+                np.ndarray: A 2D array representing the stoichiometric matrix, 
+                            where rows correspond to species and columns to reactions.
         """
 
         if biomlmodel == None:
@@ -136,16 +137,16 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def reverse_stoichiometric_matrix_constructor(self, biomlmodel) -> np.ndarray:
+    def construct_reverse_stoichiometric_matrix(self, biomlmodel: BioMLModel) -> np.ndarray:
         """
-        Constructs the reverse stoichiometric matrix for the given BioModel.
+            Constructs the reverse stoichiometric matrix for the given BioModel.
 
-        Parameters:
-            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
+            Parameters:
+                biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
 
-        Returns:
-            np.ndarray: A 2D array representing the stoichiometric matrix, 
-                        where rows correspond to species and columns to reactions.
+            Returns:
+                np.ndarray: A 2D array representing the stoichiometric matrix, 
+                            where rows correspond to species and columns to reactions.
         """
 
         if biomlmodel == None:
@@ -190,7 +191,16 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_column_names(self, biomlmodel) -> dict:
+    def get_stoichiometric_matrix_column_names(self, biomlmodel: BioMLModel) -> dict:
+        '''
+            Returns a dictionary containing the names of columns with their corresponding indices in the stoichiometric matrix
+
+            Args:
+                biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+
+            Returns:
+                dict: A dictionary mapping column index to column name
+        '''
         
         if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -211,7 +221,16 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_row_names(self, biomlmodel) -> dict:
+    def get_stoichiometric_matrix_row_names(self, biomlmodel: BioMLModel) -> dict:
+        '''
+            Returns a dictionary containing the names of rows with their corresponding indices in the stoichiometric matrix
+
+            Args:
+                biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+
+            Returns:
+                dict: A dictionary mapping row index to row name
+        '''
     
         if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -238,7 +257,19 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def stoichiometric_matrix_element_information(self, i, j, biomlmodel, printing="off") -> str:
+    def get_stoichiometric_matrix_element_information(self, i: int, j: int, biomlmodel: BioMLModel, printing: bool = False) -> str:
+        '''
+            Returns the element in the stoichiometric matrix
+
+            Args:
+                i (int): the row index
+                j (int): the column index
+                biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                str: A value (string)
+        '''
 
         if biomlmodel == None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -255,13 +286,13 @@ class MatrixConstructor:
 
         else:
 
-            row_indices_names = self.stoichiometric_matrix_row_names(biomlmodel)
+            row_indices_names = self.get_stoichiometric_matrix_row_names(biomlmodel)
             species = row_indices_names[i]
 
-            column_indices_names = self.stoichiometric_matrix_column_names(biomlmodel)
+            column_indices_names = self.get_stoichiometric_matrix_column_names(biomlmodel)
             reaction = column_indices_names[j]
 
-            if printing.lower() == "on":
+            if printing:
                 utility.printer(f"\nThe stoichiometric coefficient for {species} in reaction {reaction} is: ", f"{self.stoichiometric_matrix[i][j]}")
 
             return f"The stoichiometric coefficient for {species} in reaction {reaction} is: {self.stoichiometric_matrix[i][j]}"
@@ -271,7 +302,17 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_constants_vector_constructor(self, biomlmodel, printing = "off") -> np.ndarray:
+    def construct_kinetic_constants_vector(self, biomlmodel: BioMLModel, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 1D numpy array that contains the ratio of forward to reverse reaction rate constants
+
+            Args:
+            biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 1D numpy array
+        '''
 
         if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -304,7 +345,7 @@ class MatrixConstructor:
 
                 vector_of_kinetic_constants[index] = k_plus_value / k_minus_value
 
-        if printing.lower() == "on":
+        if printing:
             utility.printer("\nKinetic Constants Vector is:\n",vector_of_kinetic_constants)
 
         return vector_of_kinetic_constants
@@ -313,7 +354,17 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_thermo_conversion_matrix_constructor(self, biomlmodel, printing = "off") -> np.ndarray:
+    def construct_kinetic_thermo_conversion_matrix(self, biomlmodel: BioMLModel, printing: bool = False) -> np.ndarray:
+        '''
+            Returns a 2D numpy array that converts kinetic reaction rate constants to corresponding thermodynamic reaction rate constants
+
+            Args:
+                biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 2D numpy array
+        '''
 
         if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
@@ -322,9 +373,9 @@ class MatrixConstructor:
 
         identity_array = np.eye(reactions_number)
 
-        forward_stoichiometric_matrix = self.forward_stoichiometric_matrix_constructor(biomlmodel)
+        forward_stoichiometric_matrix = self.construct_forward_stoichiometric_matrix(biomlmodel)
 
-        reverse_stoichiometric_matrix = self.reverse_stoichiometric_matrix_constructor(biomlmodel)
+        reverse_stoichiometric_matrix = self.construct_reverse_stoichiometric_matrix(biomlmodel)
 
         transposed_forward_stoichiometric_matrix = np.transpose(forward_stoichiometric_matrix)
 
@@ -332,7 +383,7 @@ class MatrixConstructor:
 
         conversion_matrix = np.block( [ [ identity_array, transposed_forward_stoichiometric_matrix ], [ identity_array, transposed_reverse_stoichiometric_matrix ] ] )
 
-        if printing.lower() == "on":
+        if printing:
             utility.printer("\nConversion Matrix is\n:", conversion_matrix)
 
         return conversion_matrix
@@ -341,13 +392,24 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def kinetic_rates_thermo_compatibility_check(self, biomlmodel, printing = False) -> bool:
+    def check_kinetic_rates_thermo_compatibility(self, biomlmodel: BioMLModel, printing: bool = False) -> bool:
+        '''
+            Checks the validity of Kinetic reaction rate constants in thermodynamic framework.
+            The function uses Wegscheider conditions to check thermodynamic compatibility of constants
+
+            Args:
+                biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                bool: True if the reaction rate constants are compatible and meaningful, False otherwise
+        '''
 
         if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
         
 
-        kinetic_rates_vector = self.kinetic_constants_vector_constructor(biomlmodel)
+        kinetic_rates_vector = self.construct_kinetic_constants_vector(biomlmodel)
 
         with warnings.catch_warnings():
 
@@ -357,7 +419,7 @@ class MatrixConstructor:
 
         logn_kinetic_rates_vector = logn_kinetic_rates_vector.reshape(-1,1)
 
-        stoichiometric_matrix = self.stoichiometric_matrix_constructor(biomlmodel)
+        stoichiometric_matrix = self.construct_stoichiometric_matrix(biomlmodel)
 
         minus_stoichiometric_matrix = -1 * stoichiometric_matrix
 
@@ -387,12 +449,12 @@ class MatrixConstructor:
     # ********************************
     # *           Function           *
     # ********************************
-    def elemental_matrix_constructor(self, biomlmodel) -> np.ndarray:
+    def construct_elemental_matrix(self, biomlmodel: BioMLModel) -> np.ndarray:
         """
         Constructs the elemental matrix for the given BioModel.
 
         Parameters:
-            biomlmodel (an instance of BioModel class): The biological model containing species and reactions.
+            biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
 
         Returns:
             np.ndarray: A 2D array representing the elemental matrix, 
