@@ -14,12 +14,12 @@ class BioMLModelPropertiesMixin:
     
     @property
     def compartments(self):
-        '''Getter for compartments'''
+        """Getter for compartments"""
         return self._compartments
     
     @compartments.setter
     def compartments(self, new_compartments):
-        '''Setter for compartments - Ensures it is a list'''
+        """Setter for compartments - Ensures it is a list"""
         if not isinstance(new_compartments, list):
             raise ValueError("compartments must be stored in a list")
         self._compartments = new_compartments
@@ -29,36 +29,36 @@ class BioMLModelPropertiesMixin:
 
     @property
     def reactions(self):
-        '''Getter for reactions'''
+        """Getter for reactions"""
         return self._reactions
     
     @reactions.setter
     def reactions(self, new_reactions):
-        '''Setter for reactions - Ensures it is a list'''
+        """Setter for reactions - Ensures it is a list"""
         if not isinstance(new_reactions, list):
             raise ValueError("reactions must be stored in a list")
         self._reactions = new_reactions
 
     @property
     def species(self):
-        '''Getter for species'''
+        """Getter for species"""
         return self._species
     
     @species.setter
     def species(self, new_species):
-        '''Setter for species - Ensures it is a list'''
+        """Setter for species - Ensures it is a list"""
         if not isinstance(new_species, list):
             raise ValueError("species must be stored in a list")
         self._species = new_species
 
     @property
     def parameters(self):
-        '''Getter for parameters'''
+        """Getter for parameters"""
         return self._parameters
     
     @parameters.setter
     def parameters(self, new_parameters):
-        '''Setter for parameters - Ensures it is a list'''
+        """Setter for parameters - Ensures it is a list"""
         if not isinstance(new_parameters, list):
             raise ValueError("parameters must be stored in a list")
         self._parameters = new_parameters
@@ -66,12 +66,12 @@ class BioMLModelPropertiesMixin:
 
     @property
     def function_definitions(self):
-        '''Getter for function_definitions'''
+        """Getter for function_definitions"""
         return self._function_definitions
     
     @function_definitions.setter
     def function_definitions(self, new_definitions):
-        '''Setter for function_definitions - Ensures it is a list'''
+        """Setter for function_definitions - Ensures it is a list"""
         if not isinstance(new_definitions, list):
             raise ValueError("function definitions must be stored in a list")
         self._function_definitions = new_definitions
@@ -99,3 +99,16 @@ class BioMLModelPropertiesMixin:
             self._is_mass_action = flag
         else:
             raise ValueError("Input for \"is_mass_action\" must be a boolean")
+        
+
+    @property
+    def is_direct_conversion(self):
+        return self._is_direct_conversion
+    
+
+    @is_direct_conversion.setter
+    def is_direct_conversion(self, flag):
+        if isinstance(flag, bool):
+            self._is_direct_conversion = flag
+        else:
+            raise ValueError("Input for \"is_direct_conversion\" must be a boolean")

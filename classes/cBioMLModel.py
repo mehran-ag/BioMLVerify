@@ -4,16 +4,17 @@ class BioMLModel(BioMLModelPropertiesMixin):
 
     def __init__(self, ID):
 
-        self._ID = ID
-        self._compartments = []
-        self._reactions = []
-        self._species = []
-        self._parameters = []
-        self._function_definitions = []
+        self._ID: str = ID
+        self._compartments: list[str] = []
+        self._reactions: list[object] = []
+        self._species: list[object] = []
+        self._parameters: list[object] = []
+        self._function_definitions: list[object] = []
         self._kinetic_rate_constants_vector: np.ndarray = None
         self._reaction_indices: dict = None
         self._species_indices: dict = None
         self._is_mass_action: bool = None
+        self._is_direct_conversion: bool = False
 
         self._element_indices_dict = {}
 

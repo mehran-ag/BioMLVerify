@@ -6,8 +6,8 @@ class BioMLSpeciesReference(BioMLSpecies):
     def __init__(self, species_instance):
         # Copy all attributes from parent dynamically
         self.__dict__.update(vars(species_instance))
-        self._reaction_id = None
-        self._stoichiometry = None
+        self._reaction_id: str = None
+        self._stoichiometry: float = None
 
     @property
     def stoichiometry(self):
@@ -30,6 +30,9 @@ class BioMLSpeciesReference(BioMLSpecies):
             self._reaction_id = r_id
         else:
             raise ValueError("Input must be a string!")
+        
+
+        
 
     def get_stoichiometry(self):
 

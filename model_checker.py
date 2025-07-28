@@ -562,7 +562,7 @@ class ModelChecker(object):
                                             representing a mathematical expression.
 
             Returns:
-                list: A list of variable names (strings) extracted from the AST.
+                list[str]: A list of variable names (strings) extracted from the AST.
 
             Notes:
                 - Uses a global `cur_depth` variable to track recursion depth during traversal.

@@ -33,9 +33,9 @@ atexit.register(lambda: print("\n" * 2))
 
 # file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
 
-file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
+# file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
 
-# file_path = "/Users/makb047/UoA/Codes/Mass_Actions/BIOMD0000000038.xml"
+file_path = "/Users/makb047/UoA/Codes/SBML_Models/BIOMD0000000038.xml"
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
 
@@ -55,7 +55,7 @@ bioml = BioML()
 
 bioml.read_file(file_path)
 
-bioml.verify_model(mass_balance=True, printing=True)
+bioml.verify_model(mass_balance=True, charge_balance= True, printing=True)
 
 
 

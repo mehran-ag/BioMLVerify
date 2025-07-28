@@ -16,6 +16,9 @@ import os
 import exceptions
 import time
 
+import chemparse as chp
+import libchebipy as chb
+
 import model_checker
 
 
@@ -100,7 +103,7 @@ class SbmlReader:
                 libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
 
             Returns:
-                list: A list of BioMLSpecies instances created from the SBML species.
+                list[object]: A list of BioMLSpecies instances created from the SBML species.
         """
 
 
@@ -118,7 +121,26 @@ class SbmlReader:
 
             biomlmodel_species.compartment = libsbml_species_class.getCompartment()
 
-            biomlmodel_species.charge = libsbml_species_class.getCharge()
+            if libsbml_species_class.getCharge():
+
+                biomlmodel_species.charge = libsbml_species_class.getCharge()
+
+            annotations = SbmlReader._get_chebi_annotations(libsbml_species_class)
+
+            if annotations:
+
+                biomlmodel_species.annotations['chebi'] = annotations
+
+                for annotation in annotations:
+
+                    formula, composition = SbmlReader._parse_using_chebi(annotation)
+
+                    if formula and composition:
+                        break
+
+                biomlmodel_species.compound = formula
+
+                biomlmodel_species.composition = composition
 
             self._biomlmodel_species_list.append(biomlmodel_species)
 
@@ -126,8 +148,6 @@ class SbmlReader:
             utility.warning_printer("No species imported from SBML model!")
 
         return self._biomlmodel_species_list
-    
-
 
 
 
@@ -146,7 +166,7 @@ class SbmlReader:
                 libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
 
             Returns:
-                list: A list of BioMLParameter instances created from the SBML parameters.
+                list[object]: A list of BioMLParameter instances created from the SBML parameters.
         """
 
         biomlmodel_parameters_list = []
@@ -207,7 +227,7 @@ class SbmlReader:
                 libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
 
             Returns:
-                list: A list of BioMLReaction instances created from the SBML reactions.
+                list[object]: A list of BioMLReaction instances created from the SBML reactions.
         """
 
         biomlmodel_reactions_list = []
@@ -368,7 +388,7 @@ class SbmlReader:
                 libsbml_model (libsbml.Model): An SBML model from the `libsbml` package.
 
             Returns:
-                list: A list of BioMLFunctionDefinition instances created from the SBML function definitions.
+                list[object]: A list of BioMLFunctionDefinition instances created from the SBML function definitions.
         """
 
         sbml_function_definitons = [libsbml_model.getFunctionDefinition(i)
@@ -1195,3 +1215,80 @@ class SbmlReader:
             return SbmlReader._expand_formula(formula, function_definitions,
                         num_recursions=num_recursions+1)
         return formula, input_symbols_dict
+    
+
+
+    @staticmethod
+    def _get_chebi_annotations(libsbml_species: libsbml.Species):
+        """
+            Finds the ChEBI codes in the annotation node of the species and stores them in a list
+
+            Args:
+                species (libsbml.Species: A libsbml species instance
+
+            Returns:
+                list[str]: ChEBI codes (as digits only) stored in a list
+        """
+
+        annotation = libsbml_species.getAnnotation()
+        if annotation is None:
+            return []
+
+        chebi_ids = []
+        for i in range(libsbml_species.getNumCVTerms()):
+            cv_term = libsbml_species.getCVTerm(i)
+            if cv_term.getQualifierType() == libsbml.BIOLOGICAL_QUALIFIER:
+                for j in range(cv_term.getNumResources()):
+                    resource = cv_term.getResourceURI(j)
+                    if "chebi" in resource.lower():
+                       
+                        match = re.search(r'CHEBI:(\d+)', resource)
+                        if match:
+                            chebi_ids.append(match.group(1))
+
+        chebi_ids = list(dict.fromkeys(chebi_ids))
+
+        return chebi_ids
+    
+
+
+    @staticmethod
+    def _parse_using_chebi( chebi_code: str ) -> tuple[str, dict]:
+
+        """
+            This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compounds chemical composition and fetches it
+            Then using the chemparse package decomposes the chemical formula to its elements and returns it as a dictionary
+            It should be mentioned that some ChEBI compounds don't have chemical formula registered for them and some have two different chemical compositions assigned to them
+
+            Args:
+                chebi_code (str): a 5 digit code as a string
+
+            Returns:
+                str: a string represnting the compound's chemical formula (like CH4)
+                dict: A dictionary mapping molecule names (str) to their integer counts (int).
+        """
+
+        chebi_entity = chb.ChebiEntity(chebi_code)
+        name = chebi_entity.get_name()
+
+        parsed_compound={}
+
+
+        formulae = chebi_entity.get_formulae() # There are two methods to fetch chemical composition of a compound: get_formulae is used when more than one composition is registerd for the compound
+                                                # It returns a list containing 'Formula' classes and Getting list's length will show us that if there is one or more chemical compositions registered
+        if len(formulae) == 0: # Sometimes no chemical formula is registered so the length of the list will be zero
+
+            parsed_compound = None
+            formula = None
+
+        elif len(formulae) == 1:
+
+            formula = chebi_entity.get_formula()
+            parsed_compound = chp.parse_formula(formula)
+
+        else:
+
+            formula = formulae[1].get_formula()
+            parsed_compound = chp.parse_formula(formula)
+
+        return formula, parsed_compound

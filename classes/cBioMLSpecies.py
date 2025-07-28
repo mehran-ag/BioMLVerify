@@ -11,17 +11,17 @@ class BioMLSpecies(BioMLSpeciesPropertiesMixin):
             self._index = BioMLSpecies._counter
             BioMLSpecies._counter += 1
         else:
-            self._index = None
+            self._index: int = None
 
-        self._ID = ID
-        self._name = None
-        self._initial_concentration = None
-        self._compartment = None
-        self._annotations: list = None
-        self._charge = None
-        self._thermodynamic_rate_constant = None
-        self._compound = None  #This is the scientific name of the species like CO2, H2O, CH4
-        self._composition = None
+        self._ID: str = ID
+        self._name: str = None
+        self._initial_concentration: float = None
+        self._compartment: str = None
+        self._annotations: dict[str, list[str]] = {}
+        self._charge: int = 0
+        self._thermodynamic_rate_constant: str = None
+        self._compound: str = None  #This is the scientific name of the species like CO2, H2O, CH4
+        self._composition: dict = None
         self._chebi_code: str = None
 
     @classmethod

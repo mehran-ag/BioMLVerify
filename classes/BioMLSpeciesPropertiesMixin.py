@@ -2,12 +2,12 @@ class BioMLSpeciesPropertiesMixin:
 
     @property
     def ID(self):
-        '''Getter for ID'''
+        """Getter for ID"""
         return self._ID
     
     @ID.setter
     def ID(self, ID):
-        '''Setter for ID'''
+        """Setter for ID"""
         self._ID = str(ID)
 
     @property
@@ -57,10 +57,10 @@ class BioMLSpeciesPropertiesMixin:
     
     @annotations.setter
     def annotations(self, annots):
-        if isinstance(annots, list):
+        if isinstance(annots, dict):
             self._annotations = annots
         else:
-            raise ValueError("Annotations must be stored in a list")
+            raise ValueError("Annotations must be stored in a dictionary")
         
     @property
     def charge(self):

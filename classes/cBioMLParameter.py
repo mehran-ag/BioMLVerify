@@ -2,9 +2,9 @@ class BioMLParameter:
 
     def __init__(self, ID):
 
-        self._ID = ID
-        self._value = None
-        self._annotations = None
+        self._ID: str = ID
+        self._value: float = None
+        self._annotations: dict[str, list[str]] = {}
 
     @property
     def ID(self):
@@ -12,7 +12,11 @@ class BioMLParameter:
     
     @ID.setter
     def ID(self, ID):
-        self._ID = ID
+        if isinstance(ID, str):
+            self._ID = ID
+        else:
+            raise ValueError("Input foID must be a string")
+        
 
     @property
     def value(self):
@@ -31,10 +35,12 @@ class BioMLParameter:
     
     @annotations.setter
     def annotations(self, annots):
-        if isinstance(annots, list):
+        if isinstance(annots, dict):
             self._annotations = annots
         else:
-            raise ValueError("Input for annotations must be a list")
+            raise ValueError("Input for annotations must be a dictionary")
+        
+
 
     def get_id(self):
 

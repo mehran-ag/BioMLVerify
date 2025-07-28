@@ -6,12 +6,12 @@ class BioMLReactionPropertiesMixin:
 
     @property
     def ID(self):
-        '''Getter for ID'''
+        """Getter for ID"""
         return self._ID
     
     @ID.setter
     def ID(self, ID):
-        '''Setter for ID'''
+        """Setter for ID"""
         self._ID = str(ID)
 
 
@@ -28,21 +28,21 @@ class BioMLReactionPropertiesMixin:
 
     @property
     def annotations(self):
-        '''Getter for annotations'''
+        """Getter for annotations"""
         return self._annotations
     
     @annotations.setter
     def annotations(self, annotations):
-        '''Setter for annotation - Ensures it is a list'''
-        if not isinstance(annotations, list):
-            raise ValueError("The annotations must be stored in a list")
+        """Setter for annotation - Ensures it is a list"""
+        if not isinstance(annotations, dict):
+            raise ValueError("The annotations must be stored in dictionary")
         self._annotations = annotations
 
 
 
     @property
     def reversible(self):
-        '''Getter for reversible'''
+        """Getter for reversible"""
         return self._reversible
     
     @reversible.setter

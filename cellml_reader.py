@@ -34,7 +34,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def read_file( self, file_path: Union[str, Path], cellml_strict_mode: bool = False) -> BioMLModel:
-        '''
+        """
             Reads a CellML file and converts it to a BioML if it is convertible.
             
             Args: 
@@ -43,7 +43,7 @@ class CellmlReader:
             
             Returns:
                 BioMLModel class, to which different functions can be applied.
-        '''
+        """
 
         base_dir = os.path.dirname(file_path)
 
@@ -68,7 +68,7 @@ class CellmlReader:
 
         variable_type_buckets = self._classify_variables(cellml_vars_instances)
         
-        '''
+        """
         "variables_type_buckets" is a dictionary as shown below. It contains all kinds of variables encoded in the CellML file
 
         variable_type_buckets = {
@@ -81,7 +81,7 @@ class CellmlReader:
             'bv': list of boundary values
             'en': list of enzymes
         }
-        '''
+        """
 
         keys_to_check = ['va', 'co', 'rc', 'ra']
 
@@ -101,17 +101,9 @@ class CellmlReader:
 
             biomlmodel.reactions = biomlmodel_reactions_list
 
-            utility.warning_printer(f"\nThis model has been converted from a CellML model and the equations extracted from the model might not be related to equations.\n")
+            utility.warning_printer(f"\nThis model has been converted from a CellML model using the annotations only and not by reading the equations in the CellML file.\n")
 
-            mass_action = self._find_cellml_mass_actions(**cellml_contents)
-
-            if mass_action:
-            
-                biomlmodel.is_mass_action = True
-
-            else:
-
-                biomlmodel.is_mass_action = False
+            biomlmodel.is_direct_conversion = True
 
             return biomlmodel
             
@@ -140,7 +132,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _extract_cellml_content(self, cellml_model: CellMLModel) -> dict:
-        '''
+        """
             Reads a CellML file and extracts all its contents, e.g. equations and all variables.
             
             Args: 
@@ -148,7 +140,7 @@ class CellmlReader:
             
             Returns:
                 dict: A dictionary containing CellML equations, variables, species, and AST nodes.
-        '''
+        """
 
         cellml_vars_instances = []
 
@@ -241,7 +233,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _read_cellml_elements(self, cellml_model: CellMLModel, cellml_model_name: str) -> tuple[list[object], list[object]]:
-        '''
+        """
             Reads a CellML file and extracts all its contents, e.g. equations and all variables.
             
             Args: 
@@ -252,7 +244,7 @@ class CellmlReader:
                 two lists:
                     list: containing CellML components (instances of cellml component class)
                     list: containing CellML variables (instances of cellml variable class)
-        '''
+        """
 
         cellml_variables = []
 
@@ -288,7 +280,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _classify_variables(self, cellml_variables: list[object]) -> dict:
-        '''
+        """
             Classifies the variables in a CellML Model based on their annotations:
                 'va': variables
                 'co': coefficients
@@ -304,7 +296,7 @@ class CellmlReader:
             
             Returns:
                 dict: A dictionary containing CellML variables, coefficients, rate constants, rates, boundary conditions, equation variables, boundary values,and enzymes
-        '''
+        """
 
 
         variable_type_buckets = {
@@ -351,7 +343,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _identify_species(self, variables: list[object]) -> list[object]:
-        '''
+        """
             finds all species in the model and converts them into BioML species
             
             Args: 
@@ -359,7 +351,7 @@ class CellmlReader:
             
             Returns:
                 list: a list containing all BioML species (instances of BioML species class)
-        '''
+        """
 
         biomlmodel_species_list = []
 
@@ -417,7 +409,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _identify_reactions(self, coefficients: list[object], biomlmodel_species_list: list[object] ) -> list[object]:
-        '''
+        """
             finds all reactions in the model and converts them into BioML reactions
             
             Args:
@@ -426,7 +418,7 @@ class CellmlReader:
             
             Returns:
                 list: a list containing all BioML reactions (instances of BioML reaction class)
-        '''
+        """
 
         biomlmodel_reactions_list = []
 
@@ -523,7 +515,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _identify_boundary_conditions(self, boundary_conditions: list[object], biomlmodel_reactions_list: list[object], biomlmodel_species_list: list[object]) -> tuple[list[object], list[object]]:
-        '''
+        """
             gets boundary conditions in the model and converts them into equivalent BioML reactions
             
             Args:
@@ -535,7 +527,7 @@ class CellmlReader:
                 two lists:
                     list: containing BioML reactions (instances of BioML reaction class)
                     list: containing BioML species (instances of BioML species class)
-        '''
+        """
 
         if boundary_conditions:
 
@@ -641,7 +633,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _find_kinetic_rate_constants(self, rate_constants: list[object], biomlmodel_reactions_list: list[object]) -> None:
-        '''
+        """
             reads equations stored for a reaction and indetifies reaction rate constants for the reaction and updates the BioML reaction instance
             
             Args:
@@ -650,7 +642,7 @@ class CellmlReader:
             
             Returns:
                None
-        '''
+        """
 
         for rate_constant in rate_constants:
 
@@ -694,7 +686,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _find_cellml_mass_actions(self, **cellml_contents) -> bool:
-        '''
+        """
             checks the equations for the patterns similar to Mass Action formulations and marks the equation as Mass Action if pattern is found in the reaction
             
             Keyword Args:
@@ -705,7 +697,7 @@ class CellmlReader:
             
             Returns:
                bool: True if any mass action pattern is found, False otherwise.
-        '''
+        """
 
         cellml_vars_instances = cellml_contents["cellml_vars_instances"]
 
@@ -749,7 +741,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _find_species_in_all_eqs(self, **cellml_contents) -> list[str]:
-        '''
+        """
             checks the equations for the existence of species and stores the species in a list
             
             Keyword Args:
@@ -758,7 +750,7 @@ class CellmlReader:
             
             Returns:
                list: containing CellMl variables used as species in all equations of the CellML model
-        '''
+        """
 
         cellml_ast_nodes = cellml_contents["cellml_ast_nodes"]
 
@@ -792,7 +784,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _check_mass_action(self, cellml_eq: str, simp_cellml_eq: str, cellml_vars: list[str], species_in_cellml_eq: list[str]) -> bool:
-        '''
+        """
             checks a single equation for the patterns found in Mass Action Kinetics equations
             
             Keyword Args:
@@ -803,7 +795,7 @@ class CellmlReader:
             
             Returns:
                bool: True if any mass action pattern is found, False otherwise.
-        '''
+        """
 
         flag = False
 
@@ -1019,7 +1011,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     def _flatten_equations(self, cellml_eqs: list[str], cellml_vars_instances: list[object]) -> list:
-        '''
+        """
             Returns a dictionary mapping variables (as strings) to flattened equations (sympy expressions) where all variables defined by equations have been substituted by their defnitions.
 
             Args:
@@ -1028,7 +1020,7 @@ class CellmlReader:
 
             Returns:
                 list: containing the flattened equations
-        '''
+        """
 
         # Step 1: Create symbol dictionary
         cellml_vars = [var_instance.name() for var_instance in cellml_vars_instances]
@@ -1078,7 +1070,7 @@ class CellmlReader:
     # ********************************
     def _make_biomlmodel(self, cellml_model: CellMLModel, **cellml_contents) -> BioMLModel:
 
-        '''
+        """
             Returns a dictionary mapping variables (as strings) to flattened equations (sympy expressions) where all variables defined by equations have been substituted by their defnitions.
 
             Args:
@@ -1091,7 +1083,7 @@ class CellmlReader:
 
             Returns:
                BioMLModel
-        '''
+        """
 
 
         species_in_cell_equations = self._find_species_in_all_eqs(**cellml_contents)

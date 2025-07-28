@@ -20,20 +20,20 @@ from classes.cBioMLFunctionDefinition import *
 
 
 class BioML(object):
-    '''
-    This class creates a model, either CellML or SBML, that will be processed by other classes
-    '''
+    """
+        This class creates a model, either CellML or SBML, that will be processed by other classes
+    """
 
     def __init__(self):
-        '''
-        Initializes the ModelReader by reading path for a file
-        '''
+        """
+            Initializes the BioML class. This is the main class which has the functions to study and verify models
+        """
         BioMLSpecies.reset_counter()
         BioMLReaction.reset_counter()
-        self._file_path = None
-        self._file_name= None
-        self._file_format = None
-        self._biomlmodel = None
+        self._file_path: str = None
+        self._file_name: str = None
+        self._file_format: str = None
+        self._biomlmodel: BioMLModel = None
         self._matrix_constructor = matrix_constructor.MatrixConstructor()
         self._model_checker = model_checker.ModelChecker()
         self._sbml_reader = sbml_reader.SbmlReader()
@@ -55,7 +55,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def read_file(self, file_path: str) -> None:
-        '''
+        """
             Reads the file path and calls smblreader or cellmlreader to convert the input model into a biomlmodel
 
             Args:
@@ -63,7 +63,7 @@ class BioML(object):
 
             Returns:
                 None, converts the input model into a BioMLModel, the main internal class, and saves it in an internal variable: self._biomlmodel
-        '''
+        """
 
         try:
             if not isinstance(file_path, str):
@@ -122,7 +122,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def check_mass_action_kinetics(self, printing: bool = False) -> bool:
-        '''
+        """
             Checks the equations of the imported model to confirm if all equations in the model are governed by Mass Action Kinetics
 
             Args:
@@ -131,7 +131,7 @@ class BioML(object):
             Returns:
                 bool: Boolean value showing if all reactions are governed by Mass Action Kinetics or not
                 None: If an exception is raised during the check.
-        '''
+        """
 
         try:
 
@@ -209,7 +209,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def check_model_reversibility(self, return_irreversibles: bool = False, printing: bool = False) -> bool:
-        '''
+        """
             Checks all reactions of the imported model to confirm if the reactions are Reversibe
 
             Args:
@@ -219,7 +219,7 @@ class BioML(object):
             Returns:
                 bool: Boolean value showing if all reactions are reversible or not
                 None: If an exception is raised during the check.
-        '''
+        """
 
         try:
 
@@ -273,7 +273,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_list_of_reactions(self) -> list[object]:
-        '''
+        """
             Returns the list of BioML Reactions (BioML reaction instances) in the model
 
             Args:
@@ -281,7 +281,7 @@ class BioML(object):
 
             Returns:
                 list: A list containing the BioML reaction instances
-        '''
+        """
 
         return self._biomlmodel._reactions
     
@@ -295,7 +295,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_list_of_species(self) -> list[object]:
-        '''
+        """
             Returns the list of BioMLSpecies (BioML species instances) in the model
 
             Args:
@@ -303,7 +303,7 @@ class BioML(object):
 
             Returns:
             list: A list containing the BioML species instances
-        '''
+        """
 
         return self._biomlmodel._species
 
@@ -316,7 +316,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_stoichiometric_matrix(self, printing: bool = False) -> np.ndarray:
-        '''
+        """
             Returns a 2D numpy array representing the stoichiometric matrix of the reactions for the imported model: This matrix represents the stoichiometric coefficients of species in reactions having species as rows and reactions as columns
 
             Args:
@@ -325,7 +325,7 @@ class BioML(object):
             Returns:
                 np.ndarray: A numpy array
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             stoichiometric_matrix = self._matrix_constructor.construct_stoichiometric_matrix(self._biomlmodel)
@@ -349,7 +349,7 @@ class BioML(object):
     # *           Function           *
     # ********************************    
     def get_forward_stoichiometric_matrix(self, printing: bool = False) -> np.ndarray:
-        '''
+        """
             Returns a 2D numpy array representing the forward stoichiometric matrix of the reactions for the imported model: This array shows stoichiometric coefficients of reactants only (all values are positive in this array)
 
             Args:
@@ -358,7 +358,7 @@ class BioML(object):
             Returns:
                 np.ndarray: A 2D numpy array
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             forward_stoichiometric_matrix = self._matrix_constructor.construct_forward_stoichiometric_matrix(self._biomlmodel)
@@ -381,7 +381,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_reverse_stoichiometric_matrix(self, printing: bool = False) -> np.ndarray:
-        '''
+        """
             Returns a 2D numpy array representing the reverse stoichiometric matrix of the reactions for the imported model: This array shows stoichiometric coefficients of products only (all values are positive in this array)
 
             Args:
@@ -390,7 +390,7 @@ class BioML(object):
             Returns:
                 np.ndarray: A 2D numpy array
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             reverse_stoichiometric_matrix = self._matrix_constructor.construct_reverse_stoichiometric_matrix(self._biomlmodel)
@@ -413,7 +413,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_stoichiometric_column_names_indices(self, printing: bool = False) -> dict:
-        '''
+        """
             Returns a dictionary containing the names of columns with their corresponding indices in the stoichiometric matrix
 
             Args:
@@ -421,7 +421,7 @@ class BioML(object):
 
             Returns:
                 dict: A dictionary mapping column index to column name
-        '''
+        """
 
         columns = self._matrix_constructor.get_stoichiometric_matrix_column_names(self._biomlmodel)
 
@@ -441,7 +441,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_stoichiometric_row_names_indices(self, printing: bool = False) -> dict:
-        '''
+        """
             Returns a dictionary containing the names of rows with their corresponding indices in the stoichiometric matrix
 
             Args:
@@ -449,7 +449,7 @@ class BioML(object):
 
             Returns:
                 dict: A dictionary mapping row index to row name
-        '''
+        """
 
         rows = self._matrix_constructor.get_stoichiometric_matrix_row_names(self._biomlmodel)
 
@@ -469,7 +469,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_element_information_in_stoichiometric_matrix(self, i: int, j: int, printing: bool = False) -> str:
-        '''
+        """
             Returns the element in the stoichiometric matrix
 
             Args:
@@ -480,7 +480,7 @@ class BioML(object):
             Returns:
                 str: A value (string)
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
 
@@ -502,7 +502,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_thermo_conversion_matrix(self, printing: bool = False) -> np.ndarray:
-        '''
+        """
             Returns a 2D numpy array that converts kinetic reaction rate constants to corresponding thermodynamic reaction rate constants
 
             Args:
@@ -511,7 +511,7 @@ class BioML(object):
             Returns:
                 np.ndarray: A 2D numpy array
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             conversion_matrix = self._matrix_constructor.construct_kinetic_thermo_conversion_matrix(self._biomlmodel, printing = printing)
@@ -532,7 +532,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_kinetic_rate_constants_vector(self, printing: bool = False) -> np.ndarray:
-        '''
+        """
             Returns a 1D numpy array that contains the ratio of forward to reverse reaction rate constants
 
             Args:
@@ -541,7 +541,7 @@ class BioML(object):
             Returns:
                 np.ndarray: A 1D numpy array
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             kinetic_constants_vector = self._matrix_constructor.construct_kinetic_constants_vector(self._biomlmodel, printing)
@@ -561,7 +561,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def check_kinetic_constants_thermo_compatibility(self, printing: bool = False) -> bool:
-        '''
+        """
             Checks the validity of Kinetic reaction rate constants in thermodynamic framework.
             The function uses Wegscheider conditions to check thermodynamic compatibility of constants
 
@@ -571,7 +571,7 @@ class BioML(object):
             Returns:
                 bool: True if the reaction rate constants are compatible and meaningful, False otherwise
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             compatibility = self._matrix_constructor.check_kinetic_rates_thermo_compatibility(self._biomlmodel, printing)
@@ -591,7 +591,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def get_elemental_matrix(self, printing: bool = False) -> np.ndarray:
-        '''
+        """
             Returns a 2D numpy array that represents the composition of each compound in an array: rows as chemical elements and columns as chemical compounds
 
             Args:
@@ -600,14 +600,14 @@ class BioML(object):
             Returns:
                 np.ndarray: A 2D numpy array
                 None: If an exception is raised during the execution.
-        '''
+        """
 
         try:
             elemental_matrix = self._matrix_constructor.construct_elemental_matrix(self._biomlmodel)
             
 
             if printing:
-                utility.printer("\nThe Stoichiometric Matrix is:\n", elemental_matrix)
+                utility.printer("\nThe Elemental Matrix is:\n", elemental_matrix)
 
             return elemental_matrix
 
@@ -621,7 +621,7 @@ class BioML(object):
     # *           Function           *
     # ********************************
     def check_mass_balance(self, printing: bool = False) -> bool:
-        '''
+        """
             Returns True if mass is conserved in all reactions of the model and False if not conserved. If printing is on, it can display the reaction violating mass conservation if mass balance fails
 
             Args:
@@ -630,7 +630,7 @@ class BioML(object):
             Returns:
                 bool: True if mass is conserved, False otherwise
                 None: If an exception is raised during the check.
-        '''
+        """
 
 
         try:
@@ -683,8 +683,111 @@ class BioML(object):
 
 
 
-    def verify_model(self, mass_balance: bool = False, printing: bool = False):
-        '''
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def get_charge_matrix(self, printing: bool = False) -> np.ndarray:
+        """
+            Returns a 2D numpy array that represents the charge of each compound in an array: rows as reactions and columns as chemical compounds
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                np.ndarray: A 2D numpy array
+                None: If an exception is raised during the execution.
+        """
+
+        try:
+            charge_matrix = self._matrix_constructor.construct_charge_matrix(self._biomlmodel)
+            
+
+            if printing:
+                utility.printer("\nThe Charge Matrix is:\n", charge_matrix)
+
+            return charge_matrix
+
+        except Exception as e:
+            utility.error_handler(e, "get_charge_matrix")
+            return None
+        
+
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def check_charge_balance(self, printing: bool = False) -> bool:
+        """
+            Returns True if charge is conserved in all reactions of the model and False if not conserved. If printing is on, it can display the reaction violating charge conservation if charge balance fails
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                bool: True if charge is conserved, False otherwise
+                None: If an exception is raised during the check.
+        """
+
+
+        try:
+
+            charge_array = self.get_charge_matrix()
+
+            if charge_array is None:
+                raise ValueError(f"Charge matrix is not provided!")
+
+            stoichiometric_array = self.get_stoichiometric_matrix()
+
+            if stoichiometric_array is None:
+                raise ValueError(f"Stoichiometric matrix is not provided!")
+
+            if charge_array.shape[1] == stoichiometric_array.shape[0]:
+                charge_conservation_array = charge_array @ stoichiometric_array
+            
+            else:
+
+                raise ValueError(f"Matrices cannot be multiplied as the number of columns of the elemental matrix, {charge_array.shape[1]}, is not equal to the number of rows of the stoichiometric matrix, {stoichiometric_array.shape[0]}!")
+            
+            if np.all( ( charge_conservation_array == 0 ) ):
+
+                if printing:
+                    utility.message_printer("\nCharge is conserved in the reactions\n", color='green')
+
+                return True
+        
+            else:
+                if printing:
+                    utility.message_printer("\nConservation of Mass is violated", color='red')
+                
+                    length = charge_conservation_array.shape[1]
+                    for i in  range(0,length):
+                        if np.all(charge_conservation_array[:, i] == 0):
+                            pass
+                        else:
+                            for biomlreaction in self._biomlmodel.reactions:
+                                if biomlreaction.index == i:
+                                    utility.message_printer(f"\nCharge is not conserved in reaction {biomlreaction.ID}", color='magenta')
+
+                return False
+
+
+        
+        except Exception as e:
+            utility.error_handler(e, "check_charge_balance")
+            return None
+        
+
+
+        
+
+
+
+    def verify_model(self, mass_balance: bool = False, charge_balance: bool = False, printing: bool = False):
+        """
         Returns True if model complies with thermodynamic principles and False if not.
 
         Args:
@@ -694,7 +797,7 @@ class BioML(object):
         Returns:
            bool: True if model is consistent with thermodynamic rules, False otherwise
            None: If an exception is raised during the check.
-        '''
+        """
 
         passed = True
 
@@ -704,10 +807,11 @@ class BioML(object):
 
             if mass_balance:
 
-                is_mass_balanced = self.check_mass_balance(printing)
+                is_mass_balanced = self.check_mass_balance()
 
                 if is_mass_balanced is None:
                     raise ValueError(f"Mass balance cannot be checked!")
+            
 
                 if is_mass_balanced:
 
@@ -726,36 +830,83 @@ class BioML(object):
         except Exception as e:
             utility.error_handler(e, "verify_model")
 
+            utility.printer("\nMass Conservation Check: ",f"Mass balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
+
+
+        try:
+
+            is_charge_balanced = None
+
+            if charge_balance:
+
+                is_charge_balanced = self.check_charge_balance()
+
+                if is_charge_balanced is None:
+                    raise ValueError(f"Charge balance cannot be checked!")
+
+                if is_charge_balanced:
+
+                    if printing:
+
+                        utility.printer("\nCharge Conservation Check: ",f"Charge is conserved in the reactions\n", text_color="green", text_style="bold")
+
+                else:
+
+                    passed = False
+                        
+                    if printing:
+
+                        utility.printer("\nCharge Conservation Check: ",f"Charge is NOT conserved in the reactions", text_color="red", text_style="bold")
+
+        except Exception as e:
+            utility.error_handler(e, "verify_model")
+
+            utility.printer("\nCharge Conservation Check: ",f"Charge balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
+
 
         try:
 
             if passed:
 
-                if not self.check_mass_action_kinetics():
+                if self._biomlmodel is None:
+                    raise ValueError(f"No BioML Model has been imported!")
 
-                    passed = False
+                if self._biomlmodel.is_direct_conversion:
 
-                    if printing:
+                    if self.check_kinetic_constants_thermo_compatibility(printing):
+                        passed = True
 
-                        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                        return passed
 
-                    return passed
-                
-                if not self.check_model_reversibility():
+                else:
 
-                    passed = False
+                    if not self.check_mass_action_kinetics():
 
-                    if printing:
+                        passed = False
 
-                        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                        if printing:
 
-                    return passed
-                
-                if self.check_kinetic_constants_thermo_compatibility(printing):
-                    passed = True
+                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
-                    return passed
+                        return passed
+                    
+                    if not self.check_model_reversibility():
+
+                        passed = False
+
+                        if printing:
+
+                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+
+                        return passed
+                    
+                    if self.check_kinetic_constants_thermo_compatibility(printing):
+                        passed = True
+
+                        return passed
 
         except Exception as e:
             utility.error_handler(e, "verify_model")
+
+            utility.printer("\nThermodynamic Compatibility Check: ",f"Thermodynamic compatibilit cannot be checked as an error is raised.", text_color="red", text_style="bold")
             return None

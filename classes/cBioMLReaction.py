@@ -1,5 +1,6 @@
 from classes.BioMLReactionPropertiesMixin import *
 from typing import Union
+from sympy import Expr as sympy_expression
 
 
 class BioMLReaction(BioMLReactionPropertiesMixin):
@@ -11,26 +12,26 @@ class BioMLReaction(BioMLReactionPropertiesMixin):
         self._index = BioMLReaction._counter
         BioMLReaction._counter += 1
         self._ID: str = ID
-        self._annotations: list = None
+        self._annotations: dict[str, list[str]] = {}
         self._reversible: bool = None
         self._kinetic_forward_rate_constant: str = None
-        self._kinetic_forward_rate_constant_value: Union[int, float] = None
+        self._kinetic_forward_rate_constant_value: float = None
         self._kinetic_reverse_rate_constant: str = None
-        self._kinetic_reverse_rate_constant_value: Union[int, float] = None
+        self._kinetic_reverse_rate_constant_value: float = None
         self._thermo_forward_rate_constant: str = None
-        self._thermo_forward_rate_constant_value: Union[int, float] = None
+        self._thermo_forward_rate_constant_value: float = None
         self._thermo_reverse_rate_constant: str = None
-        self._thermo_reverse_rate_constant_value: Union[int, float] = None
-        self._kappa: Union[int, float] = None
+        self._thermo_reverse_rate_constant_value: float = None
+        self._kappa: float = None
         self._kinetic_law: str = None
-        self._sp_kinetic_law = None #sympy expression
+        self._sp_kinetic_law: sympy_expression = None #sympy expression
         self._expanded_kinetic_law: str = None #Not set yet
         self._kinetic_law_type: str = None
-        self._reactants: list = []
-        self._products: list = []
+        self._reactants: list[object] = []
+        self._products: list[object] = []
         self._boundary_condition: bool = False
-        self._local_parameters: list = None
-        self._klaw_variables: list = []
+        self._local_parameters: list[object] = None
+        self._klaw_variables: list[str] = []
         self._mass_action: bool = None
 
 
