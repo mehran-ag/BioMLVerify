@@ -8,59 +8,59 @@ class BioMLFunctionDefinition():
         if not isinstance(sbml_function_definition, libsbml.FunctionDefinition):
             raise ValueError("Wrong initialization value input for \"FunctionDefinition Class\"")
 
-        self.sbml_function_definition = sbml_function_definition
+        self._sbml_function_definition = sbml_function_definition
 
-        self.name = self.sbml_function_definition.getName()
+        self._name = self._sbml_function_definition.getName()
 
-        self.ID = self.sbml_function_definition.getId()
+        self._ID = self._sbml_function_definition.getId()
 
-        self.formula = libsbml.formulaToL3String(self.sbml_function_definition.getBody())
+        self._formula = libsbml.formulaToL3String(self._sbml_function_definition.getBody())
 
-        self.arguments = [self.sbml_function_definition.getArgument(n).getName()
-                            for n in range(self.sbml_function_definition.getNumArguments())]
+        self._arguments = [self._sbml_function_definition.getArgument(n).getName()
+                            for n in range(self._sbml_function_definition.getNumArguments())]
         
 
 
     @property
     def name(self):
-        return self.name
+        return self._name
     
     @name.setter
     def name(self, nm):
         if isinstance(nm, str):
-            self.name = nm
+            self._name = nm
         else:
             raise ValueError("Input for name of a FunctionDefinition instance must be string!")
         
     @property
     def ID(self):
-        return self.ID
+        return self._ID
     
     @ID.setter
     def ID(self, i):
         if isinstance(i, str):
-            self.ID = i
+            self._ID = i
         else:
             raise ValueError("Input for ID of a FunctionDefinition instance must be string!")
         
     @property
     def formula(self):
-        return self.formula
+        return self._formula
     
     @formula.setter
-    def ID(self, fm):
+    def formula(self, fm):
         if isinstance(fm, str):
-            self.formula = fm
+            self._formula = fm
         else:
             raise ValueError("Input for formula of a FunctionDefinition instance must be string!")
         
     @property
     def arguments(self):
-        return self.arguments
+        return self._arguments
     
     @arguments.setter
     def arguments(self, args):
         if isinstance(args, list):
-            self.arguments = args
+            self._arguments = args
         else:
             raise ValueError("Input for arguments of a FunctionDefinition instance must be list!")

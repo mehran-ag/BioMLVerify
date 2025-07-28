@@ -29,10 +29,10 @@ class BioMLSpeciesReference(BioMLSpecies):
         if isinstance(r_id, str):
             self._reaction_id = r_id
         else:
-            raise ValueError("Input must be a string!")
+            raise ValueError("Input for reaction_id must be a string!")
         
 
-        
+
 
     def get_stoichiometry(self):
 

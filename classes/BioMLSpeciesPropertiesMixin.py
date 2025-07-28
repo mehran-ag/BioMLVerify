@@ -93,7 +93,7 @@ class BioMLSpeciesPropertiesMixin:
         if isinstance(new_compound, str):
             self._compound = new_compound
         else:
-            raise ValueError("Input must be a string")
+            raise ValueError("Input for compound must be a string")
 
     @property
     def composition(self):
@@ -115,4 +115,4 @@ class BioMLSpeciesPropertiesMixin:
         if isinstance(new_code, str):
             self._chebi_code = new_code
         else:
-            raise ValueError("Input must be a string")
+            raise ValueError("Input for chebi code must be a string")

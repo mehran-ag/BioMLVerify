@@ -138,9 +138,11 @@ class SbmlReader:
                     if formula and composition:
                         break
 
-                biomlmodel_species.compound = formula
+                if formula is not None or composition is not None:
 
-                biomlmodel_species.composition = composition
+                    biomlmodel_species.compound = formula
+
+                    biomlmodel_species.composition = composition
 
             self._biomlmodel_species_list.append(biomlmodel_species)
 
