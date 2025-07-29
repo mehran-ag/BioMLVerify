@@ -45,7 +45,9 @@ atexit.register(lambda: print("\n" * 2))
 
 # file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
 
-file_path = "/Users/makb047/UoA/Codes/SBML_Models/BIOMD0000000207.xml"
+# file_path = "/Users/makb047/UoA/Codes/SBML_Models/BIOMD0000000207.xml"
+
+file_path = "/Users/makb047/UoA/Codes/ATP Hydrolysis/ATP_Hydrolysis.cellml"
 
 
 

@@ -376,15 +376,37 @@ class CellmlReader:
 
                 biomlmodel_species.chebi_code = chebi_code
 
-                biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._parse_using_chebi(chebi_code)
+                compound, charge, composition = CellmlReader._parse_using_chebi(chebi_code)
+
+                if compound is not None:
+                    biomlmodel_species.compound = compound
+
+                if charge is not None:
+                    biomlmodel_species.charge = charge
+
+                if composition is not None:
+                    biomlmodel_species.composition = composition
 
             else:
 
-                cellml_species_compound = cellml_id.split('_')[1].split('-')[0]
+                compound_part = cellml_id.split('_')[1]
 
-                if len( cellml_id.split('_')[1].split('-') ) > 1:
+                if compound_part[0] == '-':
+                    charge_sign = -1
+                    compound_part = compound_part[1:]
 
-                    cellml_species_comp_code = cellml_id.split('_')[1].split('-')[1]
+                else:
+                    charge_sign = +1
+
+                compound_code = compound_part.split('-')[0]
+
+                cellml_species_compound, cellml_species_charge = CellmlReader._parse_compound_code(compound_code)
+
+                biomlmodel_species.charge = charge_sign * cellml_species_charge
+
+                if len( compound_part.split('-') ) > 1:
+
+                    cellml_species_comp_code = compound_part.split('-')[1]
 
                     cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
 
@@ -1197,15 +1219,37 @@ class CellmlReader:
 
                         biomlmodel_species.chebi_code = chebi_code
 
-                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._parse_using_chebi(chebi_code)
+                        compound, charge, composition = CellmlReader._parse_using_chebi(chebi_code)
+
+                        if compound is not None:
+                            biomlmodel_species.compound = compound
+
+                        if charge:
+                            biomlmodel_species.charge = charge
+
+                        if composition is not None:
+                            biomlmodel_species.composition = composition
 
                     else:
 
-                        cellml_species_compound = cellml_id.split('_')[1].split('-')[0]
+                        compound_part = cellml_id.split('_')[1]
 
-                        if len( cellml_id.split('_')[1].split('-') ) > 1:
+                        if compound_part[0] == '-':
+                            charge_sign = -1
+                            compound_part = compound_part[1:]
 
-                            cellml_species_comp_code = cellml_id.split('_')[1].split('-')[1]
+                        else:
+                            charge_sign = +1
+
+                        compound_code = compound_part.split('-')[0]
+
+                        cellml_species_compound, cellml_species_charge = CellmlReader._parse_compound_code(compound_code)
+
+                        biomlmodel_species.charge = charge_sign * cellml_species_charge
+
+                        if len( compound_part.split('-') ) > 1:
+
+                            cellml_species_comp_code = compound_part.split('-')[1]
 
                             cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
 
@@ -1265,17 +1309,45 @@ class CellmlReader:
 
                         biomlmodel_species.chebi_code = chebi_code
 
-                        biomlmodel_species.compound, biomlmodel_species.composition = CellmlReader._parse_using_chebi(chebi_code)
+                        compound, charge, composition = CellmlReader._parse_using_chebi(chebi_code)
+
+                        if compound is not None:
+                            biomlmodel_species.compound = compound
+
+                        if charge:
+                            biomlmodel_species.charge = charge
+
+                        if composition is not None:
+                            biomlmodel_species.composition = composition
 
                     else:
 
-                        cellml_species_name = cellml_id.split('_')[1].split('-')[0]
+                        compound_part = cellml_id.split('_')[1]
 
-                        cellml_species_comp_code = cellml_id.split('_')[1].split('-')[1]
+                        if compound_part[0] == '-':
+                            charge_sign = -1
+                            compound_part = compound_part[1:]
 
-                        cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
+                        else:
+                            charge_sign = +1
 
-                        biomlmodel_species.compound = cellml_species_name
+                        compound_code = compound_part.split('-')[0]
+
+                        cellml_species_compound, cellml_species_charge = CellmlReader._parse_compound_code(compound_code)
+
+                        biomlmodel_species.charge = charge_sign * cellml_species_charge
+
+                        if len( compound_part.split('-') ) > 1:
+
+                            cellml_species_comp_code = compound_part.split('-')[1]
+
+                            cellml_species_composition = self._parse_molecule_units(cellml_species_comp_code)
+
+                        else:
+
+                            cellml_species_composition = {cellml_species_compound: 1}
+
+                        biomlmodel_species.compound = cellml_species_compound
 
                         biomlmodel_species.composition = cellml_species_composition
 
@@ -1566,7 +1638,7 @@ class CellmlReader:
     # *           Function           *
     # ********************************
     @staticmethod
-    def _parse_using_chebi( chebi_code: str ) -> tuple[str, dict]:
+    def _parse_using_chebi( chebi_code: str ) -> tuple[str, int, dict]:
 
         """
             This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compounds chemical composition and fetches it
@@ -1578,6 +1650,7 @@ class CellmlReader:
 
             Returns:
                 str: a string represnting the compound's chemical formula (like CH4)
+                int: an integer representing the charge of the compound
                 dict: A dictionary mapping molecule names (str) to their integer counts (int).
         """
 
@@ -1593,18 +1666,21 @@ class CellmlReader:
 
             parsed_compound = None
             formula = None
+            charge = None
 
         elif len(formulae) == 1:
 
+            charge = chebi_entity.get_charge()
             formula = chebi_entity.get_formula()
             parsed_compound = chp.parse_formula(formula)
 
         else:
 
+            charge = formulae[1].get_charge()
             formula = formulae[1].get_formula()
             parsed_compound = chp.parse_formula(formula)
 
-        return formula, parsed_compound
+        return formula, charge, parsed_compound
 
 
 
@@ -1647,6 +1723,32 @@ class CellmlReader:
 
 
         return formula
+    
+
+    @staticmethod
+    def _parse_compound_code(compound: str) -> tuple[int, str]:
+        """
+            Extract charge and name from a compound string like '-4ATP', '2Ca', or 'H2O'.
+            Returns (charge, name).
+        """
+        match = re.match(r'^([+-]?\d*)([A-Za-z].*)$', compound)
+        
+        if match:
+            charge_str, name = match.groups()
+            
+            if charge_str == '':
+                charge = 0
+            elif charge_str.startswith(('+', '-')):
+                charge = int(charge_str)
+            else:
+                # number without + or - is considered positive
+                charge = int(charge_str)
+        else:
+            # No number at the beginning → assume charge 0
+            charge = 0
+            name = compound
+
+        return name, charge
 
 
 

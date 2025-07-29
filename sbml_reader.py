@@ -121,10 +121,6 @@ class SbmlReader:
 
             biomlmodel_species.compartment = libsbml_species_class.getCompartment()
 
-            if libsbml_species_class.getCharge():
-
-                biomlmodel_species.charge = libsbml_species_class.getCharge()
-
             annotations = SbmlReader._get_chebi_annotations(libsbml_species_class)
 
             if annotations:
@@ -133,16 +129,23 @@ class SbmlReader:
 
                 for annotation in annotations:
 
-                    formula, composition = SbmlReader._parse_using_chebi(annotation)
+                    formula, charge, composition = SbmlReader._parse_using_chebi(annotation)
 
-                    if formula and composition:
+                    if formula is not None or charge is not None or composition is not None:
                         break
 
-                if formula is not None or composition is not None:
-
+                if formula is not None:
                     biomlmodel_species.compound = formula
 
+                if composition is not None:
                     biomlmodel_species.composition = composition
+
+                if libsbml_species_class.getCharge():
+                    biomlmodel_species.charge = libsbml_species_class.getCharge()
+                else:
+                    if charge:
+                        biomlmodel_species.charge = charge
+
 
             self._biomlmodel_species_list.append(biomlmodel_species)
 
@@ -1255,7 +1258,7 @@ class SbmlReader:
 
 
     @staticmethod
-    def _parse_using_chebi( chebi_code: str ) -> tuple[str, dict]:
+    def _parse_using_chebi( chebi_code: str ) -> tuple[str, int, dict]:
 
         """
             This function receives a string which includes ChEBI code for the compound and uses EBI API to search for the compounds chemical composition and fetches it
@@ -1267,6 +1270,7 @@ class SbmlReader:
 
             Returns:
                 str: a string represnting the compound's chemical formula (like CH4)
+                int: an integer representing the charge of the compound
                 dict: A dictionary mapping molecule names (str) to their integer counts (int).
         """
 
@@ -1282,15 +1286,18 @@ class SbmlReader:
 
             parsed_compound = None
             formula = None
+            charge = None
 
         elif len(formulae) == 1:
 
             formula = chebi_entity.get_formula()
+            charge = chebi_entity.get_charge()
             parsed_compound = chp.parse_formula(formula)
 
         else:
 
             formula = formulae[1].get_formula()
+            cherge = formulae[1].get_charge()
             parsed_compound = chp.parse_formula(formula)
 
-        return formula, parsed_compound
+        return formula, charge, parsed_compound
