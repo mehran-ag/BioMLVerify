@@ -1288,16 +1288,10 @@ class SbmlReader:
             formula = None
             charge = None
 
-        elif len(formulae) == 1:
+        else:
 
             formula = chebi_entity.get_formula()
             charge = chebi_entity.get_charge()
-            parsed_compound = chp.parse_formula(formula)
-
-        else:
-
-            formula = formulae[1].get_formula()
-            cherge = formulae[1].get_charge()
             parsed_compound = chp.parse_formula(formula)
 
         return formula, charge, parsed_compound

@@ -9,6 +9,7 @@ import exceptions
 import utility
 
 import numpy as np
+import pandas as pd
 
 
 from classes.cBioMLReaction import *
@@ -24,7 +25,26 @@ class BioML(object):
         This class creates a model, either CellML or SBML, that will be processed by other classes
     """
 
+    # def __init__(self):
+    #     """
+    #         Initializes the BioML class. This is the main class which has the functions to study and verify models
+    #     """
+    #     BioMLSpecies.reset_counter()
+    #     BioMLReaction.reset_counter()
+    #     self._file_path: str = None
+    #     self._file_name: str = None
+    #     self._file_format: str = None
+    #     self._biomlmodel: BioMLModel = None
+    #     self._matrix_constructor = matrix_constructor.MatrixConstructor()
+    #     self._model_checker = model_checker.ModelChecker()
+    #     self._sbml_reader = sbml_reader.SbmlReader()
+    #     self._cellml_reader = cellml_reader.CellmlReader()
+        
+
     def __init__(self):
+        self._initialize_fields()
+
+    def _initialize_fields(self):
         """
             Initializes the BioML class. This is the main class which has the functions to study and verify models
         """
@@ -38,6 +58,28 @@ class BioML(object):
         self._model_checker = model_checker.ModelChecker()
         self._sbml_reader = sbml_reader.SbmlReader()
         self._cellml_reader = cellml_reader.CellmlReader()
+
+    def _cleanup(self):
+        """
+            Clears all internal state. Call this to reset the instance before reuse.
+        """
+        self._file_path = None
+        self._file_name = None
+        self._file_format = None
+        self._biomlmodel = None
+
+        # Optional: Reset or replace these if needed
+        self._matrix_constructor = None
+        self._model_checker = None
+        self._sbml_reader = None
+        self._cellml_reader = None
+
+    def _reset(self):
+        """
+            Combines cleanup and reinitialization.
+        """
+        self._cleanup()
+        self._initialize_fields()
 
 
 
@@ -54,7 +96,7 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def read_file(self, file_path: str) -> None:
+    def read_file(self, folder_path: str, file_name: str) -> None:
         """
             Reads the file path and calls smblreader or cellmlreader to convert the input model into a biomlmodel
 
@@ -66,15 +108,23 @@ class BioML(object):
         """
 
         try:
-            if not isinstance(file_path, str):
-                raise TypeError("File path must be a string.")
+            if not isinstance(folder_path, str):
+                raise TypeError("Folder path must be a string.")
             
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
+            if not isinstance(file_name, str):
+                raise TypeError("File name must be a string.")
             
-            self._file_path = file_path
-            self._file_name = os.path.basename(file_path)
-            self._file_format = os.path.splitext(file_path)[1][1:]
+            if not os.path.isdir(folder_path):
+                raise FileNotFoundError(f"Folder does not exist: {folder_path}")
+            
+            # Check file existence
+            full_path = os.path.join(folder_path, file_name)
+            if not os.path.isfile(full_path):
+                raise FileNotFoundError(f"File does not exist: {full_path}")
+            
+            self._file_path = full_path
+            self._file_name =file_name
+            self._file_format = os.path.splitext(file_name)[1][1:]
         
         except Exception as e:
             utility.error_handler(e)
@@ -121,7 +171,7 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_mass_action_kinetics(self, printing: bool = False) -> bool:
+    def check_mass_action_kinetics(self, printing: bool = False, raise_error: bool = False) -> bool:
         """
             Checks the equations of the imported model to confirm if all equations in the model are governed by Mass Action Kinetics
 
@@ -195,6 +245,8 @@ class BioML(object):
             
         except Exception as e:
             utility.error_handler(e, "check_mass_action_kinetics")
+            if raise_error:
+                raise e
             return None
 
 
@@ -208,7 +260,7 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_model_reversibility(self, return_irreversibles: bool = False, printing: bool = False) -> bool:
+    def check_model_reversibility(self, return_irreversibles: bool = False, printing: bool = False, raise_error: bool = False) -> bool:
         """
             Checks all reactions of the imported model to confirm if the reactions are Reversibe
 
@@ -262,6 +314,8 @@ class BioML(object):
 
         except Exception as e:
             utility.error_handler(e, "check_model_reversibility")
+            if raise_error:
+                raise e
             return None
 
 
@@ -560,7 +614,7 @@ class BioML(object):
     # ********************************
     # *           Function           *
     # ********************************
-    def check_kinetic_constants_thermo_compatibility(self, printing: bool = False) -> bool:
+    def check_kinetic_constants_thermo_compatibility(self, printing: bool = False, raise_error: bool = False) -> bool:
         """
             Checks the validity of Kinetic reaction rate constants in thermodynamic framework.
             The function uses Wegscheider conditions to check thermodynamic compatibility of constants
@@ -583,6 +637,8 @@ class BioML(object):
         except Exception as e:
             utility.error_handler(e, "check_kinetic_constants_thermo_compatibility")
             utility.printer("\nThermodynamic Compatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
+            if raise_error:
+                raise e
             return None
         
 
@@ -910,3 +966,67 @@ class BioML(object):
 
             utility.printer("\nThermodynamic Compatibility Check: ",f"Thermodynamic compatibilit cannot be checked as an error is raised.", text_color="red", text_style="bold")
             return None
+        
+
+
+    def verify_bunch_models(self, folder_path):
+
+        checked_results = pd.DataFrame(columns=["Model Name", "Mass Action", "Reversible", "Plausible", "Error"])
+
+
+        for file_name in os.listdir(folder_path):
+
+            if not file_name.endswith('.xml'): continue    
+
+            self._reset()
+
+            self.read_file(folder_path, file_name)
+
+            mass_action: bool = None
+
+            reversible: bool = None
+
+            plausible: bool = None
+
+            error: str = None
+
+            try:
+
+
+                if self.check_mass_action_kinetics(raise_error=True):
+
+                    mass_action = True
+
+                    if self.check_model_reversibility(raise_error=True):
+
+                        reversible = True
+
+                        if self.check_kinetic_constants_thermo_compatibility(raise_error=True):
+
+                            plausible = True
+
+                        else:
+
+                            plausible = False
+
+                    else:
+
+                        reversible = False
+
+                else:
+
+                    mass_action = False
+
+            except Exception as e:
+
+                error = str(e)
+
+            checked_results.loc[len(checked_results)] = [file_name, mass_action, reversible, plausible, error]
+
+        excel_full_path = os.path.join(folder_path, "Thermodynamic compatibility results.xlsx")
+            
+        checked_results.to_excel(excel_full_path, index=False)
+
+        save_message = f"\n{'*' * 30} The Excel file \"check_results.xlsx\" has been successfully saved to \"{folder_path}\" {'*' * 30}"
+
+        utility.message_printer(save_message)

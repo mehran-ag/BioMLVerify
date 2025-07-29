@@ -1668,16 +1668,10 @@ class CellmlReader:
             formula = None
             charge = None
 
-        elif len(formulae) == 1:
+        else:
 
             charge = chebi_entity.get_charge()
             formula = chebi_entity.get_formula()
-            parsed_compound = chp.parse_formula(formula)
-
-        else:
-
-            charge = formulae[1].get_charge()
-            formula = formulae[1].get_formula()
             parsed_compound = chp.parse_formula(formula)
 
         return formula, charge, parsed_compound
@@ -1728,9 +1722,16 @@ class CellmlReader:
     @staticmethod
     def _parse_compound_code(compound: str) -> tuple[int, str]:
         """
-            Extract charge and name from a compound string like '-4ATP', '2Ca', or 'H2O'.
-            Returns (charge, name).
+            Extracts charge and name from a compound string like '-4ATP', '2Ca', or 'H2O'.
+
+            Args:
+                compound (str): The chemical compound with its charge added to the beginning of the string
+
+            Returns:
+                str: a string which is solely the compound name
+                int: the charge of the compound
         """
+
         match = re.match(r'^([+-]?\d*)([A-Za-z].*)$', compound)
         
         if match:

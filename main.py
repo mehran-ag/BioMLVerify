@@ -14,50 +14,39 @@ os.system("cls" if os.name == "nt" else "clear")
 
 atexit.register(lambda: print("\n" * 2))
 
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs"
-
-# file_name = "modified_huang_ferrell_1996.cellml"
 
 
 
+
+# folder_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML"
+
+# folder_path = "/Users/makb047/UoA/Codes/ATP Hydrolysis"
 
 # folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
 
-# file_name = "BIOMD0000000378.xml"
+file_name = "BIOMD0000000150.xml"
 
-# verify_model(folder_path, file_name)
+# file_name = "ATP_Hydrolysis.cellml"
 
-# verify_bunch_SBML_models(folder_path)
+# file_name = "modified_huang_ferrell_1996.cellml"
 
+# file_name = "aguda_b_1999.cellml"
 
+# file_name = "aguda_b_1999-original.cellml"
 
-# file_path = "/Users/makb047/UoA/Codes/aguda_b_1999/aguda_b_1999-original.cellml"
-
-# file_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML/NitrosylBromide-BioML.cellml"
-
-# file_path = "/Users/makb047/UoA/Codes/SBML_Models/BIOMD0000000038.xml"
-
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/modified_huang_ferrell_1996.cellml"
-
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/reactions_set.cellml"
-
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/aguda_b_1999.cellml"
-
-# file_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs/NitrosylBromide.cellml"
-
-# file_path = "/Users/makb047/UoA/Codes/SBML_Models/BIOMD0000000207.xml"
-
-file_path = "/Users/makb047/UoA/Codes/ATP Hydrolysis/ATP_Hydrolysis.cellml"
+# file_name = "NitrosylBromide-BioML.cellml"
 
 
+# verify_bunch_models(folder_path)
 
+folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
 
 
 bioml = BioML()
 
-bioml.read_file(file_path)
+bioml.read_file(folder_path, file_name)
 
-bioml.verify_model(mass_balance=True, charge_balance= True, printing=True)
+bioml.verify_model(mass_balance=False, charge_balance=False, printing=True)
 
 
 

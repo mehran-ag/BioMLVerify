@@ -1,101 +1,22 @@
 from bioml import *
 import os
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from pathlib import Path, PurePath
-
-import gc
 
 
 
-def read_files_in_folder(path):
+def verify_bunch_models(folder_path):
 
-
-    reversibles = []
-
-    for filename in os.listdir(path):
-
-        if not filename.endswith('.xml'): continue
-
-        fullname = os.path.join(path, filename)
-
-        biomlmodel = BioMLModel()
-
-        biomlmodel.read_file(fullname)
-
-        if biomlmodel.check_model_reversibility():
-            print(f"\nModel {biomlmodel.file_name} is ALL REVERSIBLE")
-            reversibles.append(biomlmodel.file_name)
-
-    print(len(reversibles))
-
-    for m in reversibles:
-
-        print(f"\n{m}")
-
-
-    with open("/Users/makb047/UoA/Codes/Mass_Actions/reversibles.txt", "w") as file:
-        for item in reversibles:
-            file.write(item + "\n")
-
-    return
-
-
-def verify_model(file_path, file_name):
-
-    # Ensure file_path is a string or Path
-    if isinstance(file_path, (Path, PurePath)):
-        file_path = str(file_path)
-    elif not isinstance(file_path, str):
-        raise TypeError('The file path should be a string or a Path object.')
-
-    full_path = os.path.join(file_path, file_name)
-
-    if not os.path.isfile(full_path):
-        raise FileNotFoundError(f'Model source file `{full_path}` does not exist.')
-    
-    bioml = BioML()
-
-    bioml.read_file(full_path)
-
-    if not bioml.check_mass_action_kinetics():
-
-        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n" + 36 * " " + "it is NOT eligible for verification check\n", text_color="red")
-
-        return
-    
-    if not bioml.check_model_reversibility():
-
-        utility.printer("\nThermodynamic Compatibility Check: ",f"Model {file_name} has (an) irrversible reaction(s) and\n" + 36 * " " + "it is NOT eligible for verification check\n", text_color="red")
-
-        return
-    
-    bioml.check_kinetic_constants_thermo_compatibility("on")
-
-
-
-
-
-def verify_bunch_SBML_models(folder_path):
-
-    check_results = pd.DataFrame(columns=["Model Name", "Mass Action", "Reversible", "Plausible"])
+    check_results = pd.DataFrame(columns=["Model Name", "Mass Action", "Reversible", "Plausible", "Error"])
 
 
 
     for file_name in os.listdir(folder_path):
 
-        if not file_name.endswith('.xml'): continue
-
-        full_path = os.path.join(folder_path, file_name)
-
-        if not os.path.isfile(full_path):
-            raise FileNotFoundError(f'Model source file `{full_path}` does not exist.')
-        
+        if not file_name.endswith('.xml'): continue    
         
         bioml = BioML()
 
-        bioml.read_file(full_path)
+        bioml.read_file(folder_path, file_name)
 
         mass_action: bool = None
 
@@ -108,15 +29,15 @@ def verify_bunch_SBML_models(folder_path):
         try:
 
 
-            if bioml.check_mass_action_kinetics():
+            if bioml.check_mass_action_kinetics(raise_error=True):
 
                 mass_action = True
 
-                if bioml.check_model_reversibility():
+                if bioml.check_model_reversibility(raise_error=True):
 
                     reversible = True
 
-                    if bioml.check_kinetic_constants_thermo_compatibility():
+                    if bioml.check_kinetic_constants_thermo_compatibility(raise_error=True):
 
                         plausible = True
 
@@ -136,7 +57,7 @@ def verify_bunch_SBML_models(folder_path):
 
             error = str(e)
 
-        check_results.loc[len(check_results)] = [file_name, mass_action, reversible, plausible]
+        check_results.loc[len(check_results)] = [file_name, mass_action, reversible, plausible, error]
 
     excel_full_path = os.path.join(folder_path, "check_results.xlsx")
         
