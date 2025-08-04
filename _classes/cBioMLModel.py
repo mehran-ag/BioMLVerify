@@ -1,4 +1,4 @@
-from classes.BioMLModelPropertiesMixin import *
+from _classes.BioMLModelPropertiesMixin import *
 
 class BioMLModel(BioMLModelPropertiesMixin):
 

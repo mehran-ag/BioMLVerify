@@ -1,25 +1,25 @@
 import libsbml
-import utility
+import _modules._utility as utility
 import re
-from constants import *
+from _modules._constants import *
 from collections import defaultdict
 import itertools
 import sympy as sp
-from classes.cBioMLReaction import *
-from classes.cBioMLModel import *
-from classes.cBioMLSpecies import *
-from classes.cBioMLParameter import *
-from classes.cBioMLSpeciesReference import *
-from classes.cBioMLFunctionDefinition import *
+from _classes.cBioMLReaction import *
+from _classes.cBioMLModel import *
+from _classes.cBioMLSpecies import *
+from _classes.cBioMLParameter import *
+from _classes.cBioMLSpeciesReference import *
+from _classes.cBioMLFunctionDefinition import *
 
 import os
-import exceptions
+import _modules._exceptions as exceptions
 import time
 
 import chemparse as chp
 import libchebipy as chb
 
-import model_checker
+import _modules._model_checker as model_checker
 
 
 
@@ -812,7 +812,7 @@ class SbmlReader:
         empty_global_parameters = False     # a flag to indicate if there are no global parameters
 
         if biomlmodel is None:
-            raise exceptions.NoModel("No biomlmodel has been read!!!")
+            raise _exceptions.NoModel("No biomlmodel has been read!!!")
 
 
         species_classes_list = biomlmodel.get_list_of_species()

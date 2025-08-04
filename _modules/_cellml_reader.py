@@ -12,17 +12,17 @@ from lxml import etree
 
 # Importing internal packages
 import os
-import utility
+import _modules._utility as utility
 from pathlib import Path, PurePath
-import constants as cn
+import _modules._constants as cn
 
 from xml.dom.minidom import parseString
 
-from classes.cBioMLReaction import *
-from classes.cBioMLModel import *
-from classes.cBioMLSpecies import *
-from classes.cBioMLParameter import *
-from classes.cBioMLSpeciesReference import *
+from _classes.cBioMLReaction import *
+from _classes.cBioMLModel import *
+from _classes.cBioMLSpecies import *
+from _classes.cBioMLParameter import *
+from _classes.cBioMLSpeciesReference import *
 
 
 

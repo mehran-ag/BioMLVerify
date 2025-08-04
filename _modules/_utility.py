@@ -3,7 +3,7 @@ from colorama import Fore, Back, Style, init
 import traceback
 import sys
 import os
-import exceptions
+import _modules._exceptions as exceptions
 import sympy as sp
 
 init( autoreset=True )
@@ -116,3 +116,17 @@ def error_handler(e: Exception, function: str = None, print_trace: bool = True) 
         printer(", line: ", lineno)
         printer("Error type: ", sys.exc_info()[0].__name__)
         message_printer("Unable to complete the query!", color="red")
+
+
+
+def time_counter(t, t0):
+    
+
+    elapsed = t() - t0
+
+    elapsed_str = (
+        f"{int(elapsed // 60)} minute{'s' if int(elapsed // 60) != 1 else ''} and "
+        f"{int(elapsed % 60)} second{'s' if int(elapsed % 60) != 1 else ''}"
+    ) if elapsed >= 60 else f"{int(elapsed)} second{'s' if int(elapsed) != 1 else ''}"
+
+    printer("\n\nExecution time: ", elapsed_str, text_color='light_yellow', text_style='dim')

@@ -1,4 +1,4 @@
-from classes.cBioMLSpecies import *
+from _classes.cBioMLSpecies import *
 
 
 class BioMLSpeciesReference(BioMLSpecies):

@@ -2,6 +2,8 @@ from bioml import *
 import os
 import pandas as pd
 
+import _modules._utility as utility
+
 
 
 def verify_bunch_models(folder_path):

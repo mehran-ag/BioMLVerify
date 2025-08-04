@@ -1,4 +1,4 @@
-from classes.BioMLSpeciesPropertiesMixin import *
+from _classes.BioMLSpeciesPropertiesMixin import *
 
 
 class BioMLSpecies(BioMLSpeciesPropertiesMixin):

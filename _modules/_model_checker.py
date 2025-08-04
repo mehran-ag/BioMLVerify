@@ -1,10 +1,10 @@
 import libsbml
-import exceptions
-import constants as cn
+import _modules._exceptions as exceptions
+import _modules._constants as cn
 from typing import Union
 import sympy as sp
 from sympy import symbols
-from classes.cBioMLModel import BioMLModel
+from _classes.cBioMLModel import BioMLModel
 
 
 
@@ -36,7 +36,7 @@ class ModelChecker(object):
         """
 
         if biomlmodel == None:
-            raise exceptions.NoModel("No BioModel has been read!!!")
+            raise _exceptions.NoModel("No BioModel has been read!!!")
 
         biomlmodel_reactions = biomlmodel.get_list_of_reactions()
 

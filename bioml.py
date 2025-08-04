@@ -1,23 +1,23 @@
 import os
 import time
 
-import sbml_reader
-import cellml_reader
-import matrix_constructor
-import model_checker
-import exceptions
-import utility
+import _modules._sbml_reader as _sbml_reader
+import _modules._cellml_reader as _cellml_reader
+import _modules._matrix_constructor as _matrix_constructor
+import _modules._model_checker as _model_checker
+import _modules._exceptions as _exceptions
+import _modules._utility as _utility
 
 import numpy as np
 import pandas as pd
 
 
-from classes.cBioMLReaction import *
-from classes.cBioMLModel import *
-from classes.cBioMLSpecies import *
-from classes.cBioMLParameter import *
-from classes.cBioMLSpeciesReference import *
-from classes.cBioMLFunctionDefinition import *
+from _classes.cBioMLReaction import *
+from _classes.cBioMLModel import *
+from _classes.cBioMLSpecies import *
+from _classes.cBioMLParameter import *
+from _classes.cBioMLSpeciesReference import *
+from _classes.cBioMLFunctionDefinition import *
 
 
 class BioML(object):
@@ -54,10 +54,10 @@ class BioML(object):
         self._file_name: str = None
         self._file_format: str = None
         self._biomlmodel: BioMLModel = None
-        self._matrix_constructor = matrix_constructor.MatrixConstructor()
-        self._model_checker = model_checker.ModelChecker()
-        self._sbml_reader = sbml_reader.SbmlReader()
-        self._cellml_reader = cellml_reader.CellmlReader()
+        self._matrix_constructor = _matrix_constructor.MatrixConstructor()
+        self._model_checker = _model_checker.ModelChecker()
+        self._sbml_reader = _sbml_reader.SbmlReader()
+        self._cellml_reader = _cellml_reader.CellmlReader()
 
     def _cleanup(self):
         """
@@ -127,7 +127,7 @@ class BioML(object):
             self._file_format = os.path.splitext(file_name)[1][1:]
         
         except Exception as e:
-            utility.error_handler(e)
+            _utility.error_handler(e)
             return
 
         else:
@@ -135,7 +135,7 @@ class BioML(object):
             try:
                 if self._file_format == 'xml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n", color="cyan")
+                    _utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a SBML model \u27A4\u27A4\u27A4\n", color="cyan")
 
                     self._biomlmodel =  self._sbml_reader.read_file(self._file_path)
 
@@ -143,23 +143,23 @@ class BioML(object):
 
                 elif self._file_format == 'cellml':
 
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n", color="cyan")
+                    _utility.message_printer(f"\n\u27A4\u27A4\u27A4 The input file: {self._file_name} is a CellML model \u27A4\u27A4\u27A4\n", color="cyan")
 
                     self._biomlmodel = self._cellml_reader.read_file(self._file_path)
 
                     file_type = 'CellML'
 
             except Exception as e:
-                utility.error_handler(e, function="reading_file")
+                _utility.error_handler(e, function="reading_file")
 
                 return
             
             else:
 
                 if self._biomlmodel is not None:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel \u27A4\u27A4\u27A4\n", color="green")
+                    _utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel \u27A4\u27A4\u27A4\n", color="green")
                 else:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel \u27A4\u27A4\u27A4\n", color="red", style="bold")
+                    _utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel \u27A4\u27A4\u27A4\n", color="red", style="bold")
                     time.sleep(1)
 
 
@@ -198,7 +198,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
+                            _utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
 
                             time.sleep(5)
 
@@ -208,7 +208,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
+                            _utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
                             time.sleep(5)
 
@@ -220,7 +220,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
+                            _utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
 
                             time.sleep(5)
 
@@ -230,7 +230,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
+                            _utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
                             time.sleep(5)
 
@@ -244,7 +244,7 @@ class BioML(object):
 
             
         except Exception as e:
-            utility.error_handler(e, "check_mass_action_kinetics")
+            _utility.error_handler(e, "check_mass_action_kinetics")
             if raise_error:
                 raise e
             return None
@@ -284,13 +284,13 @@ class BioML(object):
                     if reversibility is not None:
 
                         if reversibility:
-                            utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
+                            _utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
                         else:
-                            utility.message_printer("\nAll reactions in the model are NOT reversible!", color='magenta')
+                            _utility.message_printer("\nAll reactions in the model are NOT reversible!", color='magenta')
 
                     else:
 
-                        utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='magenta')
+                        _utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='magenta')
 
                 return reversibility, irreversibles
             
@@ -302,18 +302,18 @@ class BioML(object):
 
                     if printing:
                         if reversibility:
-                            utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
+                            _utility.message_printer("\nAll reactions in the model are REVERSIBLE.")
                         else:
-                            utility.message_printer("\nAll reactions in the model are NOT reversible!")
+                            _utility.message_printer("\nAll reactions in the model are NOT reversible!")
 
                 else:
 
-                    utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='magenta')
+                    _utility.message_printer("\nReversibility conditions are not defined for the reactions!!\n", color='magenta')
 
                 return reversibility
 
         except Exception as e:
-            utility.error_handler(e, "check_model_reversibility")
+            _utility.error_handler(e, "check_model_reversibility")
             if raise_error:
                 raise e
             return None
@@ -386,12 +386,12 @@ class BioML(object):
             
 
             if printing:
-                utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
+                _utility.printer("\nThe Stoichiometric Matrix is:\n", stoichiometric_matrix)
 
             return stoichiometric_matrix
 
         except Exception as e:
-            utility.error_handler(e, "get_stoichiometric_matrix")
+            _utility.error_handler(e, "get_stoichiometric_matrix")
             return None
 
 
@@ -418,12 +418,12 @@ class BioML(object):
             forward_stoichiometric_matrix = self._matrix_constructor.construct_forward_stoichiometric_matrix(self._biomlmodel)
 
             if printing:
-                utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
+                _utility.printer("\nThe Forward Stoichiometric Matrix is:\n", forward_stoichiometric_matrix)
 
             return forward_stoichiometric_matrix
 
         except Exception as e:
-            utility.error_handler(e, "get_forward_stoichiometric_matrix")
+            _utility.error_handler(e, "get_forward_stoichiometric_matrix")
             return None
         
 
@@ -450,12 +450,12 @@ class BioML(object):
             reverse_stoichiometric_matrix = self._matrix_constructor.construct_reverse_stoichiometric_matrix(self._biomlmodel)
 
             if printing:
-                utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
+                _utility.printer("\nThe Reverse Stoichiometric Matrix is:\n", reverse_stoichiometric_matrix)
 
             return reverse_stoichiometric_matrix
 
         except Exception as e:
-            utility.error_handler(e, "get_reverse_stoichiometric_matrix")
+            _utility.error_handler(e, "get_reverse_stoichiometric_matrix")
             return None
         
     
@@ -481,7 +481,7 @@ class BioML(object):
 
         if printing:
 
-            utility.printer("\nThe Columns are:", columns )
+            _utility.printer("\nThe Columns are:", columns )
 
         return columns
     
@@ -509,7 +509,7 @@ class BioML(object):
 
         if printing:
 
-            utility.printer("\nThe Rows are:", rows )
+            _utility.printer("\nThe Rows are:", rows )
 
         return rows
     
@@ -539,12 +539,12 @@ class BioML(object):
         try:
 
             if self._biomlmodel is None:
-                raise exceptions.NoModel("No BioModel has been read!!!")
+                raise _exceptions.NoModel("No BioModel has been read!!!")
 
             return self._matrix_constructor.get_stoichiometric_matrix_element_information(i, j, self._biomlmodel, printing = printing)
         
         except Exception as e:
-            utility.error_handler(e, "get_element_information_in_stoichiometric_matrix")
+            _utility.error_handler(e, "get_element_information_in_stoichiometric_matrix")
             return None
         
 
@@ -573,7 +573,7 @@ class BioML(object):
             return conversion_matrix
             
         except Exception as e:
-            utility.error_handler(e, "get_thermo_conversion_matrix")
+            _utility.error_handler(e, "get_thermo_conversion_matrix")
 
             return None
 
@@ -603,7 +603,7 @@ class BioML(object):
             return kinetic_constants_vector
         
         except Exception as e:
-            utility.error_handler(e, "get_kinetic_rate_constants_vector")
+            _utility.error_handler(e, "get_kinetic_rate_constants_vector")
 
             return None
 
@@ -630,13 +630,13 @@ class BioML(object):
         try:
             compatibility = self._matrix_constructor.check_kinetic_rates_thermo_compatibility(self._biomlmodel, printing)
 
-            utility.display_warnings()
+            _utility.display_warnings()
 
             return compatibility
         
         except Exception as e:
-            utility.error_handler(e, "check_kinetic_constants_thermo_compatibility")
-            utility.printer("\nThermodynamic Compatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
+            _utility.error_handler(e, "check_kinetic_constants_thermo_compatibility")
+            _utility.printer("\nThermodynamic Compatibility Check: ","\nThe kinetic reaction rate constants are NOT compatible with thermodynamic constraints\n", text_color="red", text_style="bold")
             if raise_error:
                 raise e
             return None
@@ -663,12 +663,12 @@ class BioML(object):
             
 
             if printing:
-                utility.printer("\nThe Elemental Matrix is:\n", elemental_matrix)
+                _utility.printer("\nThe Elemental Matrix is:\n", elemental_matrix)
 
             return elemental_matrix
 
         except Exception as e:
-            utility.error_handler(e, "get_elemental_matrix")
+            _utility.error_handler(e, "get_elemental_matrix")
             return None
         
 
@@ -711,13 +711,13 @@ class BioML(object):
             if np.all( ( conservation_array == 0 ) ):
 
                 if printing:
-                    utility.message_printer("\nMass is conserved in the reactions\n", color='green')
+                    _utility.message_printer("\nMass is conserved in the reactions\n", color='green')
 
                 return True
         
             else:
                 if printing:
-                    utility.message_printer("\nConservation of Mass is violated", color='red')
+                    _utility.message_printer("\nConservation of Mass is violated", color='red')
                 
                     length = conservation_array.shape[1]
                     for i in  range(0,length):
@@ -726,14 +726,14 @@ class BioML(object):
                         else:
                             for biomlreaction in self._biomlmodel.reactions:
                                 if biomlreaction.index == i:
-                                    utility.message_printer(f"\nMass is not conserved in reaction {biomlreaction.ID}", color='magenta')
+                                    _utility.message_printer(f"\nMass is not conserved in reaction {biomlreaction.ID}", color='magenta')
 
                 return False
 
 
         
         except Exception as e:
-            utility.error_handler(e, "check_mass_balance")
+            _utility.error_handler(e, "check_mass_balance")
             return None
         
 
@@ -761,12 +761,12 @@ class BioML(object):
             
 
             if printing:
-                utility.printer("\nThe Charge Matrix is:\n", charge_matrix)
+                _utility.printer("\nThe Charge Matrix is:\n", charge_matrix)
 
             return charge_matrix
 
         except Exception as e:
-            utility.error_handler(e, "get_charge_matrix")
+            _utility.error_handler(e, "get_charge_matrix")
             return None
         
 
@@ -811,13 +811,13 @@ class BioML(object):
             if np.all( ( charge_conservation_array == 0 ) ):
 
                 if printing:
-                    utility.message_printer("\nCharge is conserved in the reactions\n", color='green')
+                    _utility.message_printer("\nCharge is conserved in the reactions\n", color='green')
 
                 return True
         
             else:
                 if printing:
-                    utility.message_printer("\nConservation of Mass is violated", color='red')
+                    _utility.message_printer("\nConservation of Mass is violated", color='red')
                 
                     length = charge_conservation_array.shape[1]
                     for i in  range(0,length):
@@ -826,14 +826,14 @@ class BioML(object):
                         else:
                             for biomlreaction in self._biomlmodel.reactions:
                                 if biomlreaction.index == i:
-                                    utility.message_printer(f"\nCharge is not conserved in reaction {biomlreaction.ID}", color='magenta')
+                                    _utility.message_printer(f"\nCharge is not conserved in reaction {biomlreaction.ID}", color='magenta')
 
                 return False
 
 
         
         except Exception as e:
-            utility.error_handler(e, "check_charge_balance")
+            _utility.error_handler(e, "check_charge_balance")
             return None
         
 
@@ -873,7 +873,7 @@ class BioML(object):
 
                     if printing:
 
-                        utility.printer("\nMass Conservation Check: ",f"Mass is conserved in the reactions\n", text_color="green", text_style="bold")
+                        _utility.printer("\nMass Conservation Check: ",f"Mass is conserved in the reactions\n", text_color="green", text_style="bold")
 
                 else:
 
@@ -881,12 +881,12 @@ class BioML(object):
                         
                     if printing:
 
-                        utility.printer("\nMass Conservation Check: ",f"Mass is NOT conserved in the reactions", text_color="red", text_style="bold")
+                        _utility.printer("\nMass Conservation Check: ",f"Mass is NOT conserved in the reactions", text_color="red", text_style="bold")
 
         except Exception as e:
-            utility.error_handler(e, "verify_model")
+            _utility.error_handler(e, "verify_model")
 
-            utility.printer("\nMass Conservation Check: ",f"Mass balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            _utility.printer("\nMass Conservation Check: ",f"Mass balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
 
 
         try:
@@ -904,7 +904,7 @@ class BioML(object):
 
                     if printing:
 
-                        utility.printer("\nCharge Conservation Check: ",f"Charge is conserved in the reactions\n", text_color="green", text_style="bold")
+                        _utility.printer("\nCharge Conservation Check: ",f"Charge is conserved in the reactions\n", text_color="green", text_style="bold")
 
                 else:
 
@@ -912,12 +912,12 @@ class BioML(object):
                         
                     if printing:
 
-                        utility.printer("\nCharge Conservation Check: ",f"Charge is NOT conserved in the reactions", text_color="red", text_style="bold")
+                        _utility.printer("\nCharge Conservation Check: ",f"Charge is NOT conserved in the reactions", text_color="red", text_style="bold")
 
         except Exception as e:
-            utility.error_handler(e, "verify_model")
+            _utility.error_handler(e, "verify_model")
 
-            utility.printer("\nCharge Conservation Check: ",f"Charge balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            _utility.printer("\nCharge Conservation Check: ",f"Charge balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
 
 
         try:
@@ -942,7 +942,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                            _utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                         return passed
                     
@@ -952,7 +952,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                            _utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                         return passed
                     
@@ -962,14 +962,14 @@ class BioML(object):
                         return passed
 
         except Exception as e:
-            utility.error_handler(e, "verify_model")
+            _utility.error_handler(e, "verify_model")
 
-            utility.printer("\nThermodynamic Compatibility Check: ",f"Thermodynamic compatibilit cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            _utility.printer("\nThermodynamic Compatibility Check: ",f"Thermodynamic compatibilit cannot be checked as an error is raised.", text_color="red", text_style="bold")
             return None
         
 
 
-    def verify_bunch_models(self, folder_path):
+    def verify_bunch_models(self, folder_path: str):
 
         checked_results = pd.DataFrame(columns=["Model Name", "Mass Action", "Reversible", "Plausible", "Error"])
 
@@ -1029,4 +1029,4 @@ class BioML(object):
 
         save_message = f"\n{'*' * 30} The Excel file \"check_results.xlsx\" has been successfully saved to \"{folder_path}\" {'*' * 30}"
 
-        utility.message_printer(save_message)
+        _utility.message_printer(save_message)
