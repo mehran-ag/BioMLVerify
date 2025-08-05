@@ -1,5 +1,5 @@
 import numpy as np
-import _modules._exceptions as _exceptions
+import _modules._exceptions as exceptions
 from _classes.cBioMLModel import BioMLModel
 from _classes.cBioMLReaction import *
 from _classes.cBioMLSpecies import *
@@ -31,16 +31,16 @@ class MatrixConstructor:
         """
 
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
         reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
-            raise _exceptions.EmptyList("There are no species in this model.")
+            raise exceptions.EmptyList("There are no species in this model.")
         
         if len(reactions_list) == 0:
-            raise _exceptions.EmptyList("There are no reactions in this model.")
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = BioMLSpecies.get_current_index()
 
@@ -95,17 +95,17 @@ class MatrixConstructor:
         """
 
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
         parameters_list = biomlmodel.get_list_of_parameters()
         reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
-            raise _exceptions.EmptyList("There are no species in this model.")
+            raise exceptions.EmptyList("There are no species in this model.")
         
         if len(reactions_list) == 0:
-            raise _exceptions.EmptyList("There are no reactions in this model.")
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = BioMLSpecies.get_current_index()
 
@@ -150,17 +150,17 @@ class MatrixConstructor:
         """
 
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
         parameters_list = biomlmodel.get_list_of_parameters()
         reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
-            raise _exceptions.EmptyList("There are no species in this model.")
+            raise exceptions.EmptyList("There are no species in this model.")
         
         if len(reactions_list) == 0:
-            raise _exceptions.EmptyList("There are no reactions in this model.")
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = BioMLSpecies.get_current_index()
 
@@ -203,7 +203,7 @@ class MatrixConstructor:
         """
         
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
         
         reactions_list = biomlmodel.get_list_of_reactions()
 
@@ -233,7 +233,7 @@ class MatrixConstructor:
         """
     
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
 
@@ -272,7 +272,7 @@ class MatrixConstructor:
         """
 
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         highest_i = self.stoichiometric_matrix.shape[0]
         highest_j = self.stoichiometric_matrix.shape[1]
@@ -315,7 +315,7 @@ class MatrixConstructor:
         """
 
         if biomlmodel is None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
         
         biomlmodel_reactions = biomlmodel.get_list_of_reactions()
 
@@ -339,9 +339,9 @@ class MatrixConstructor:
 
                 if k_minus_value == 0.:
                     if biomlmodel_reaction.kinetic_reverse_rate_constant:
-                        raise _exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no initial value (or it is zero) for the reverse reaction rate constant for reaction {name}: {biomlmodel_reaction.get_kinetic_law()}")
+                        raise exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no initial value (or it is zero) for the reverse reaction rate constant for reaction {name}: {biomlmodel_reaction.get_kinetic_law()}")
                     else:
-                        raise _exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no reverse reaction rate constant for reaction {name}: {biomlmodel_reaction.get_kinetic_law()}")
+                        raise exceptions.NoReverseRateConstant(f"Kinetic Constants Vector cannot be constructed since there is no reverse reaction rate constant for reaction {name}: {biomlmodel_reaction.get_kinetic_law()}")
 
                 vector_of_kinetic_constants[index] = k_plus_value / k_minus_value
 
@@ -367,7 +367,7 @@ class MatrixConstructor:
         """
 
         if biomlmodel is None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         reactions_number = BioMLReaction.get_current_index()
 
@@ -406,7 +406,7 @@ class MatrixConstructor:
         """
 
         if biomlmodel is None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
         
 
         kinetic_rates_vector = self.construct_kinetic_constants_vector(biomlmodel)
@@ -461,12 +461,12 @@ class MatrixConstructor:
                         where rows correspond to elements and columns to species.
         """
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         biomlspecies_list = biomlmodel.get_list_of_species()
 
         if len(biomlspecies_list) == 0:
-            raise _exceptions.EmptyList("There are no species in this model.")
+            raise exceptions.EmptyList("There are no species in this model.")
         
 
         columns = BioMLSpecies.get_current_index()
@@ -514,16 +514,16 @@ class MatrixConstructor:
         """
 
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
         reactions_list = biomlmodel.get_list_of_reactions()
 
         if len(species_list) == 0:
-            raise _exceptions.EmptyList("There are no species in this model.")
+            raise exceptions.EmptyList("There are no species in this model.")
         
         if len(reactions_list) == 0:
-            raise _exceptions.EmptyList("There are no reactions in this model.")
+            raise exceptions.EmptyList("There are no reactions in this model.")
 
         rows = BioMLSpecies.get_current_index()
 

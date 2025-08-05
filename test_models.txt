@@ -1,8 +1,13 @@
-folder_path = "/Users/makb047/UoA/Codes/NitrosylBromide_BioML"
+folder_path = "/Users/makb047/UoA/Codes/Mass Actions"
 
-folder_path = "/Users/makb047/UoA/Codes/ATP Hydrolysis"
+folder_path = "/Users/makb047/UoA/Codes/SBML Models"
 
-folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
+folder_path ="/Users/makb047/UoA/Codes/CellML Models"
+
+
+
+
+
 
 file_name = "BIOMD0000000150.xml"
 
@@ -10,12 +15,6 @@ file_name = "ATP_Hydrolysis.cellml"
 
 file_name = "modified_huang_ferrell_1996.cellml"
 
-file_name = "aguda_b_1999.cellml"
+file_name = "NitrosylBromide.cellml"
 
-file_name = "aguda_b_1999-original.cellml"
-
-file_name = "NitrosylBromide-BioML.cellml"
-
-folder_path = "/Users/makb047/UoA/Codes/CellML_Model_Verification/docs"
-
-folder_path = "/Users/makb047/UoA/Codes/Mass_Actions"
+file_name = "tran_smith_loiselle_crampin_2009.cellml"

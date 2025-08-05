@@ -36,7 +36,7 @@ class ModelChecker(object):
         """
 
         if biomlmodel == None:
-            raise _exceptions.NoModel("No BioModel has been read!!!")
+            raise exceptions.NoModel("No BioModel has been read!!!")
 
         biomlmodel_reactions = biomlmodel.get_list_of_reactions()
 

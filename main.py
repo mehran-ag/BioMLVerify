@@ -2,7 +2,6 @@ from bioml import *
 import os
 import atexit
 
-from functions import *
 
 from _modules._utility import time_counter
 
@@ -13,7 +12,7 @@ os.system("cls" if os.name == "nt" else "clear")
 atexit.register(lambda: print("\n" * 2))
 
 
-folder_path = "/Users/makb047/UoA/Codes/SBML_Models"
+folder_path = "/Users/makb047/UoA/Codes/SBML Models"
 
 file_name = "BIOMD0000000038.xml"
 

@@ -812,7 +812,7 @@ class SbmlReader:
         empty_global_parameters = False     # a flag to indicate if there are no global parameters
 
         if biomlmodel is None:
-            raise _exceptions.NoModel("No biomlmodel has been read!!!")
+            raise exceptions.NoModel("No biomlmodel has been read!!!")
 
 
         species_classes_list = biomlmodel.get_list_of_species()
