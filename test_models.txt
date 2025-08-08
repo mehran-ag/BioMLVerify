@@ -1,8 +1,8 @@
-folder_path = "/Users/makb047/UoA/Codes/Mass Actions"
+folder_path = "../Mass Actions"
 
-folder_path = "/Users/makb047/UoA/Codes/SBML Models"
+folder_path = "../SBML Models"
 
-folder_path ="/Users/makb047/UoA/Codes/CellML Models"
+folder_path = "../CellML Models"
 
 
 

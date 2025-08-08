@@ -1,12 +1,28 @@
 # BioMLVerify
-This code is a tool to verify biological models written in XML format.
+BioML: A Tool for Verifying Biological Models
 
-The code investigates mass conservation, charge conservation and thermodynamic compatibility of reaction networks in SBML and CellML models.
+This tool verifies biological models written in XML format, focusing on:
+    Mass conservation
+    Charge conservation
+    Thermodynamic compatibility of reaction networks
 
-Currently, the code can check reactions governed by Mass Action law.
+It supports models in both SBML and CellML formats.
 
-If the species in the reaction are annotated by ChEBI codes, mass and charge conservations can be checked automatically. Otherwise, there is an alternative method os manually assigning chemical elements or chemical moeities for mass conservation check. Charge can also be added to charged species if they have a charge, otherwise it will be considered zero.
+Supported Reaction Types
+    Currently, the tool can check reactions governed by the Law of Mass Action.
 
-To use the tool, an instance of BioML object must be created.
+Conservation Checks
+    Automatic check: If reaction species are annotated with ChEBI codes, mass and charge conservation are checked automatically.
+    Manual check: If ChEBI codes are not available, chemical elements or moieties can be assigned manually for mass conservation. Charges can also be assigned manually; unassigned species are assumed to have zero charge.
 
-Using BioML instance, the model can be read and verified easily by only using two functions: read_file and verify_model.
+Usage
+    To use the tool:
+        Create an instance of the BioML object.
+            bioml = BioML()
+
+        Use just two functions to read and verify a model:
+            bioml.read_file(folder_path="C:/my folder", file_name="model_file.xml")
+            # or
+            bioml.read_file(folder_path="C:/my folder", file_name="model_file.cellml")
+
+            bioml.verify_model(printing = True)

@@ -93,6 +93,13 @@ class BioML(object):
         """
 
         try:
+
+            if self._biomlmodel is not None:
+                utility.warning_printer(f"\"{self._file_name}\" was already read and converted to a BioML model.\nIt will be overwritten by the new file, \"{file_name}\"")
+
+                self._reset()
+                      
+
             if not isinstance(folder_path, str):
                 raise TypeError("Folder path must be a string.")
             
