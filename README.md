@@ -39,6 +39,7 @@ To use the tool:
 
 2. Use just two functions to read and verify a model:
 
+```python
 bioml.read_file(folder_path="C:/my folder", file_name="model_file.xml")
 # or
 bioml.read_file(folder_path="C:/my folder", file_name="model_file.cellml")
