@@ -9,7 +9,9 @@ folder_path = "../CellML Models"
 
 
 
-file_name = "BIOMD0000000150.xml"
+file_name = "BIOMD0000000085.xml"
+
+file_name = "BIOMD0000000692.xml"
 
 file_name = "ATP_Hydrolysis.cellml"
 

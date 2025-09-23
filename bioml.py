@@ -952,6 +952,45 @@ class BioML(object):
                         passed = True
 
                         return passed
+                    
+            else:
+
+                if self._biomlmodel is None:
+                    raise ValueError(f"No BioML Model has been imported!")
+
+                if self._biomlmodel.is_direct_conversion:
+
+                    if self.check_kinetic_constants_thermo_compatibility(printing):
+                        passed = True
+
+                        return passed
+
+                else:
+
+                    if not self.check_mass_action_kinetics():
+
+                        passed = False
+
+                        if printing:
+
+                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+
+                        return passed
+                    
+                    if not self.check_model_reversibility():
+
+                        passed = False
+
+                        if printing:
+
+                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+
+                        return passed
+                    
+                    if self.check_kinetic_constants_thermo_compatibility(printing):
+                        passed = True
+
+                        return passed
 
         except Exception as e:
             utility.error_handler(e, "verify_model")

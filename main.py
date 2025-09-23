@@ -12,15 +12,25 @@ os.system("cls" if os.name == "nt" else "clear")
 atexit.register(lambda: print("\n" * 2))
 
 
-folder_path = "../CellML Models"
+folder_path = "../SBML Models"
 
-file_name = "ATP_Hydrolysis.cellml"
+file_name = "BIOMD0000000692.xml"
 
 bioml = BioML()
 
 bioml.read_file(folder_path, file_name)
 
-bioml.verify_model(printing=True)
+bioml.get_elemental_matrix(printing=True)
+
+bioml.get_stoichiometric_matrix(printing=True)
+
+bioml.get_charge_matrix(printing=True)
+
+bioml.get_stoichiometric_column_names_indices(printing=True)
+
+bioml.get_stoichiometric_row_names_indices(printing=True)
+
+bioml.verify_model(mass_balance=True, charge_balance=True, printing=True)
 
 
 time_counter(t, t0)  # This function calculates the execution time and prints on the screen

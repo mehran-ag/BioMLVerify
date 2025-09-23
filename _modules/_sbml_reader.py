@@ -19,6 +19,8 @@ import time
 import chemparse as chp
 import libchebipy as chb
 
+import math
+
 import _modules._model_checker as model_checker
 
 
@@ -140,11 +142,19 @@ class SbmlReader:
                 if composition is not None:
                     biomlmodel_species.composition = composition
 
-                if libsbml_species_class.getCharge():
-                    biomlmodel_species.charge = libsbml_species_class.getCharge()
-                else:
-                    if charge:
-                        biomlmodel_species.charge = charge
+                if charge is not None:
+
+                    if not math.isnan(charge):
+
+                        if libsbml_species_class.getCharge():
+                            biomlmodel_species.charge = libsbml_species_class.getCharge()
+                        else:
+                            if charge:
+                                biomlmodel_species.charge = charge
+
+                    else:
+
+                        biomlmodel_species.charge = 0
 
 
             self._biomlmodel_species_list.append(biomlmodel_species)
