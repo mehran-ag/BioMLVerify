@@ -12,9 +12,11 @@ os.system("cls" if os.name == "nt" else "clear")
 atexit.register(lambda: print("\n" * 2))
 
 
-folder_path = "../SBML Models"
+folder_path = "SBML and CellML test models"
 
-file_name = "BIOMD0000000692.xml"
+# folder_path = "Curated SBML Models"
+
+file_name = "BIOMD0000000085-labelled.xml"
 
 bioml = BioML()
 

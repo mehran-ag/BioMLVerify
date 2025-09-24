@@ -1384,7 +1384,9 @@ class CellmlReader:
         
 
 
-
+    # ********************************
+    # *           Function           *
+    # ********************************
     def _parse_molecule_units(self, cellml_comp_code: str) -> dict:
         """
             Parses a string like '2CH4.P4' into a dictionary of molecule counts.

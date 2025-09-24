@@ -469,13 +469,22 @@ class BioML(object):
                 dict: A dictionary mapping column index to column name
         """
 
-        columns = self._matrix_constructor.get_stoichiometric_matrix_column_names(self._biomlmodel)
+        try:
 
-        if printing:
+            if self._biomlmodel is None:
+                raise exceptions.NoModel("No BioModel has been read!!!")
 
-            utility.printer("\nThe Columns are:", columns )
+            columns = self._matrix_constructor.get_stoichiometric_matrix_column_names(self._biomlmodel)
 
-        return columns
+            if printing:
+
+                utility.printer("\nThe Columns are:", columns )
+
+            return columns
+        
+        except Exception as e:
+            utility.error_handler(e, "get_stoichiometric_matrix_column_names")
+            return None
     
 
 
@@ -497,13 +506,22 @@ class BioML(object):
                 dict: A dictionary mapping row index to row name
         """
 
-        rows = self._matrix_constructor.get_stoichiometric_matrix_row_names(self._biomlmodel)
+        try:
 
-        if printing:
+            if self._biomlmodel is None:
+                raise exceptions.NoModel("No BioModel has been read!!!")
 
-            utility.printer("\nThe Rows are:", rows )
+            rows = self._matrix_constructor.get_stoichiometric_matrix_row_names(self._biomlmodel)
 
-        return rows
+            if printing:
+
+                utility.printer("\nThe Rows are:", rows )
+
+            return rows
+        
+        except Exception as e:
+            utility.error_handler(e, "get_stoichiometric_matrix_row_names")
+            return None
     
 
 
@@ -934,7 +952,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                            utility.printer("\nThermodynamic Consistency Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                         return passed
                     
@@ -944,7 +962,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                            utility.printer("\nThermodynamic Consistency Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                         return passed
                     
@@ -973,7 +991,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                            utility.printer("\nThermodynamic Consistency Check: ",f"Model {self._file_name} has (a) reaction(s) not governed by \"Mass Action\" kinetics and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                         return passed
                     
@@ -983,7 +1001,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.printer("\nThermodynamic Compatibility Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
+                            utility.printer("\nThermodynamic Consistency Check: ",f"Model {self._file_name} has (an) irrversible reaction(s) and\n{' ' * 37}it is NOT eligible for verification check\n", text_color="red")
 
                         return passed
                     
@@ -995,7 +1013,7 @@ class BioML(object):
         except Exception as e:
             utility.error_handler(e, "verify_model")
 
-            utility.printer("\nThermodynamic Compatibility Check: ",f"Thermodynamic compatibilit cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            utility.printer("\nThermodynamic Consistency Check: ",f"Thermodynamic consistency cannot be checked as an error is raised.", text_color="red", text_style="bold")
             return None
         
 
@@ -1054,10 +1072,10 @@ class BioML(object):
 
             checked_results.loc[len(checked_results)] = [file_name, mass_action, reversible, plausible, error]
 
-        excel_full_path = os.path.join(folder_path, "Thermodynamic compatibility results.xlsx")
+        excel_full_path = os.path.join(folder_path, "Thermodynamic consistency results.xlsx")
             
         checked_results.to_excel(excel_full_path, index=False)
 
-        save_message = f"\n{'*' * 30} The Excel file \"check_results.xlsx\" has been successfully saved to \"{folder_path}\" {'*' * 30}"
+        save_message = f"\n{'*' * 30} The Excel file \"Thermodynamic consistency results.xlsx\" has been successfully saved to \"{folder_path}\" {'*' * 30}"
 
         utility.message_printer(save_message)

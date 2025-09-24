@@ -1,5 +1,3 @@
-folder_path = "../Mass Actions"
-
 folder_path = "../SBML Models"
 
 folder_path = "../CellML Models"
@@ -9,14 +7,14 @@ folder_path = "../CellML Models"
 
 
 
-file_name = "BIOMD0000000085.xml"
+file_name = "BIOMD0000000085.xml" #Incompatible with thermodynamics
 
-file_name = "BIOMD0000000692.xml"
+file_name = "BIOMD0000000692.xml" #Compatible with thermodynamics
 
-file_name = "ATP_Hydrolysis.cellml"
 
-file_name = "modified_huang_ferrell_1996.cellml"
 
-file_name = "NitrosylBromide.cellml"
 
-file_name = "tran_smith_loiselle_crampin_2009.cellml"
+
+file_name = "modified_huang_ferrell_1996.cellml" #Incompatible with thermodynamics
+
+file_name = "tran_smith_loiselle_crampin_2009.cellml" #Compatible with thermodynamics

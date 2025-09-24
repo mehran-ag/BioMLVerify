@@ -53,6 +53,12 @@ class SbmlReader:
         document = reader.readSBML(file_path)
         if document.getNumErrors() > 0:
             utility.error_printer(f"The SBML file \"{self._file_name}\" contains {document.getNumErrors()} error(s).")
+
+            for i in range(document.getNumErrors()):
+                error = document.getError(i)
+                utility.error_printer(f"{error.getMessage()}")
+
+
             utility.message_printer("\n>>>>> Model not read <<<<<<", color="red", style='bold')
             return None
         else:
@@ -155,6 +161,41 @@ class SbmlReader:
                     else:
 
                         biomlmodel_species.charge = 0
+
+            else:
+
+                sbml_metaid = libsbml_species_class.getMetaId()
+
+                if sbml_metaid.split('_')[0] == 'va':
+
+                    compound_part = sbml_metaid.split('_')[1]
+
+                    if compound_part[0] == '-':
+                        charge_sign = -1
+                        compound_part = compound_part[1:]
+
+                    else:
+                        charge_sign = +1
+
+                    compound_code = compound_part.split('-')[0]
+
+                    sbml_species_compound, sbml_species_charge = SbmlReader._parse_compound_code(compound_code)
+
+                    biomlmodel_species.charge = charge_sign * sbml_species_charge
+
+                    if len( compound_part.split('-') ) > 1:
+
+                        sbml_species_comp_code = compound_part.split('-')[1]
+
+                        sbml_species_composition = self._parse_molecule_units(sbml_species_comp_code)
+
+                    else:
+
+                        sbml_species_composition = {sbml_species_compound: 1}
+
+                    biomlmodel_species.compound = sbml_species_compound
+
+                    biomlmodel_species.composition = sbml_species_composition
 
 
             self._biomlmodel_species_list.append(biomlmodel_species)
@@ -1305,3 +1346,69 @@ class SbmlReader:
             parsed_compound = chp.parse_formula(formula)
 
         return formula, charge, parsed_compound
+    
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def _parse_molecule_units(self, cellml_comp_code: str) -> dict:
+        """
+            Parses a string like '2CH4.P4' into a dictionary of molecule counts.
+            For example, '2CH4.P4' becomes {'CH4': 2, 'P4': 1}.
+
+            Args:
+                cellml_comp_code (str): A string representing the encoded composition of a compound, 
+                    where molecules are separated by dots ('.') and may be prefixed by a coefficient.
+
+            Returns:
+                dict: A dictionary mapping molecule names (str) to their integer counts (int).
+        """
+
+        result = defaultdict(int)
+        units = cellml_comp_code.split('.')
+
+        for unit in units:
+            match = re.match(r'^(\d*)([a-zA-Z][a-zA-Z0-9]*)$', unit.strip())
+            if not match:
+                raise ValueError(f"Invalid format in unit: '{unit}'")
+            
+            qty_str, formula = match.groups()
+            qty = int(qty_str) if qty_str else 1
+            result[formula] += qty
+
+        return dict(result)
+    
+
+
+    @staticmethod
+    def _parse_compound_code(compound: str) -> tuple[int, str]:
+        """
+            Extracts charge and name from a compound string like '-4ATP', '2Ca', or 'H2O'.
+
+            Args:
+                compound (str): The chemical compound with its charge added to the beginning of the string
+
+            Returns:
+                str: a string which is solely the compound name
+                int: the charge of the compound
+        """
+
+        match = re.match(r'^([+-]?\d*)([A-Za-z].*)$', compound)
+        
+        if match:
+            charge_str, name = match.groups()
+            
+            if charge_str == '':
+                charge = 0
+            elif charge_str.startswith(('+', '-')):
+                charge = int(charge_str)
+            else:
+                # number without + or - is considered positive
+                charge = int(charge_str)
+        else:
+            # No number at the beginning → assume charge 0
+            charge = 0
+            name = compound
+
+        return name, charge
