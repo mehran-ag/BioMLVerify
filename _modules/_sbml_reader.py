@@ -18,6 +18,8 @@ import time
 
 import chemparse as chp
 import libchebipy as chb
+from bioservices import ChEBI
+import requests
 
 import math
 
@@ -143,14 +145,22 @@ class SbmlReader:
 
                     except Exception as e:
 
-                        if "urlopen" in str(e):
-                            message = f"ChEBI fetch failed for {annotation} — URL cannot be reached to read ChEBI"
-                            formula = None
-                            charge = None
-                            composition = None
-                            utility.add_warning(message)
-                        else:
-                            raise
+                        try:
+
+                            formula, charge, composition = SbmlReader._parse_using_chebi_bioservices(annotation)
+
+                        except Exception as e:
+
+                            try:
+                                formula, charge, composition = SbmlReader._parse_using_chebi_url(annotation)
+
+                            except Exception as e:
+
+                                message = f"ChEBI fetch failed for {annotation}"
+                                formula = None
+                                charge = None
+                                composition = None
+                                utility.add_warning(message)
 
                     if formula is not None or charge is not None or composition is not None:
                             break
@@ -1359,6 +1369,109 @@ class SbmlReader:
             formula = chebi_entity.get_formula()
             charge = chebi_entity.get_charge()
             parsed_compound = chp.parse_formula(formula)
+
+        return formula, charge, parsed_compound
+    
+
+
+
+
+    
+    @staticmethod
+    def _parse_using_chebi_bioservices(chebi_code: str) -> tuple[str, int, dict]:
+        """
+            This function receives a ChEBI code string and uses the BioServices ChEBI API
+            to fetch the compound’s chemical composition, then uses chemparse to decompose
+            the chemical formula into its elements and returns it as a dictionary.
+
+            Args:
+                chebi_code (str): a 5-digit ChEBI code (e.g., '15377' or 'CHEBI:15377')
+
+            Returns:
+                str: a string representing the compound's chemical formula (like 'CH4')
+                int: an integer representing the charge of the compound
+                dict: a dictionary mapping element symbols (str) to their integer counts (int)
+        """
+
+        # from bioservices import ChEBI
+        
+        import chemparse as chp
+
+        chebi = ChEBI()
+
+        # Ensure correct ChEBI ID format
+        if not chebi_code.startswith("CHEBI:"):
+            chebi_code = f"CHEBI:{chebi_code}"
+
+        try:
+            entity = chebi.getCompleteEntity(chebi_code)
+        except Exception as e:
+            print(f"Error fetching data from ChEBI for {chebi_code}: {e}")
+            return None, None, None
+
+        # Extract formula and charge (may be missing for some compounds)
+        formula = None
+        charge = None
+        parsed_compound = None
+
+        # 'Formulae' is a list of dicts containing formula data
+        if "Formulae" in entity and len(entity["Formulae"]) > 0:
+            formula = entity["Formulae"][0].get("data", None)
+            charge = entity.get("Charge", None)
+
+            if formula:
+                parsed_compound = chp.parse_formula(formula)
+
+        return formula, charge, parsed_compound
+    
+
+
+
+
+    
+    @staticmethod
+    def _parse_using_chebi_url(chebi_code: str) -> tuple[str, int, dict]:
+        """
+            This function receives a ChEBI code string and uses the BioServices ChEBI API
+            to fetch the compound’s chemical composition, then uses chemparse to decompose
+            the chemical formula into its elements and returns it as a dictionary.
+
+            Args:
+                chebi_code (str): a 5-digit ChEBI code (e.g., '15377' or 'CHEBI:15377')
+
+            Returns:
+                str: a string representing the compound's chemical formula (like 'CH4')
+                int: an integer representing the charge of the compound
+                dict: a dictionary mapping element symbols (str) to their integer counts (int)
+        """
+
+        from bioservices import ChEBI
+        import chemparse as chp
+
+        chebi = ChEBI()
+
+        # Ensure correct ChEBI ID format
+        if not chebi_code.startswith("CHEBI:"):
+            chebi_code = f"CHEBI:{chebi_code}"
+
+        try:
+            entity = chebi.getCompleteEntity(chebi_code)
+        except Exception as e:
+            print(f"Error fetching data from ChEBI for {chebi_code}: {e}")
+            return None, None, None
+
+        # Extract formula and charge (may be missing for some compounds)
+        formula = None
+        charge = None
+        parsed_compound = None
+
+        # 'Formulae' is a list of dicts containing formula data
+        if "Formulae" in entity and len(entity["Formulae"]) > 0:
+            formula = entity["Formulae"][0].get("data", None)
+            charge = entity.get("Charge", None)
+
+            if formula:
+                parsed_compound = chp.parse_formula(formula)
 
         return formula, charge, parsed_compound
     
