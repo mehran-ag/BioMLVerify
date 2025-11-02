@@ -478,7 +478,7 @@ class BioML(object):
 
             if printing:
 
-                utility.printer("\nThe Columns are:", columns )
+                utility.printer("\nThe columns of the stoichiometric matrix are:", columns )
 
             return columns
         
@@ -515,12 +515,46 @@ class BioML(object):
 
             if printing:
 
-                utility.printer("\nThe Rows are:", rows )
+                utility.printer("\nThe rows of the stoichiometric matrix are:", rows )
 
             return rows
         
         except Exception as e:
             utility.error_handler(e, "get_stoichiometric_matrix_row_names")
+            return None
+        
+
+
+
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def get_elemental_row_names_indices(self, printing: bool = False) -> dict:
+        """
+            Returns a dictionary containing the names of rows with their corresponding indices in the elemental matrix
+
+            Args:
+                printing (bool): if this value is True, a message will be displayed to show the result
+
+            Returns:
+                dict: A dictionary mapping row index to row name
+        """
+
+        try:
+
+            if self._biomlmodel is None:
+                raise exceptions.NoModel("No BioModel has been read!!!")
+
+            rows = self._matrix_constructor.get_elemental_matrix_row_names(self._biomlmodel)
+
+            if printing:
+
+                utility.printer("\nThe rows of the elemental matrix are:", rows )
+
+            return rows
+        
+        except Exception as e:
+            utility.error_handler(e, "get_elemental_matrix_row_names")
             return None
     
 

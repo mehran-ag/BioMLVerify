@@ -249,7 +249,31 @@ class MatrixConstructor:
 
                 row_indices_names[species.index] = species.ID
 
-        return row_indices_names        
+        return row_indices_names
+
+
+
+    
+    # ********************************
+    # *           Function           *
+    # ********************************
+    def get_elemental_matrix_row_names(self, biomlmodel: BioMLModel) -> dict:
+        """
+            Returns a dictionary containing the names of rows with their corresponding indices in the elemental matrix
+
+            Args:
+                biomlmodel (BioMlModel): A model of BioML class containing species and reactions.
+
+            Returns:
+                dict: A dictionary mapping row index to row name
+        """
+    
+        if biomlmodel == None:
+            raise exceptions.NoModel("No BioModel has been read!!!")
+
+        elements = biomlmodel.get_element_indices_dict()
+
+        return elements     
     
 
 

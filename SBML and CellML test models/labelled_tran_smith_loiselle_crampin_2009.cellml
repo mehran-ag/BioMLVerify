@@ -405,20 +405,20 @@
     </component>
     <component name="variables">
         <variable cmeta:id="va_P1-E.H" name="P1" units="millimolar"/>
-        <variable cmeta:id="va_P2" name="P2" units="millimolar"/>
-        <variable cmeta:id="va_P2a" name="P2a" units="millimolar"/>
-        <variable cmeta:id="va_P4" name="P4" units="millimolar"/>
-        <variable cmeta:id="va_P5" name="P5" units="millimolar"/>
-        <variable cmeta:id="va_P6" name="P6" units="millimolar"/>
-        <variable cmeta:id="va_P8" name="P8" units="millimolar"/>
-        <variable cmeta:id="va_P9" name="P9" units="millimolar"/>
-        <variable cmeta:id="va_P10" name="P10" units="millimolar"/>
+        <variable cmeta:id="va_P2-ADP.Pi.E.H" name="P2" units="millimolar"/>
+        <variable cmeta:id="va_P2a-2H.ADP.Pi.E" name="P2a" units="millimolar"/>
+        <variable cmeta:id="va_P4-ADP.Pi.H.2Ca" name="P4" units="millimolar"/>
+        <variable cmeta:id="va_P5-ADP.Pi.E.2Ca" name="P5" units="millimolar"/>
+        <variable cmeta:id="va_P6-H.Pi.E" name="P6" units="millimolar"/>
+        <variable cmeta:id="va_P8-H.Pi.E" name="P8" units="millimolar"/>
+        <variable cmeta:id="va_P9-2H.Pi.E" name="P9" units="millimolar"/>
+        <variable cmeta:id="va_P10-H.E" name="P10" units="millimolar"/>
         <variable cmeta:id="va_Pi" name="Pi" units="millimolar"/>
-        <variable cmeta:id="va_MgATP" name="MgATP" units="millimolar"/>
-        <variable cmeta:id="va_Cai" name="Cai" units="millimolar"/>
-        <variable cmeta:id="va_Casr" name="Casr" units="millimolar"/>
-        <variable cmeta:id="va_H" name="H" units="millimolar"/>
-        <variable cmeta:id="va_MgADP" name="MgADP" units="millimolar"/>
+        <variable cmeta:id="va_MgATP-Mg.ADP.Pi" name="MgATP" units="millimolar"/>
+        <variable cmeta:id="va_2Cai-Ca" name="Cai" units="millimolar"/>
+        <variable cmeta:id="va_2Casr-Ca" name="Casr" units="millimolar"/>
+        <variable cmeta:id="va_1H" name="H" units="millimolar"/>
+        <variable cmeta:id="va_MgADP-Mg.ADP" name="MgADP" units="millimolar"/>
     </component>
     <component name="reaction_rates">
         <variable cmeta:id="ra_12" name="v_12" units="millimolar"/>

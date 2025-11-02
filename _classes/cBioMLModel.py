@@ -48,9 +48,9 @@ class BioMLModel(BioMLModelPropertiesMixin):
     
     def get_element_indices_dict(self):
 
-        if self._element_indices_dict():
+        if self._element_indices_dict:
 
-            return self._element_indices_dict()
+            return self._element_indices_dict
         
         else:
 

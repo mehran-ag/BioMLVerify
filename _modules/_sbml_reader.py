@@ -137,10 +137,24 @@ class SbmlReader:
 
                 for annotation in annotations:
 
-                    formula, charge, composition = SbmlReader._parse_using_chebi(annotation)
+                    try:
+
+                        formula, charge, composition = SbmlReader._parse_using_chebi(annotation)
+
+                    except Exception as e:
+
+                        if "urlopen" in str(e):
+                            message = f"ChEBI fetch failed for {annotation} — URL cannot be reached to read ChEBI"
+                            formula = None
+                            charge = None
+                            composition = None
+                            utility.add_warning(message)
+                        else:
+                            raise
 
                     if formula is not None or charge is not None or composition is not None:
-                        break
+                            break
+
 
                 if formula is not None:
                     biomlmodel_species.compound = formula
@@ -316,6 +330,7 @@ class SbmlReader:
                     biomlmodel_reaction.kinetic_law = libsbml_klaw.getFormula()
 
                 except Exception as e:
+                    
                     raise ValueError(f"The formula can't be read from the SBML reaction law. The message from libsbl is: " + str(e))
 
             else:
