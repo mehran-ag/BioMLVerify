@@ -20,6 +20,7 @@ import chemparse as chp
 import libchebipy as chb
 from bioservices import ChEBI
 import requests
+import json
 
 import math
 
@@ -143,20 +144,21 @@ class SbmlReader:
 
                         formula, charge, composition = SbmlReader._parse_using_chebi(annotation)
 
-                    except Exception as e:
+                    except Exception:
 
                         try:
 
-                            formula, charge, composition = SbmlReader._parse_using_chebi_bioservices(annotation)
+                            formula, charge, composition = SbmlReader._parse_using_chebi_url(annotation)
 
-                        except Exception as e:
+                        except Exception:
 
                             try:
-                                formula, charge, composition = SbmlReader._parse_using_chebi_url(annotation)
+
+                                formula, charge, composition = SbmlReader._parse_using_chebi_bioservices(annotation)
 
                             except Exception as e:
 
-                                message = f"ChEBI fetch failed for {annotation}"
+                                message = f"ChEBI fetch failed for {annotation} due to external package error: libchebipy and bioservices.\nstr{e}"
                                 formula = None
                                 charge = None
                                 composition = None
@@ -1239,14 +1241,12 @@ class SbmlReader:
 
 
         return reaction_to_rate_constants
-    
 
 
 
-
-
-
-
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _expand_formula(formula: str, function_definitions: list[BioMLFunctionDefinition],
             num_recursions: int = 0) -> tuple[str, dict]:
@@ -1299,6 +1299,9 @@ class SbmlReader:
     
 
 
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _get_chebi_annotations(libsbml_species: libsbml.Species):
         """
@@ -1333,6 +1336,9 @@ class SbmlReader:
     
 
 
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _parse_using_chebi( chebi_code: str ) -> tuple[str, int, dict]:
 
@@ -1374,9 +1380,9 @@ class SbmlReader:
     
 
 
-
-
-    
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _parse_using_chebi_bioservices(chebi_code: str) -> tuple[str, int, dict]:
         """
@@ -1393,13 +1399,9 @@ class SbmlReader:
                 dict: a dictionary mapping element symbols (str) to their integer counts (int)
         """
 
-        # from bioservices import ChEBI
-        
-        import chemparse as chp
-
         chebi = ChEBI()
 
-        # Ensure correct ChEBI ID format
+        #
         if not chebi_code.startswith("CHEBI:"):
             chebi_code = f"CHEBI:{chebi_code}"
 
@@ -1409,12 +1411,12 @@ class SbmlReader:
             print(f"Error fetching data from ChEBI for {chebi_code}: {e}")
             return None, None, None
 
-        # Extract formula and charge (may be missing for some compounds)
+       
         formula = None
         charge = None
         parsed_compound = None
 
-        # 'Formulae' is a list of dicts containing formula data
+        
         if "Formulae" in entity and len(entity["Formulae"]) > 0:
             formula = entity["Formulae"][0].get("data", None)
             charge = entity.get("Charge", None)
@@ -1428,50 +1430,56 @@ class SbmlReader:
 
 
 
-    
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _parse_using_chebi_url(chebi_code: str) -> tuple[str, int, dict]:
         """
-            This function receives a ChEBI code string and uses the BioServices ChEBI API
-            to fetch the compound’s chemical composition, then uses chemparse to decompose
-            the chemical formula into its elements and returns it as a dictionary.
+        Fetches a ChEBI compound’s formula and charge using the ChEBI REST API,
+        then uses chemparse to decompose the formula into elements.
 
-            Args:
-                chebi_code (str): a 5-digit ChEBI code (e.g., '15377' or 'CHEBI:15377')
+        Args:
+            chebi_code (str): a ChEBI ID, like '15377' or 'CHEBI:15377'
 
-            Returns:
-                str: a string representing the compound's chemical formula (like 'CH4')
-                int: an integer representing the charge of the compound
-                dict: a dictionary mapping element symbols (str) to their integer counts (int)
+        Returns:
+            tuple[str, int, dict]: (formula, charge, parsed_elements)
         """
 
-        from bioservices import ChEBI
-        import chemparse as chp
-
-        chebi = ChEBI()
-
-        # Ensure correct ChEBI ID format
-        if not chebi_code.startswith("CHEBI:"):
-            chebi_code = f"CHEBI:{chebi_code}"
+        
+        chebi_id = chebi_code.split(":")[1] if chebi_code.startswith("CHEBI:") else chebi_code
+        url = f"https://www.ebi.ac.uk/chebi/backend/api/public/compound/{chebi_id}"
+        headers = {"Accept": "application/json"}
 
         try:
-            entity = chebi.getCompleteEntity(chebi_code)
-        except Exception as e:
-            print(f"Error fetching data from ChEBI for {chebi_code}: {e}")
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if not response.ok:
+                print(f"HTTP error {response.status_code} for {url}")
+                print("Response text:", response.text[:300])
+                return None, None, None
+
+            data = response.json()
+
+        except requests.exceptions.RequestException as e:
+            print(f"Request error for {chebi_code}: {e}")
+            return None, None, None
+        except ValueError:
+            print(f"Invalid JSON response for {chebi_code}")
+            print(response.text[:300])
             return None, None, None
 
-        # Extract formula and charge (may be missing for some compounds)
-        formula = None
-        charge = None
+        # Extract the relevant data
+        chemical_data = data.get("chemical_data", {})
+        formula = chemical_data.get("formula")
+        charge = chemical_data.get("charge")
+
         parsed_compound = None
-
-        # 'Formulae' is a list of dicts containing formula data
-        if "Formulae" in entity and len(entity["Formulae"]) > 0:
-            formula = entity["Formulae"][0].get("data", None)
-            charge = entity.get("Charge", None)
-
-            if formula:
+        if formula:
+            try:
                 parsed_compound = chp.parse_formula(formula)
+            except Exception as e:
+                print(f"Error parsing formula '{formula}': {e}")
 
         return formula, charge, parsed_compound
     
@@ -1508,7 +1516,11 @@ class SbmlReader:
         return dict(result)
     
 
+    
 
+    # ********************************
+    # *           Function           *
+    # ********************************
     @staticmethod
     def _parse_compound_code(compound: str) -> tuple[int, str]:
         """

@@ -149,9 +149,9 @@ class BioML(object):
             else:
 
                 if self._biomlmodel is not None:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioModel \u27A4\u27A4\u27A4\n", color="green")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The {file_type} model: {self._file_name} has been succesfully converted to a BioMLModel \u27A4\u27A4\u27A4\n", color="green")
                 else:
-                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioModel \u27A4\u27A4\u27A4\n", color="red", style="bold")
+                    utility.message_printer(f"\n\u27A4\u27A4\u27A4 The imported {file_type} model has not been converted to a BioMLModel \u27A4\u27A4\u27A4\n", color="red", style="bold")
                     time.sleep(1)
 
 
