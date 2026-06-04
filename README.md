@@ -4,29 +4,37 @@
 
 This tool verifies biological models written in XML format, focusing on:
 
-- **Mass conservation**  
-- **Charge conservation**  
-- **Thermodynamic compatibility** of reaction networks  
+- **Mass conservation**
+- **Charge conservation**
+- **Thermodynamic consistency** of reaction networks
 
 It supports models in both **SBML** and **CellML** formats.
 
 ---
 
 ## Supported Reaction Types
+
 - Currently, the tool can check reactions governed by the **Law of Mass Action**.
 
 ---
 
 ## Conservation Checks
+
 - **Automatic check**:  
-  If reaction species are annotated with **ChEBI codes**, mass and charge conservation are checked automatically.  
+  If reaction species are annotated with **ChEBI codes**, mass and charge conservation are checked automatically.
 
 - **Manual check**:
 
   If ChEBI codes are not available, chemical elements or moieties can be assigned manually for mass conservation.  
-  Charges can also be assigned manually; unassigned species are assumed to have zero charge.  
+  Charges can also be assigned manually; unassigned species are assumed to have zero charge.
 
 ---
+
+## How to install
+
+1. Download the whole package
+2. Install the required packages from "requirements.txt"
+3. Use Python version 3.10.10 or above
 
 ## Usage
 
@@ -37,6 +45,8 @@ To use the tool:
    ```python
    bioml = BioML()
 
+   ```
+
 2. Use just two functions to read and verify a model:
 
 ```python
@@ -45,3 +55,4 @@ bioml.read_file(folder_path="C:/my folder", file_name="model_file.xml")
 bioml.read_file(folder_path="C:/my folder", file_name="model_file.cellml")
 
 bioml.verify_model(printing=True)
+```
