@@ -1,4 +1,4 @@
-import libsbml
+import libsbml # type: ignore
 import _modules._utility as utility
 import re
 from _modules._constants import *
@@ -19,7 +19,6 @@ import time
 import chemparse as chp
 import libchebipy as chb
 import requests
-import json
 
 import math
 
@@ -151,7 +150,7 @@ class SbmlReader:
 
                         except Exception as e:
 
-                            message = f"ChEBI fetch failed for {annotation} due to external package error: libchebipy and bioservices.\nstr{e}"
+                            message = f"ChEBI fetch failed for CHEBI Code '{annotation}' due to external package error: libchebipy and URL.\nstr{e}"
                             formula = None
                             charge = None
                             composition = None
@@ -336,7 +335,7 @@ class SbmlReader:
 
                 except Exception as e:
                     
-                    raise ValueError(f"The formula can't be read from the SBML reaction law. The message from libsbl is: " + str(e))
+                    raise ValueError("The formula can't be read from the SBML reaction law. The message from libsbl is: " + str(e))
 
             else:
 
@@ -947,7 +946,7 @@ class SbmlReader:
             
             else:
 
-                if empty_global_parameters == True:
+                if empty_global_parameters:
                     raise ValueError(f"There are no global parameters defined for the model, nor are there any local parameters defined for {reaction_name}!")
                 
             reactant_classes_list = individual_reaction_class.get_list_of_reactants()
@@ -1350,7 +1349,6 @@ class SbmlReader:
         """
 
         chebi_entity = chb.ChebiEntity(chebi_code)
-        name = chebi_entity.get_name()
 
         parsed_compound={}
 

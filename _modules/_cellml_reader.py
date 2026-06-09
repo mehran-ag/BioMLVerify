@@ -1,12 +1,12 @@
 # Importing external packages
-from libcellml import Parser, Validator, Analyser, AnalyserExternalVariable, Importer, cellmlElementTypeAsString, Model as CellMLModel
-import numpy as np
+from libcellml import Parser, Validator, Analyser, AnalyserExternalVariable, Importer, Model as CellMLModel
 import chemparse as chp
 import libchebipy as chb
-import libsbml
+import libsbml # type: ignore
 import sympy as sp
 import re
 from collections import defaultdict
+from typing import Union
 
 from lxml import etree
 
@@ -16,7 +16,6 @@ import _modules._utility as utility
 from pathlib import Path, PurePath
 import _modules._constants as cn
 
-from xml.dom.minidom import parseString
 
 from _classes.cBioMLReaction import *
 from _classes.cBioMLModel import *
@@ -101,7 +100,7 @@ class CellmlReader:
 
             biomlmodel.reactions = biomlmodel_reactions_list
 
-            utility.warning_printer(f"\nThis model has been converted from a CellML model using the annotations only and not by reading the equations in the CellML file.\n")
+            utility.warning_printer("\nThis model has been converted from a CellML model using the annotations only and not by reading the equations in the CellML file.\n")
 
             biomlmodel.is_direct_conversion = True
 
@@ -840,7 +839,7 @@ class CellmlReader:
                     if species_in_cellml_eq[i] in fracs["denominator"]:
                         flag = False
 
-        except:
+        except Exception:
             pass
 
         return flag
@@ -894,7 +893,7 @@ class CellmlReader:
 
         flag = False
 
-        if self._single_product(kinetic_law, simple_kinetic_law) == False:
+        if not self._single_product(kinetic_law, simple_kinetic_law):
             terms = kinetic_law.split("-")
             if len(terms) == 2:
                 flag = True
@@ -1020,9 +1019,9 @@ class CellmlReader:
             "m": "http://www.w3.org/1998/Math/MathML",
         }
 
-        for cn in root.xpath(".//m:cn", namespaces=ns):
-            cn.attrib.pop('{http://www.cellml.org/cellml/1.0#}units', None)
-            cn.attrib.pop('{http://www.cellml.org/cellml/2.0#}units', None)
+        for cn_variable in root.xpath(".//m:cn", namespaces=ns):
+            cn_variable.attrib.pop('{http://www.cellml.org/cellml/1.0#}units', None)
+            cn_variable.attrib.pop('{http://www.cellml.org/cellml/2.0#}units', None)
 
         return etree.tostring(root).decode()
 
@@ -1487,18 +1486,18 @@ class CellmlReader:
         stoichiometry = {}
         expr = rate_expr  # Make a copy to modify
 
-        for sp in sorted(species, key=len, reverse=True):
+        for sp_value in sorted(species, key=len, reverse=True):
             # First, handle exponentiated species (e.g., x_NO**2)
-            power_match = re.search(rf"{re.escape(sp)}\s*\*\*\s*(\d+)", expr)
+            power_match = re.search(rf"{re.escape(sp_value)}\s*\*\*\s*(\d+)", expr)
             if power_match:
-                stoichiometry[sp] = int(power_match.group(1))
+                stoichiometry[sp_value] = int(power_match.group(1))
                 expr = re.sub(rf"{re.escape(sp)}\s*\*\*\s*\d+", "1", expr)
             else:
                 # Then handle species without exponent
                 pattern_no_power = rf"(?<![\w]){re.escape(sp)}(?![\w])"
                 match = re.search(pattern_no_power, expr)
                 if match:
-                    stoichiometry[sp] = 1
+                    stoichiometry[sp_value] = 1
                     expr = re.sub(pattern_no_power, "1", expr)
 
         return {
@@ -1657,7 +1656,6 @@ class CellmlReader:
         """
 
         chebi_entity = chb.ChebiEntity(chebi_code)
-        name = chebi_entity.get_name()
 
         parsed_compound={}
 

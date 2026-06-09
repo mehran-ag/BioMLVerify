@@ -30,7 +30,7 @@ class MatrixConstructor:
                             where rows correspond to species and columns to reactions.
         """
 
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
@@ -52,7 +52,7 @@ class MatrixConstructor:
 
             column = individual_reaction.index
 
-            if column == None:
+            if column is None:
                 continue
 
             reaction_reactants = individual_reaction.get_list_of_reactants()
@@ -94,7 +94,7 @@ class MatrixConstructor:
                             where rows correspond to species and columns to reactions.
         """
 
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
@@ -117,7 +117,7 @@ class MatrixConstructor:
 
             column = individual_reaction.index
 
-            if column == None:
+            if column is None:
                 continue
 
             reaction_reactants = individual_reaction.get_list_of_reactants()
@@ -149,7 +149,7 @@ class MatrixConstructor:
                             where rows correspond to species and columns to reactions.
         """
 
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
@@ -172,7 +172,7 @@ class MatrixConstructor:
 
             column = individual_reaction.index
 
-            if column == None:
+            if column is None:
                 continue
 
             reaction_products = individual_reaction.get_list_of_products()
@@ -202,7 +202,7 @@ class MatrixConstructor:
                 dict: A dictionary mapping column index to column name
         """
         
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
         
         reactions_list = biomlmodel.get_list_of_reactions()
@@ -232,7 +232,7 @@ class MatrixConstructor:
                 dict: A dictionary mapping row index to row name
         """
     
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
@@ -268,7 +268,7 @@ class MatrixConstructor:
                 dict: A dictionary mapping row index to row name
         """
     
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         elements = biomlmodel.get_element_indices_dict()
@@ -295,7 +295,7 @@ class MatrixConstructor:
                 str: A value (string)
         """
 
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         highest_i = self.stoichiometric_matrix.shape[0]
@@ -351,7 +351,7 @@ class MatrixConstructor:
 
         for biomlmodel_reaction in biomlmodel_reactions:
 
-            if biomlmodel_reaction.index != None:
+            if biomlmodel_reaction.index is not None:
 
                 index = biomlmodel_reaction.index
 
@@ -484,7 +484,7 @@ class MatrixConstructor:
             np.ndarray: A 2D array representing the elemental matrix, 
                         where rows correspond to elements and columns to species.
         """
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         biomlspecies_list = biomlmodel.get_list_of_species()
@@ -537,7 +537,7 @@ class MatrixConstructor:
                             where rows correspond to species and columns to reactions.
         """
 
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         species_list = biomlmodel.get_list_of_species()
@@ -559,7 +559,7 @@ class MatrixConstructor:
 
             column = individual_reaction.index
 
-            if column == None:
+            if column is None:
                 continue
 
             reaction_reactants = individual_reaction.get_list_of_reactants()

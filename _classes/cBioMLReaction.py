@@ -1,5 +1,4 @@
 from _classes.BioMLReactionPropertiesMixin import *
-from typing import Union
 from sympy import Expr as sympy_expression
 
 

@@ -190,7 +190,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
+                            utility.message_printer("\nALL reactions in the model are \"Mass Action\" kinetics\n", color='green')
 
                             time.sleep(5)
 
@@ -200,7 +200,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
+                            utility.message_printer("\nModel has (a) reaction(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
                             time.sleep(5)
 
@@ -212,7 +212,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
+                            utility.message_printer("ALL equations in the model are \"Mass Action\" kinetics\n", color='green')
 
                             time.sleep(5)
 
@@ -222,7 +222,7 @@ class BioML(object):
 
                         if printing:
 
-                            utility.message_printer(f"\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
+                            utility.message_printer("\nModel has (a) equation(s) not governed by \"Mass Action\" kinetics\n", color='red')        
 
                             time.sleep(5)
 
@@ -738,12 +738,12 @@ class BioML(object):
             elemental_array = self.get_elemental_matrix()
 
             if elemental_array is None:
-                raise ValueError(f"Elemental matrix is not provided!")
+                raise ValueError("Elemental matrix is not provided!")
 
             stoichiometric_array = self.get_stoichiometric_matrix()
 
             if stoichiometric_array is None:
-                raise ValueError(f"Stoichiometric matrix is not provided!")
+                raise ValueError("Stoichiometric matrix is not provided!")
 
             if elemental_array.shape[1] == stoichiometric_array.shape[0]:
                 conservation_array = elemental_array @ stoichiometric_array
@@ -838,12 +838,12 @@ class BioML(object):
             charge_array = self.get_charge_matrix()
 
             if charge_array is None:
-                raise ValueError(f"Charge matrix is not provided!")
+                raise ValueError("Charge matrix is not provided!")
 
             stoichiometric_array = self.get_stoichiometric_matrix()
 
             if stoichiometric_array is None:
-                raise ValueError(f"Stoichiometric matrix is not provided!")
+                raise ValueError("Stoichiometric matrix is not provided!")
 
             if charge_array.shape[1] == stoichiometric_array.shape[0]:
                 charge_conservation_array = charge_array @ stoichiometric_array
@@ -910,14 +910,14 @@ class BioML(object):
                 is_mass_balanced = self.check_mass_balance()
 
                 if is_mass_balanced is None:
-                    raise ValueError(f"Mass balance cannot be checked!")
+                    raise ValueError("Mass balance cannot be checked!")
             
 
                 if is_mass_balanced:
 
                     if printing:
 
-                        utility.printer("\nMass Conservation Check: ",f"Mass is conserved in the reactions\n", text_color="green", text_style="bold")
+                        utility.printer("\nMass Conservation Check: ","Mass is conserved in the reactions\n", text_color="green", text_style="bold")
 
                 else:
 
@@ -925,12 +925,12 @@ class BioML(object):
                         
                     if printing:
 
-                        utility.printer("\nMass Conservation Check: ",f"Mass is NOT conserved in the reactions", text_color="red", text_style="bold")
+                        utility.printer("\nMass Conservation Check: ","Mass is NOT conserved in the reactions", text_color="red", text_style="bold")
 
         except Exception as e:
             utility.error_handler(e, "verify_model")
 
-            utility.printer("\nMass Conservation Check: ",f"Mass balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            utility.printer("\nMass Conservation Check: ","Mass balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
 
 
         try:
@@ -942,13 +942,13 @@ class BioML(object):
                 is_charge_balanced = self.check_charge_balance()
 
                 if is_charge_balanced is None:
-                    raise ValueError(f"Charge balance cannot be checked!")
+                    raise ValueError("Charge balance cannot be checked!")
 
                 if is_charge_balanced:
 
                     if printing:
 
-                        utility.printer("\nCharge Conservation Check: ",f"Charge is conserved in the reactions\n", text_color="green", text_style="bold")
+                        utility.printer("\nCharge Conservation Check: ","Charge is conserved in the reactions\n", text_color="green", text_style="bold")
 
                 else:
 
@@ -956,12 +956,12 @@ class BioML(object):
                         
                     if printing:
 
-                        utility.printer("\nCharge Conservation Check: ",f"Charge is NOT conserved in the reactions", text_color="red", text_style="bold")
+                        utility.printer("\nCharge Conservation Check: ","Charge is NOT conserved in the reactions", text_color="red", text_style="bold")
 
         except Exception as e:
             utility.error_handler(e, "verify_model")
 
-            utility.printer("\nCharge Conservation Check: ",f"Charge balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            utility.printer("\nCharge Conservation Check: ","Charge balance cannot be checked as an error is raised.", text_color="red", text_style="bold")
 
 
         try:
@@ -969,7 +969,7 @@ class BioML(object):
             if passed:
 
                 if self._biomlmodel is None:
-                    raise ValueError(f"No BioML Model has been imported!")
+                    raise ValueError("No BioML Model has been imported!")
 
                 if self._biomlmodel.is_direct_conversion:
 
@@ -1008,7 +1008,7 @@ class BioML(object):
             else:
 
                 if self._biomlmodel is None:
-                    raise ValueError(f"No BioML Model has been imported!")
+                    raise ValueError("No BioML Model has been imported!")
 
                 if self._biomlmodel.is_direct_conversion:
 
@@ -1047,7 +1047,7 @@ class BioML(object):
         except Exception as e:
             utility.error_handler(e, "verify_model")
 
-            utility.printer("\nThermodynamic Consistency Check: ",f"Thermodynamic consistency cannot be checked as an error is raised.", text_color="red", text_style="bold")
+            utility.printer("\nThermodynamic Consistency Check: ","Thermodynamic consistency cannot be checked as an error is raised.", text_color="red", text_style="bold")
             return None
         
 
@@ -1059,7 +1059,8 @@ class BioML(object):
 
         for file_name in os.listdir(folder_path):
 
-            if not file_name.endswith('.xml'): continue    
+            if not file_name.endswith('.xml'):
+                continue    
 
             self._reset()
 

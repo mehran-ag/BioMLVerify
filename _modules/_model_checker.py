@@ -1,9 +1,8 @@
-import libsbml
+import libsbml # type: ignore
 import _modules._exceptions as exceptions
 import _modules._constants as cn
 from typing import Union
 import sympy as sp
-from sympy import symbols
 from _classes.cBioMLModel import BioMLModel
 
 
@@ -35,7 +34,7 @@ class ModelChecker(object):
                 list (optional): A list of the IDs of irreversible reactions (returned only if return_irreversibles is True).
         """
 
-        if biomlmodel == None:
+        if biomlmodel is None:
             raise exceptions.NoModel("No BioModel has been read!!!")
 
         biomlmodel_reactions = biomlmodel.get_list_of_reactions()
@@ -300,7 +299,7 @@ class ModelChecker(object):
 
             simp_kinetic_formula = str(sp.simplify(symp_kinetic_formula))
 
-        except:
+        except Exception:
 
             simp_kinetic_formula = ''
 
@@ -388,7 +387,7 @@ class ModelChecker(object):
 
         flag = False
 
-        if self._single_product(kinetic_law, simple_kinetic_law) == False:
+        if not self._single_product(kinetic_law, simple_kinetic_law):
             terms = kinetic_law.split("-")
             if len(terms) == 2:
                 flag = True
@@ -487,7 +486,7 @@ class ModelChecker(object):
                     if species_in_kinetic_law[i] in fracs["denominator"]:
                         flag = False
 
-        except:
+        except Exception:
             pass
 
         return flag

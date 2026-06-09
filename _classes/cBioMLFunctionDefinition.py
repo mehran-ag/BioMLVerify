@@ -1,4 +1,4 @@
-import libsbml
+import libsbml # type: ignore
 
 
 class BioMLFunctionDefinition():

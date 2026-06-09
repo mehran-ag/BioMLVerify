@@ -1,4 +1,4 @@
-from colorama import Fore, Back, Style, init
+from colorama import Fore, Style, init
 
 import traceback
 import sys
@@ -40,7 +40,7 @@ def printer(descrip: str, text_to_print: str, descript_color: str = "white", tex
 
     print(f"{description} {text}", end=u_end)
 
-def error_printer(message: str, error: str = f"\nERROR: ", error_color: str = "magenta", error_style: str = "normal", u_end: str = "\n") -> None:
+def error_printer(message: str, error: str = "\nERROR: ", error_color: str = "magenta", error_style: str = "normal", u_end: str = "\n") -> None:
 
     message = f"{style_map.get(error_style.lower(), Style.NORMAL)}{color_map.get(error_color.lower(), Fore.BLUE)}{message}"
 
@@ -52,7 +52,7 @@ def message_printer(message: str, color: str = "white", style: str = "normal"):
 
     print(f"{message}")
 
-def warning_printer(message: str, warning: str = f"\nWARNING: ", color="yellow", style = "normal") -> None:
+def warning_printer(message: str, warning: str = "\nWARNING: ", color="yellow", style = "normal") -> None:
 
     message = f"{style_map.get(style.lower(), Style.NORMAL)}{color_map.get(color.lower(), Fore.WHITE)}{message}"
 
